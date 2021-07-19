@@ -28,8 +28,11 @@ ActiveRecord::Schema.define(version: 2021_07_19_010607) do
     t.string "name"
     t.datetime "time"
     t.decimal "rate"
+    t.integer "coin_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.index ["coin_id"], name: "index_rates_on_coin_id"
+    t.index ["name"], name: "index_rates_on_name"
   end
 
 end
