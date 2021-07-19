@@ -1,0 +1,3 @@
+class Rate < ApplicationRecord
+
+end
