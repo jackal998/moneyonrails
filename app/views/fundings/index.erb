@@ -7,13 +7,11 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Focus - Bootstrap Admin Dashboard </title>
     <!-- Favicon icon -->
-        
-    <link rel="stylesheet" href="./vendor/owl-carousel/css/owl.carousel.min.css">
-    <link rel="stylesheet" href="./vendor/owl-carousel/css/owl.theme.default.min.css">
-    <link href="./vendor/jqvmap/css/jqvmap.min.css" rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/metismenu/dist/metisMenu.min.css">
-
+    <style>
+      .table-upper-cell {border-bottom-width:0;}
+    </style>
 </head>
 
 <body>
@@ -279,19 +277,74 @@
                     <!-- /# column -->
                 </div>
                 <div class="row">
-                    <div class="col-xl-8 col-lg-8 col-md-8">
-                        <div class="card">
-                            <div class="card-header">
-                                <h4 class="card-title">Sales Overview</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-xl-12 col-lg-8">
-                                        <div id="morris-bar-chart"></div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="col-xl-12 col-lg-12 col-md-12">
+                      <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">New Orders</h4>
                         </div>
+                        <div class="card-body">
+                          <div class="table-responsive">
+                            <table class="table table-sm mb-0 table-bordered ">
+                                <thead>
+                                    <tr>
+                                      <th class="table-upper-cell" colspan="1"></th>
+                                      <th class="table-upper-cell" colspan="2">資金費率</th>
+                                      <th class="table-upper-cell" colspan="2">成功率</th>
+                                      <th class="table-upper-cell" colspan="2">年化報酬率</th>
+                                      <th class="table-upper-cell" colspan="2">價差率</th>
+                                      <th class="table-upper-cell" colspan="1"></th>
+                                      <th class="table-upper-cell" colspan="2">成交量</th>
+                                      <th class="table-upper-cell" colspan="1"></th>
+                                    </tr>
+                                    <tr>
+                                      <th>幣種</th>
+                                      <th>最近</th>
+                                      <th>預估</th>
+                                      <th>最近48小時</th>
+                                      <th>最近一周</th>
+                                      <th>最近一周</th>
+                                      <th>最近一月</th>
+                                      <th>空永續/多現貨</th>
+                                      <th>多永續/空現貨</th>
+                                      <th>現貨成交價格</th>
+                                      <th>現貨24小時</th>
+                                      <th>永續24小時</th>
+                                      <th>永續持倉量</th>
+                                      <th>抵押率</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                  <% get_funding_index_infos(@coins).each do |name, info| %>
+                                    <tr>
+                                      <td>
+                                        <div class="stat-widget-two">
+                                          <div class="stat-text">
+                                            <%= name %>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td>最近費率</td>
+                                      <td><%= info["nextFundingRate"] %></td>
+                                      <td>最近48小時成功率</td>
+                                      <td>最近一周成功率</td>
+                                      <td>最近一周年化</td>
+                                      <td>最近一月年化</td>
+                                      <td>空永續 / 多現貨 價差</td>
+                                      <td>多永續 / 空現貨 價差</br>
+                                        (尚不支援現貨槓桿)</td>
+                                      <td>現貨成交價格</td>
+                                      <td>現貨24小時成交量</td>
+                                      <td><%= info["volume"] %></td>
+                                      <td><%= info["openInterest"] %></td>
+                                      <td>coin.weight</td>
+                                    </tr>
+                                  <% end %>
+                                  <tr></tr>
+                                </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     <div class="col-xl-4 col-lg-4 col-md-4">
                         <div class="card">
