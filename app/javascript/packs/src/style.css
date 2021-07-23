@@ -8047,7 +8047,7 @@ a {
   width: 17.1875rem;
   display: inline-block;
   text-align: left;
-  position: absolute;
+  position: fixed;
   left: 0;
   top: 0;
   background-color: #343957;
@@ -8210,9 +8210,11 @@ a {
 .header {
   height: 5rem;
   z-index: 1;
-  position: relative;
+  position: fixed;
   padding: 0rem;
   background-color: #fff;
+  top: 0;
+  width: 100%;
   z-index: 3;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   padding-left: 17.1875rem;
@@ -10290,6 +10292,7 @@ html[dir="rtl"] [direction="rtl"][data-sidebar-style="compact"]:not([data-layout
   top: 0.625rem; }
 
 .content-body {
+  padding-top: 7rem;
   margin-left: 17.1875rem;
   z-index: 0;
   transition: all .2s ease; }
@@ -10301,7 +10304,7 @@ html[dir="rtl"] [direction="rtl"][data-sidebar-style="compact"]:not([data-layout
   width: 17.1875rem;
   padding-bottom: 112px;
   height: 100%;
-  position: absolute;
+  position: fixed;
   top: 5rem;
   padding-top: 0;
   z-index: 2;
@@ -11234,7 +11237,7 @@ Fixing Order => Base + Typography >> General Layout + Grid >> Page Layout + Comp
     border-top-right-radius: 0px; }
 
 [data-sidebar-position="fixed"][data-layout="vertical"] .menu-toggle .quixnav {
-  position: absolute; }
+  position: fixed; }
 
 [data-header-position="fixed"][data-sidebar-position="fixed"][data-sidebar-style="overlay"][data-layout="vertical"][data-container="boxed"] .quixnav {
   position: absolute; }

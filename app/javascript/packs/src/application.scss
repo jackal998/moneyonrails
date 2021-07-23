@@ -1,4 +1,6 @@
+@import "~bootstrap/scss/bootstrap";
 @import "style";
+
 @import url("https://fonts.googleapis.com/css?family=Roboto:400,500,700");
 @import url("https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css");
 @import url("https://cdnjs.cloudflare.com/ajax/libs/simple-line-icons/2.5.5/css/simple-line-icons.min.css");
@@ -7,6 +9,3 @@
 @import url("https://cdn.jsdelivr.net/npm/@mdi/font@5.9.55/css/materialdesignicons.min.css");
 
 @import "../vendor/animate/animate.min.css";
-@import "../vendor/aos/css/aos.min.css";
-@import "../vendor/perfect-scrollbar/css/perfect-scrollbar.css";
-@import "../vendor/metismenu/css/metisMenu.min.css";

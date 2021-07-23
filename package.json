@@ -7,8 +7,10 @@
     "@rails/activestorage": "^6.0.0",
     "@rails/ujs": "^6.0.0",
     "@rails/webpacker": "5.4.0",
+    "aos": "^2.3.4",
     "bootstrap": "^5.0.2",
     "jquery": "^3.6.0",
+    "metismenu": "^3.0.7",
     "turbolinks": "^5.2.0",
     "webpack": "^4.46.0",
     "webpack-cli": "^3.3.12"
