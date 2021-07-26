@@ -2,6 +2,7 @@ require 'csv'
 
 namespace :dev do
 
+  # Seed
   task :import_coins_csv_file => :environment do
 
     success = 0
@@ -22,16 +23,37 @@ namespace :dev do
     end
   end
 
+  task :get_funding_infos => :environment do
+
+    coins = Coin.where("have_perp = ?", true)
+
+    coins.each do |c|
+    # finding ways to websocket ftx...
+      crs = c.current_fund_stat
+
+      ftxgetfuturestatsurl = "https://ftx.com/api/futures/#{c.name}-PERP/stats"   
+      
+      response = RestClient.get ftxgetfuturestatsurl
+      data = JSON.parse(response.body)
+
+      crs.update(
+        :nextFundingRate => data["result"]["nextFundingRate"],
+        :nextFundingTime => data["result"]["nextFundingTime"],
+        :openInterest => data["result"]["openInterest"]
+        )
+    end
+    puts "get_funding_infos ok => #{Time.now}"
+  end
 
   task :fetch_history_rate => :environment do
 
     now_time = Time.now.beginning_of_hour
 
-    puts "Fetching history rate... => #{now_time}"
+    puts "Fetching history rate... => #{Time.now}"
 
     now_time_i = now_time.to_i
 
-    coins = Coin.all
+    coins = Coin.where("have_perp = ?", true)
     coin_counter = 0
     coins_to_updates = coins.count
 
@@ -41,7 +63,6 @@ namespace :dev do
 
       # init conditions
       coin_counter += 1
-      puts "(#{coin_counter}/#{coins_to_updates}) #{c.name}..."
 
       if c.rates.empty?
         lastest_data_time = "2019-03-01T00:00:00+00:00".to_time
@@ -51,7 +72,7 @@ namespace :dev do
 
       datas_lag = ((Time.now - lastest_data_time)/3600).floor
 
-      puts "Lastest data: #{lastest_data_time}, #{datas_lag} datas to be updated"
+      puts "(#{coin_counter}/#{coins_to_updates}) #{c.name}...#{datas_lag} to be updated"
 
       start_time = lastest_data_time.to_i + 1
       end_time = 0

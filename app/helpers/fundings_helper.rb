@@ -23,10 +23,10 @@ module FundingsHelper
   end
 
 
-  def get_market_infos
+  def update_market_infos
     ftxmarketsurl = "https://ftx.com/api/markets"   
     
-    response = RestClient.get ftxmarketsurl
+    response = RestClient.get ftxmarketsurl 
     data = JSON.parse(response.body)
 
     tmp = {}
@@ -35,9 +35,8 @@ module FundingsHelper
       next unless result["quoteCurrency"] == "USD" || result["name"].include?("PERP")
 
       coin_name = result["underlying"] || result["baseCurrency"]
-      c = Coin.readonly.find_by(:name => coin_name)
-      # no coin handler
-      next if c.nil?
+
+      c = Coin.create(:name => coin_name, :have_perp => false) unless c = Coin.find_by(:name => coin_name)
 
       unless tmp[coin_name]
         tmp[coin_name] = c.current_fund_stat ? c.current_fund_stat : CurrentFundStat.new(:coin => c,:market_type => "")
@@ -50,14 +49,25 @@ module FundingsHelper
           :perp_bid_usd => result["bid"],
           :perp_ask_usd => result["ask"],
           :perp_volume => result["volumeUsd24h"])
-        tmp[coin_name]["market_type"] += "f"
+        
+        tmp[coin_name]["market_type"] = tmp[coin_name]["market_type"] ? tmp[coin_name]["market_type"] += "f" : "f"
+
+        unless c.minProvideSize
+          c.update(
+            :priceIncrement => result["priceIncrement"],
+            :sizeIncrement => result["sizeIncrement"],
+            :minProvideSize => result["minProvideSize"])
+        end  
+        
+        c.update_attribute(:have_perp , true) unless c.have_perp
       when "spot"
         tmp[coin_name].assign_attributes(
           :spot_price_usd => result["price"],
           :spot_bid_usd => result["bid"],
           :spot_ask_usd => result["ask"],
           :spot_volume => result["volumeUsd24h"])
-        tmp[coin_name]["market_type"] += "s"
+
+        tmp[coin_name]["market_type"] = tmp[coin_name]["market_type"] ? tmp[coin_name]["market_type"] += "s" : "s"
       end
       
       if tmp[coin_name].data_calc_ready?
@@ -66,9 +76,9 @@ module FundingsHelper
           :market_type => "normal",
           :perp_over_spot => tmp[coin_name]["perp_bid_usd"] / tmp[coin_name]["spot_ask_usd"],
           :spot_over_perp => tmp[coin_name]["spot_bid_usd"] / tmp[coin_name]["perp_ask_usd"])
-        # tmp[coin_name].save
+        tmp[coin_name].save
       end
     end
-    return tmp
+    puts "update_market_infos ok with #{tmp.count} datas from FTX."
   end
 end
