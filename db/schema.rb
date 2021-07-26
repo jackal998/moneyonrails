@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_07_19_010607) do
+ActiveRecord::Schema.define(version: 2021_07_23_184910) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -22,6 +22,31 @@ ActiveRecord::Schema.define(version: 2021_07_19_010607) do
     t.boolean "have_perp"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "current_fund_stats", force: :cascade do |t|
+    t.integer "coin_id"
+    t.decimal "nextFundingRate"
+    t.datetime "nextFundingTime"
+    t.decimal "openInterest"
+    t.string "market_type"
+    t.decimal "spot_price_usd"
+    t.decimal "spot_bid_usd"
+    t.decimal "spot_ask_usd"
+    t.decimal "spot_volume"
+    t.decimal "perp_price_usd"
+    t.decimal "perp_bid_usd"
+    t.decimal "perp_ask_usd"
+    t.decimal "perp_volume"
+    t.decimal "success_rate_past_48_hrs"
+    t.decimal "success_rate_past_week"
+    t.decimal "irr_past_week"
+    t.decimal "irr_past_month"
+    t.decimal "perp_over_spot"
+    t.decimal "spot_over_perp"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["coin_id"], name: "index_current_fund_stats_on_coin_id"
   end
 
   create_table "rates", force: :cascade do |t|

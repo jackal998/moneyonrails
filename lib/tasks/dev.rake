@@ -29,7 +29,7 @@ namespace :dev do
 
     puts "Fetching history rate... => #{now_time}"
 
-    now_time = now_time.to_i
+    now_time_i = now_time.to_i
 
     coins = Coin.all
     coin_counter = 0
@@ -59,34 +59,79 @@ namespace :dev do
       success = 0
       failed_records = []
 
-      # get first data from very early date
-      while end_time < now_time
+      if datas_lag > 0
+        # get first data from very early date
+        while end_time < now_time_i
 
-        start_time = end_time unless end_time == 0
-        end_time = start_time + 495 * 3600 
+          start_time = end_time unless end_time == 0
+          end_time = start_time + 495 * 3600 
 
-        ftxurl = "https://ftx.com/api/funding_rates?future=#{c.name}-PERP&start_time=#{start_time}&end_time=#{end_time}"
+          ftxurl = "https://ftx.com/api/funding_rates?future=#{c.name}-PERP&start_time=#{start_time}&end_time=#{end_time}"
 
-        response = RestClient.get ftxurl
-        data = JSON.parse(response.body)
+          response = RestClient.get ftxurl
+          data = JSON.parse(response.body)
 
-        data["result"].each do |result|
-          r = Rate.new(:name => result["future"],:rate => result["rate"],:time => result["time"],:coin => c)
-          
-          if r.save
-            success += 1
-          else
-            failed_records << [r]
-          end
-        end 
+          data["result"].each do |result|
+            r = Rate.new(:name => result["future"],:rate => result["rate"],:time => result["time"],:coin => c)
+            
+            if r.save
+              success += 1
+            else
+              failed_records << [r]
+            end
+          end 
+        end
+
+        puts "Imported: #{success}/#{datas_lag}，Failed: #{failed_records.size}/#{datas_lag}"
+        
+        failed_records.each do |record|
+          puts "#{record.coin.name + record.time.to_s} ---> #{record.time.errors.full_messages}"
+        end
       end
 
-      puts "Imported: #{success}/#{datas_lag}，Failed: #{failed_records.size}/#{datas_lag}"
-      
-      failed_records.each do |record|
-        puts "#{record.coin.name + record.time.to_s} ---> #{record.time.errors.full_messages}"
-      end
+      calc_rate_stats!(c)
     end
+    puts "fetch_history_rate updated to time #{now_time}"
   end
 
+  def calc_rate_stats!(c)
+
+    success_rate_past_48_hrs = 0.00
+    success_rate_past_week = 0.00
+    irr_past_week = 1
+    irr_past_month = 1
+
+    last_hour = Time.now.beginning_of_hour
+    last_48_hrs = last_hour - 2 * 24 * 3600
+    last_week = last_hour - 7 * 24 * 3600
+    last_month = last_hour - 30 * 24 * 3600
+
+    cr_last_month = c.rates.readonly.where("time > ?", last_month).order(time: :asc)
+    
+    cr_last_month.each do |r|
+      irr_past_month = (irr_past_month * (1 + r.rate)).round(6)
+      if r.time > last_week
+        irr_past_week = (irr_past_week * (1 + r.rate)).round(6)
+        if r.rate > 0
+          success_rate_past_week += 1
+          success_rate_past_48_hrs += 1 if r.time > (last_48_hrs)
+        end
+      end
+    end
+
+    success_rate_past_48_hrs = (success_rate_past_48_hrs / 48).round(5)
+    success_rate_past_week = ((success_rate_past_week / (7 * 24))).round(5)
+    irr_past_week = (((irr_past_week - 1) / 7) * 365).round(3)
+    irr_past_month = ((irr_past_month - 1) * 12).round(3)
+
+    crs = c.current_fund_stat ? c.current_fund_stat : CurrentFundStat.new(:coin => c)
+
+    crs.assign_attributes(
+      :success_rate_past_48_hrs => success_rate_past_48_hrs,
+      :success_rate_past_week => success_rate_past_week,
+      :irr_past_week => irr_past_week,
+      :irr_past_month => irr_past_month)
+
+    crs.save
+  end  
 end
