@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_07_26_122034) do
+ActiveRecord::Schema.define(version: 2021_07_27_104648) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -24,6 +24,7 @@ ActiveRecord::Schema.define(version: 2021_07_26_122034) do
     t.datetime "updated_at", precision: 6, null: false
     t.decimal "priceIncrement"
     t.decimal "sizeIncrement"
+    t.index ["name"], name: "index_coins_on_name", unique: true
   end
 
   create_table "current_fund_stats", force: :cascade do |t|
@@ -48,6 +49,7 @@ ActiveRecord::Schema.define(version: 2021_07_26_122034) do
     t.decimal "spot_over_perp"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.decimal "rate"
     t.index ["coin_id"], name: "index_current_fund_stats_on_coin_id"
   end
 

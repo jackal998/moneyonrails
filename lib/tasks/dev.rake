@@ -72,7 +72,7 @@ namespace :dev do
 
       datas_lag = ((Time.now - lastest_data_time)/3600).floor
 
-      puts "(#{coin_counter}/#{coins_to_updates}) #{c.name}...#{datas_lag} to be updated"
+      print "(#{coin_counter}/#{coins_to_updates}) #{c.name}...#{datas_lag} to be updated..."
 
       start_time = lastest_data_time.to_i + 1
       end_time = 0
