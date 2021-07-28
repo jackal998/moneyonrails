@@ -24,8 +24,10 @@ namespace :dev do
   end
 
   task :get_funding_infos => :environment do
+    cst = Time.now
+    coins = Coin.includes(:current_fund_stat).where("have_perp = ?", true)
 
-    coins = Coin.where("have_perp = ?", true)
+    fund_stat_datas_tbu = []
 
     coins.each do |c|
     # finding ways to websocket ftx...
@@ -36,24 +38,66 @@ namespace :dev do
       response = RestClient.get ftxgetfuturestatsurl
       data = JSON.parse(response.body)
 
-      crs.update(
-        :nextFundingRate => data["result"]["nextFundingRate"],
-        :nextFundingTime => data["result"]["nextFundingTime"],
-        :openInterest => data["result"]["openInterest"]
-        )
+      append_fund_stat_data(c.current_fund_stat, data["result"], fund_stat_datas_tbu)
     end
-    puts "get_funding_infos ok => #{Time.now}"
+    
+    CurrentFundStat.upsert_all(fund_stat_datas_tbu)
+
+    puts "get_funding_infos ok => #{Time.now} (#{Time.now - cst}s)"
   end
 
-  task :fetch_history_rate => :environment do
+  task :update_rate => :environment do
+    init_time = Time.now
+    now_time = init_time.beginning_of_hour
+    now_time_i = now_time.to_i
+    ftxurl = "https://ftx.com/api/funding_rates?start_time=#{now_time_i}"
+    response = RestClient.get ftxurl
+    data = JSON.parse(response.body)
 
+    coins = Coin.includes(:current_fund_stat).where("have_perp = ?", true)
+    coins_to_update = coins.count
+    latest_rates_count = Rate.where("time >= ?",now_time - 1.hour).count
+    datas_count = data["result"].count
+
+    # check if datas are aligned and ready to be update
+    unless coins_to_update == latest_rates_count && latest_rates_count == datas_count
+      puts "update_rate: abort, data count missmatch. Please use fetch_history_rate."
+      next
+    end
+
+    puts "Updating rate... => #{now_time}"
+
+    rate_datas_tbu = []
+    tmp = data["result"].index_by {|result| "#{result["future"].split('-')[0]}"}
+
+    coins.each do |coin|
+      rate = Rate.new(
+        :coin_id => coin.id,
+        :name => tmp[coin.name]["future"],
+        :rate => tmp[coin.name]["rate"],
+        :time => tmp[coin.name]["time"],
+        :created_at => Time.now,
+        :updated_at => Time.now)
+
+      rate_datas_tbu << rate.attributes.except!("id")
+    end
+    Rate.insert_all(rate_datas_tbu)
+
+    update_rate_stats(coins)
+
+    puts "update_rate of #{coins_to_update} coins ok => #{Time.now} (#{Time.now - init_time}s)"
+  end
+  
+  # Coin.all by each fecth every data to now, need some DB i/o modify (2021/07/28)
+  task :fetch_history_rate => :environment do
+    init_time = Time.now
     now_time = Time.now.beginning_of_hour
 
     puts "Fetching history rate... => #{Time.now}"
 
     now_time_i = now_time.to_i
 
-    coins = Coin.where("have_perp = ?", true)
+    coins = Coin.includes(:current_fund_stat).where("have_perp = ?", true)
     coin_counter = 0
     coins_to_updates = coins.count
 
@@ -102,20 +146,23 @@ namespace :dev do
             end
           end 
         end
-
-        puts "Imported: #{success}/#{datas_lag}，Failed: #{failed_records.size}/#{datas_lag}"
-        
-        failed_records.each do |record|
-          puts "#{record.coin.name + record.time.to_s} ---> #{record.time.errors.full_messages}"
-        end
       end
-
-      calc_rate_stats!(c)
+      puts "Imported: #{success}/#{datas_lag}"
     end
-    puts "fetch_history_rate updated to time #{now_time}"
+
+    update_rate_stats(coins)
+
+    puts "fetch_history_rate to time #{now_time} ok => #{Time.now} (#{Time.now - init_time}s)"
   end
 
-  def calc_rate_stats!(c)
+private
+  def update_rate_stats(coins)
+    fund_stat_datas_tbu = []
+    coins.each {|coin| fund_stat_datas_tbu << calc_rate_stats(coin)}
+    CurrentFundStat.upsert_all(fund_stat_datas_tbu)
+  end
+
+  def calc_rate_stats(c)
 
     success_rate_past_48_hrs = 0.00
     success_rate_past_week = 0.00
@@ -145,14 +192,26 @@ namespace :dev do
     irr_past_week = (((irr_past_week - 1) / 7) * 365).round(3)
     irr_past_month = ((irr_past_month - 1) * 12).round(3)
 
-    crs = c.current_fund_stat ? c.current_fund_stat : CurrentFundStat.new(:coin => c)
+    crs = c.current_fund_stat ? c.current_fund_stat : CurrentFundStat.new(:coin => c,:created_at => Time.now,:updated_at => Time.now)
 
     crs.assign_attributes(
+      :rate => cr_last_month.last.rate,
       :success_rate_past_48_hrs => success_rate_past_48_hrs,
       :success_rate_past_week => success_rate_past_week,
       :irr_past_week => irr_past_week,
-      :irr_past_month => irr_past_month)
+      :irr_past_month => irr_past_month,
+      :updated_at => Time.now)
 
-    crs.save
-  end  
+    return crs.attributes
+  end
+
+  def append_fund_stat_data(fund_stat, data, data_arr)
+    fund_stat.assign_attributes(
+      :nextFundingRate => data["nextFundingRate"],
+      :nextFundingTime => data["nextFundingTime"],
+      :openInterest => data["openInterest"],
+      :updated_at => Time.now)
+    
+    data_arr << fund_stat.attributes
+  end
 end

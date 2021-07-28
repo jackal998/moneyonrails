@@ -8,7 +8,7 @@ set :output, "#{path}/log/cron.log"
 set :environment, :development
 
 every '1 * * * *' do
-  rake "dev:fetch_history_rate"
+  rake "dev:update_rate"
 end
 
 every '*/3 * * * *' do

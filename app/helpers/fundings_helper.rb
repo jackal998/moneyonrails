@@ -59,7 +59,6 @@ module FundingsHelper
       next unless tmp[coin.name]
 
       append_coin_data(coin , tmp[coin.name], coin_datas_tbu)
-
       CurrentFundStat.create(:coin => coin) unless coin.current_fund_stat
       append_fund_stat_data(coin.current_fund_stat , tmp[coin.name], fund_stat_datas_tbu)
 
@@ -108,7 +107,6 @@ module FundingsHelper
       :perp_over_spot => data[:perp_over_spot],
       :spot_over_perp => data[:spot_over_perp],
       :updated_at => Time.now)
-
     data_arr << fund_stat.attributes
   end
 end
