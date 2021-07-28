@@ -280,21 +280,21 @@
                     <div class="col-xl-12 col-lg-12 col-md-12">
                       <div class="card">
                         <div class="card-header">
-                            <h4 class="card-title">New Orders</h4>
+                            <h4 class="card-title">FTX</h4>
                         </div>
                         <div class="card-body">
-                          <div class="table-responsive">
+                          <div>
                             <table class="table table-sm mb-0 table-bordered ">
                                 <thead>
                                     <tr>
-                                      <th class="table-upper-cell" colspan="1"></th>
-                                      <th class="table-upper-cell" colspan="2">資金費率</th>
-                                      <th class="table-upper-cell" colspan="2">成功率</th>
-                                      <th class="table-upper-cell" colspan="2">年化報酬率</th>
-                                      <th class="table-upper-cell" colspan="2">價差率</th>
-                                      <th class="table-upper-cell" colspan="1"></th>
-                                      <th class="table-upper-cell" colspan="2">成交量</th>
-                                      <th class="table-upper-cell" colspan="1"></th>
+                                      <th colspan="1"></th>
+                                      <th colspan="2">資金費率</th>
+                                      <th colspan="2">成功率</th>
+                                      <th colspan="2">年化報酬率</th>
+                                      <th colspan="2">價差率</th>
+                                      <th colspan="1"></th>
+                                      <th colspan="2">成交量</th>
+                                      <th colspan="1"></th>
                                     </tr>
                                     <tr>
                                       <th>幣種</th>
@@ -314,29 +314,43 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                  <% get_funding_index_infos(@coins).each do |name, info| %>
+                                  <% @coins.each do |coin| %>
                                     <tr>
-                                      <td>
-                                        <div class="stat-widget-two">
-                                          <div class="stat-text">
-                                            <%= name %>
-                                          </div>
-                                        </div>
+                                      <td class="text-center <%= 'text-muted' unless coin.weight > 0 %>"> 
+                                        <%= coin.name %>
                                       </td>
-                                      <td>最近費率</td>
-                                      <td><%= info["nextFundingRate"] %></td>
-                                      <td>最近48小時成功率</td>
-                                      <td>最近一周成功率</td>
-                                      <td>最近一周年化</td>
-                                      <td>最近一月年化</td>
-                                      <td>空永續 / 多現貨 價差</td>
-                                      <td>多永續 / 空現貨 價差</br>
-                                        (尚不支援現貨槓桿)</td>
-                                      <td>現貨成交價格</td>
-                                      <td>現貨24小時成交量</td>
-                                      <td><%= info["volume"] %></td>
-                                      <td><%= info["openInterest"] %></td>
-                                      <td>coin.weight</td>
+                                      <td class="text-right"><%= "#{(coin.current_fund_stat.rate * 100).round(4).to_s}%" %></td>
+                                      <td class="text-right"><%= "#{(coin.current_fund_stat.nextFundingRate * 100).round(4).to_s}%" %></td>
+                                      <td class="text-right <%= 'text-success'if coin.current_fund_stat.success_rate_past_48_hrs > 0.85 %>">
+                                        <%= "#{(coin.current_fund_stat.success_rate_past_48_hrs * 100).round(1).to_s}%" %>
+                                      </td>
+                                      <td class="text-right <%= 'text-success'if coin.current_fund_stat.success_rate_past_week > 0.8 %>">
+                                        <%= "#{(coin.current_fund_stat.success_rate_past_week * 100).round(1).to_s}%" %>
+                                      </td>
+                                        <% case
+                                          when coin.current_fund_stat.irr_past_week > 0.1 %><% irr_past_week_class = 'text-success' %>
+                                        <% when coin.current_fund_stat.irr_past_week < 0 %><% irr_past_week_class = 'text-danger' %>
+                                        <% end %>
+                                      <td class="text-right <%= irr_past_week_class %>">
+                                        <%= "#{(coin.current_fund_stat.irr_past_week * 100).round(1).to_s}%" %>
+                                      </td>
+                                      <td class="text-right <%= 'text-success'if coin.current_fund_stat.irr_past_month > 0.1 %>">
+                                        <%= "#{(coin.current_fund_stat.irr_past_month * 100).round(1).to_s}%" %>
+                                      </td>
+                                      <td class="text-right <%= 'text-primary'if coin.current_fund_stat.perp_over_spot > 1 %>">
+                                        <%= "#{(coin.current_fund_stat.perp_over_spot * 100).round(2).to_s}%" %>
+                                      </td>
+                                      <td class="text-right <%= 'text-primary'if coin.current_fund_stat.spot_over_perp > 1 %>">
+                                        <%= "#{(coin.current_fund_stat.spot_over_perp * 100).round(2).to_s}%" %>
+                                      </td>
+                                      <td class="text-right"><%= "#{number_to_currency(coin.current_fund_stat.spot_price_usd, precision: 5)}" %></td>
+                                      <td class="text-right"><%= "#{number_to_currency(coin.current_fund_stat.spot_volume)}" %></td>
+                                      <td class="text-right"><%= "#{number_to_currency(coin.current_fund_stat.perp_volume)}" %></td>
+                                      <!-- openInterest volume is based on coin rather than USD -->
+                                      <td class="text-right">
+                                        <%= "#{number_to_currency(coin.current_fund_stat.openInterest * coin.current_fund_stat.spot_price_usd)}" %>
+                                      </td>
+                                      <td class="text-right"><%= coin.weight %></td>
                                     </tr>
                                   <% end %>
                                   <tr></tr>

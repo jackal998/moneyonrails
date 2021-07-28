@@ -1330,7 +1330,7 @@ pre {
 .table {
   width: 100%;
   margin-bottom: 1rem;
-  color: #BDBDC7; }
+  color: #585858; }
   .table th,
   .table td {
     padding: 0.75rem;
@@ -7598,19 +7598,19 @@ button.bg-dark:focus {
   color: #fff !important; }
 
 .text-primary {
-  color: #593bdb !important; }
+  color: #0067ff !important; }
 
 a.text-primary:hover, a.text-primary:focus {
   color: #391faa !important; }
 
 .text-secondary {
-  color: #673BB7 !important; }
+  color: #0057a5 !important; }
 
 a.text-secondary:hover, a.text-secondary:focus {
   color: #46287d !important; }
 
 .text-success {
-  color: #7ED321 !important; }
+  color: #009a13 !important; }
 
 a.text-success:hover, a.text-success:focus {
   color: #569117 !important; }
@@ -7628,7 +7628,7 @@ a.text-warning:hover, a.text-warning:focus {
   color: #c97f00 !important; }
 
 .text-danger {
-  color: #FF1616 !important; }
+  color: #dc3545 !important; }
 
 a.text-danger:hover, a.text-danger:focus {
   color: #c90000 !important; }
@@ -7649,7 +7649,7 @@ a.text-dark:hover, a.text-dark:focus {
   color: #BDBDC7 !important; }
 
 .text-muted {
-  color: #666666 !important; }
+  color: #ced4da !important; }
 
 .text-black-50 {
   color: rgba(0, 0, 0, 0.5) !important; }
@@ -16683,6 +16683,7 @@ button {
 .table thead th {
   border-bottom-width: 1px;
   text-transform: uppercase;
+  text-align: center;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.5px;
