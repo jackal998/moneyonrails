@@ -1,2 +1,0 @@
-      invoke  active_record
-      create    db/migrate/20210727104648_add_index_to_coins.rb
