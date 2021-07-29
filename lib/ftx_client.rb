@@ -5,6 +5,11 @@ class FtxClient
     params.each { |key, value| send "#{key}=", value.to_s }
   end
 
+  def self.get_market_infos
+    @ftx_client = self.new
+    return @ftx_client._get("/api/markets")
+  end
+
   def get_account_info params = {}
     # Requires authentication.
     self.auth = true
@@ -15,12 +20,12 @@ class FtxClient
     return _get("/api/funding_rates", params)
   end
 
-private
-  def _get(path, params)
+  def _get(path, params = {})
     return _request("GET", path, params)
   end
 
-  def _request(http_method, path, params)
+private
+  def _request(http_method, path, params = {})
 
     req_url = self.url + path
 

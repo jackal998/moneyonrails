@@ -1,6 +1,10 @@
 module FundingsHelper
   def update_market_infos
     init_time = Time.now
+    
+    # require 'ftx_client'
+    # data = FtxClient.get_market_infos
+    
     ftxmarketsurl = "https://ftx.com/api/markets"   
     
     response = RestClient.get ftxmarketsurl 
