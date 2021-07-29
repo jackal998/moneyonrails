@@ -56,15 +56,30 @@ namespace :dev do
 
     coins = Coin.includes(:current_fund_stat).where("have_perp = ?", true)
     coins_to_update = coins.count
-    latest_rates_count = Rate.where("time >= ?",now_time - 1.hour).count
+    last_1hr_rates_count = Rate.where("time >= ?",now_time).count
+    last_2hr_rates_count = Rate.where("time >= ?",now_time - 1.hour).count
     datas_count = data["result"].count
 
     # check if datas are aligned and ready to be update
-    unless coins_to_update == latest_rates_count && latest_rates_count == datas_count
-      puts "update_rate: abort, data count missmatch. Please use fetch_history_rate."
-      next
+    case
+    when datas_count == coins_to_update && last_2hr_rates_count == coins_to_update * 2
+      err_msg = "Rates already up-to-date, no data was imported."
+    when datas_count > coins_to_update
+      err_msg = "Please update coins list first  => rails c > `helper.update_market_infos`
+               \rthen update history rates data  => `rake dev:fetch_history_rate`"
+    else
+      err_msg = "Update history rates data first => `rake dev:fetch_history_rate`"
+    end
+    unless coins_to_update == last_2hr_rates_count && last_2hr_rates_count == datas_count
+      puts "update_rate: abort: Data counts missmatch.
+        \n\r#{err_msg}
+        \n\rrecorded coins:         #{coins_to_update}
+          \rrecorded rates (1/2hr): #{last_1hr_rates_count}/#{last_2hr_rates_count}
+          \rapi response datas:     #{datas_count}"
+      next # this means abort task ... do block
     end
 
+    # update start
     puts "Updating rate... => #{now_time}"
 
     rate_datas_tbu = []
