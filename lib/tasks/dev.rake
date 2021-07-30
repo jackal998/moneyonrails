@@ -3,21 +3,27 @@ require 'csv'
 namespace :dev do
 
   # Seed
-  task :import_coins_csv_file => :environment do
+  task :update_coins_seed_from_csv_file => :environment do
 
     success = 0
     failed_records = []
 
   	CSV.foreach("#{Rails.root}/tmp/coin_seed.csv", headers: true) do |row|
-  	  coin = Coin.new(row.to_hash)
+      rh = row.to_hash
+      coin = Coin.find(rh["id"]) || Coin.new
+      rh.keys.each do |k|
+        next if k == "id" || k == "name"
+        coin[k] = rh[k]
+      end
+
       if coin.save
         success += 1
       else
         failed_records << [row, coin]
       end
-  	end
+    end
 
-    puts "總共匯入 #{success} 筆，失敗 #{failed_records.size} 筆"
+    puts "Updated: #{success}，Failed: #{failed_records.size}"
     failed_records.each do |record|
       puts "#{record[0]} ---> #{record[1].errors.full_messages}"
     end
