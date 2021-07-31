@@ -219,17 +219,26 @@
         ***********************************-->
         <div class="content-body">
             <!-- row -->
+            <% colors = ["bg-success", "bg-primary", "bg-secondary", "bg-info", "bg-warning", "bg-danger"] %>
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-lg-3 col-sm-6">
                         <div class="card">
                             <div class="stat-widget-two card-body">
                                 <div class="stat-content">
-                                    <div class="stat-text">Today Expenses </div>
-                                    <div class="stat-digit"> <i class="fa fa-usd"></i>8500</div>
+                                    <div class="stat-text">現貨價值</div>
+                                    <div class="stat-digit"> <i class="fa fa-usd"></i><%= balances["totalusdValue"].round(2) %></div>
                                 </div>
                                 <div class="progress">
-                                    <div class="progress-bar progress-bar-striped bg-success progress-bar-animated" style="width: 25%" role="progressbar" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
+                                  <% pg_i = 0 %>
+                                  <% balances.each do |c, usdValue| %>
+                                    <% next if c == "totalusdValue" %>
+                                    <% percent = (usdValue / balances["totalusdValue"]) * 100.round(0) %>
+                                    <div class="progress-bar <%= colors[pg_i] %>" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
+                                      <%= c %>
+                                    </div> 
+                                    <% pg_i += 1 %>
+                                  <% end %>
                                 </div>
                             </div>
                         </div>
@@ -238,11 +247,18 @@
                         <div class="card">
                             <div class="stat-widget-two card-body">
                                 <div class="stat-content">
-                                    <div class="stat-text">Income Detail</div>
-                                    <div class="stat-digit"> <i class="fa fa-usd"></i>7800</div>
+                                  <% leverage = (@ftx_account["result"]["totalPositionSize"]/@ftx_account["result"]["collateral"]).round(2) if @ftx_account["result"]["collateral"] %>
+                                  <% percent = leverage * 100.round(0) %>
+                                  <div class="stat-text">持倉槓桿</div>
+                                  <div class="stat-digit">
+                                    <%= leverage %> <i class="fa fa-times"></i>
+                                  </div>
                                 </div>
                                 <div class="progress">
-                                    <div class="progress-bar progress-bar-primary w-75" role="progressbar" aria-valuenow="78" aria-valuemin="0" aria-valuemax="100"></div>
+                                  <% lev_color = "bg-success" %>
+                                  <% lev_color = "bg-warning" if percent > 160 %>
+                                  <% lev_color = "bg-danger" if percent > 300 %>
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated <%= lev_color %>" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                             </div>
                         </div>
@@ -251,7 +267,7 @@
                         <div class="card">
                             <div class="stat-widget-two card-body">
                                 <div class="stat-content">
-                                    <div class="stat-text">Task Completed</div>
+                                    <div class="stat-text">30 日收益率</div>
                                     <div class="stat-digit"> <i class="fa fa-usd"></i> 500</div>
                                 </div>
                                 <div class="progress">
@@ -264,11 +280,8 @@
                         <div class="card">
                             <div class="stat-widget-two card-body">
                                 <div class="stat-content">
-                                    <div class="stat-text">Task Completed</div>
+                                    <div class="stat-text">30 日收益</div>
                                     <div class="stat-digit"> <i class="fa fa-usd"></i>650</div>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar bg-danger w-65" role="progressbar" style="width: 65%"  aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                             </div>
                         </div>
