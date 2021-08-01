@@ -15,6 +15,17 @@ function readyFn( jQuery ) {
         $(".hamburger").toggleClass("is-active");
     });
 
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var myChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: JSON.parse(ctx.canvas.dataset.labels),
+        datasets: [{
+          data: JSON.parse(ctx.canvas.dataset.data),
+        }]
+      },
+    });
+
     var body = $('body');
     var html = $('html');
 
@@ -34,6 +45,7 @@ function readyFn( jQuery ) {
             direction: "ltr"
         });
     });
+
     //to keep the current page active
     $(function() {
         for (var nk = window.location,

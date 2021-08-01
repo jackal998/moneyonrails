@@ -2,9 +2,28 @@
   Content body start
 ***********************************-->
 <div class="content-body">
-  this is fundings.show.erb
-
+    <div class="container-fluid">
+        <!-- row -->
+        <div class="row">
+            <div class="col-12">
+                <div class="row">
+                    <div class="col-lg-6 col-sm-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">Advanced Smil Animation</h4>
+                            </div>
+                            <div class="card-body">
+                              <canvas id="myChart" width="200px" height="100px" data-labels="<%= @data_keys %>" data-data="<%= @data_values %>" ></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 <!--**********************************
   Content body end
 ***********************************-->
+<!--     // @coin = Coin.find_by("name = ?","BTC")
+    // @rates = @coin.rates.where("time > ?", Time.now - 1.week) -->

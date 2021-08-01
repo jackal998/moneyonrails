@@ -9,6 +9,7 @@
     "@rails/webpacker": "5.4.0",
     "aos": "^2.3.4",
     "bootstrap": "^5.0.2",
+    "chart.js": "^3.5.0",
     "jquery": "^3.6.0",
     "metismenu": "^3.0.7",
     "turbolinks": "^5.2.0",

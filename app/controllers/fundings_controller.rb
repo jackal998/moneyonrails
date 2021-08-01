@@ -19,6 +19,16 @@ class FundingsController < ApplicationController
   end
 
   def show
-    
+    @coin = Coin.find_by("name = ?","BTC")
+    @rates = @coin.rates.where("time > ?", Time.now - 1.week)
+        @data_keys = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+    ]
+    @data_values = [0, 10, 5, 2, 20, 30, 45]
   end
 end
