@@ -14,8 +14,7 @@ import "aos"
 import "./src/application.scss"
 import "bootstrap"
 
-import('./js/settings')
-import('./js/custom.min')
+import('./js/custom')
 
 Rails.start()
 Turbolinks.start()

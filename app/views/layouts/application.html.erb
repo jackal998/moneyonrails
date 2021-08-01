@@ -5,21 +5,237 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/metismenu/dist/metisMenu.min.css">
+
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <%= favicon_pack_tag 'media/packs/images/favicon.png', :size => "16" %>
+    <%= favicon_pack_tag 'media/packs/images/favicon-bootstrap.png', :size => "16" %>
 
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
 
   </head>
 
-  <body>  
+  <body>
+    <!--*******************
+        Preloader start
+    ********************-->
+    <div id="preloader">
+        <div class="sk-three-bounce">
+            <div class="sk-child sk-bounce1"></div>
+            <div class="sk-child sk-bounce2"></div>
+            <div class="sk-child sk-bounce3"></div>
+        </div>
+    </div>
+    <!--*******************
+        Preloader end
+    ********************-->
+    <div id="main-wrapper">
 
-    <%= yield %>
+        <!--**********************************
+            Nav header start
+        ***********************************-->
+        <div class="nav-header">
+          <%= link_to request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path, :class => "brand-logo" do %>
+            <%= image_pack_tag 'media/packs/images/favicon-bootstrap-logo.png',  :class => "logo-abbr" %>
+            <div class="brand-title">Platform J</div>
+          <% end %>
+          <div class="nav-control">
+            <div class="hamburger">
+              <span class="line"></span><span class="line"></span><span class="line"></span>
+            </div>
+          </div>
+        </div>
+        <!--**********************************
+            Nav header end
+        ***********************************-->
 
+        <!--**********************************
+            Header start
+        ***********************************-->
+        <div class="header">
+            <div class="header-content">
+                <nav class="navbar navbar-expand">
+                    <div class="collapse navbar-collapse justify-content-between">
+                        <div class="header-left">
+                            <div class="search_bar dropdown">
+                                <span class="search_icon p-3 c-pointer" data-bs-toggle="dropdown">
+                                    <i class="mdi mdi-magnify"></i>
+                                </span>
+                                <div class="dropdown-menu p-0 m-0">
+                                    <form>
+                                        <input class="form-control" type="search" placeholder="Search" aria-label="Search">
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <ul class="navbar-nav header-right">
+                            <li class="nav-item dropdown notification_dropdown">
+                                <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="mdi mdi-bell"></i>
+                                    <div class="pulse-css"></div>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
+                                    <ul class="list-unstyled">
+                                        <li class="media dropdown-item">
+                                            <span class="success"><i class="ti-user"></i></span>
+                                            <div class="media-body">
+                                                <a href="#">
+                                                    <p><strong>Martin</strong> has added a <strong>customer</strong> Successfully
+                                                    </p>
+                                                </a>
+                                            </div>
+                                            <span class="notify-time">3:20 am</span>
+                                        </li>
+                                        <li class="media dropdown-item">
+                                            <span class="primary"><i class="ti-shopping-cart"></i></span>
+                                            <div class="media-body">
+                                                <a href="#">
+                                                    <p><strong>Jennifer</strong> purchased Light Dashboard 2.0.</p>
+                                                </a>
+                                            </div>
+                                            <span class="notify-time">3:20 am</span>
+                                        </li>
+                                        <li class="media dropdown-item">
+                                            <span class="danger"><i class="ti-bookmark"></i></span>
+                                            <div class="media-body">
+                                                <a href="#">
+                                                    <p><strong>Robin</strong> marked a <strong>ticket</strong> as unsolved.
+                                                    </p>
+                                                </a>
+                                            </div>
+                                            <span class="notify-time">3:20 am</span>
+                                        </li>
+                                        <li class="media dropdown-item">
+                                            <span class="primary"><i class="ti-heart"></i></span>
+                                            <div class="media-body">
+                                                <a href="#">
+                                                    <p><strong>David</strong> purchased Light Dashboard 1.0.</p>
+                                                </a>
+                                            </div>
+                                            <span class="notify-time">3:20 am</span>
+                                        </li>
+                                        <li class="media dropdown-item">
+                                            <span class="success"><i class="ti-image"></i></span>
+                                            <div class="media-body">
+                                                <a href="#">
+                                                    <p><strong> James.</strong> has added a<strong>customer</strong> Successfully
+                                                    </p>
+                                                </a>
+                                            </div>
+                                            <span class="notify-time">3:20 am</span>
+                                        </li>
+                                    </ul>
+                                    <a class="all-notification" href="#">See all notifications <i
+                                            class="ti-arrow-right"></i></a>
+                                </div>
+                            </li>
+                            <li class="nav-item dropdown header-profile">
+                                <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="mdi mdi-account"></i>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
+                                    <a href="./app-profile.html" class="dropdown-item">
+                                        <i class="icon-user"></i>
+                                        <span class="ml-2">Profile </span>
+                                    </a>
+                                    <a href="./email-inbox.html" class="dropdown-item">
+                                        <i class="icon-envelope-open"></i>
+                                        <span class="ml-2">Inbox </span>
+                                    </a>
+                                    <a href="./page-login.html" class="dropdown-item">
+                                        <i class="icon-key"></i>
+                                        <span class="ml-2">Logout </span>
+                                    </a>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </div>
+        <!--**********************************
+            Header end ti-comment-alt
+        ***********************************-->
+
+        <!--**********************************
+            Sidebar start
+        ***********************************-->
+        <div class="quixnav">
+            <div class="quixnav-scroll">
+                <ul class="metismenu" id="menu">
+                    <li class="nav-label first">量化交易機器人</li>
+                    <li>
+                      <a class="has-arrow" href="javascript:void()" aria-expanded="false">
+                        <i>
+                          <%= image_pack_tag 'media/packs/images/ftx-logo.png'%>
+                        </i>
+                        <span class="nav-text">FTX 交易機器人</span>
+                      </a>
+                      <ul aria-expanded="false">
+                        <li><%= link_to "資金費率即時報表", request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path %></li>
+                        <li><%= link_to "幣種資金費率報表", request.env['PATH_INFO'] == funding_show_path ? "javascript:void(0)" : funding_show_path %></li>
+                      </ul>
+                    </li>
+                    <li class="nav-label">Apps</li>
+                    <li><a class="has-arrow" href="javascript:void()" aria-expanded="false"><i
+                                class="icon-grid"></i><span class="nav-text">Apps</span></a>
+                        <ul aria-expanded="false">
+                            <li><a href="./app-profile.html">Profile</a></li>
+                            <li><a class="has-arrow" href="javascript:void()" aria-expanded="false">Email</a>
+                                <ul aria-expanded="false">
+                                    <li><a href="./email-compose.html">Compose</a></li>
+                                    <li><a href="./email-inbox.html">Inbox</a></li>
+                                    <li><a href="./email-read.html">Read</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="./app-calender.html">Calendar</a></li>
+                        </ul>
+                    </li>
+                    <li><a class="has-arrow" href="javascript:void()" aria-expanded="false"><i
+                                class="icon-graph"></i><span class="nav-text">Charts</span></a>
+                        <ul aria-expanded="false">
+                            <li><a href="./chart-flot.html">Flot</a></li>
+                            <li><a href="./chart-morris.html">Morris</a></li>
+                            <li><a href="./chart-chartjs.html">Chartjs</a></li>
+                            <li><a href="./chart-chartist.html">Chartist</a></li>
+                            <li><a href="./chart-sparkline.html">Sparkline</a></li>
+                            <li><a href="./chart-peity.html">Peity</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <!--**********************************
+            Sidebar end
+        ***********************************-->
+
+        <!--**********************************
+            Content body start
+        ***********************************-->      
+        <%= yield %>
+        <!--**********************************
+            Content body end
+        ***********************************-->
+
+        <!--**********************************
+            Footer start
+        ***********************************-->
+        <div class="footer">
+            <div class="copyright">
+                <p>Copyright © Designed &amp; Developed by <a href="#" target="_blank">Quixkit</a> 2019</p>
+            </div>
+        </div>
+        <!--**********************************
+            Footer end
+        ***********************************-->
+    </div>
+    <!--**********************************
+        Main wrapper end
+    ***********************************-->
+    
   </body>
+  <script src="https://cdn.jsdelivr.net/npm/metismenu"></script>
 </html>

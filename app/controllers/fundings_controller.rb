@@ -17,4 +17,8 @@ class FundingsController < ApplicationController
     end
     render locals: {balances: balances}
   end
+
+  def show
+    
+  end
 end

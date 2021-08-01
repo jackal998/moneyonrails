@@ -8057,9 +8057,6 @@ a {
     max-width: 30px; }
   .nav-header .logo-compact {
     display: none; }
-  @media only screen and (min-width: 1800px) {
-    .nav-header {
-      left: 3.125rem; } }
   @media only screen and (min-width: 1200px) and (max-width: 1350px) {
     .nav-header {
       width: 14.375rem; } }
@@ -8086,7 +8083,7 @@ a {
         justify-content: center; } }
   .nav-header .brand-title {
     margin-left: 15px;
-    max-width: 75px; }
+    max-width: 180px; }
     [data-theme-version="dark"] .nav-header .brand-title {
       background-position: 0 120%; }
 
