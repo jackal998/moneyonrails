@@ -15,16 +15,21 @@ function readyFn( jQuery ) {
         $(".hamburger").toggleClass("is-active");
     });
 
-    var ctx = document.getElementById('myChart').getContext('2d');
-    var myChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: JSON.parse(ctx.canvas.dataset.labels),
-        datasets: [{
-          data: JSON.parse(ctx.canvas.dataset.data),
-        }]
-      },
-    });
+    var a_slider = document.getElementById("a_slider");
+    var a_slider_initValue = parseFloat(document.getElementById("a_slider").value);
+    var amount = document.getElementById("amount");
+    var bias = document.getElementById("bias");
+    a_slider.oninput = function() {
+
+         function biasValue(cur_value) {
+            if (cur_value < a_slider_initValue) 
+                return "(-" + (a_slider_initValue - cur_value) + ")";
+            else
+                return "(+" + (cur_value - a_slider_initValue) + ")";
+            };
+        bias.innerHTML = biasValue(parseFloat(this.value));
+      amount.innerHTML = this.value;
+    }
 
     var body = $('body');
     var html = $('html');
@@ -442,26 +447,7 @@ function readyFn( jQuery ) {
             body.attr("data-sidebar-style", "overlay");
         }
     }
-
 };
 
 $(window).on("load", readyFn);
 $(window).on("turbolinks:load", readyFn);
-
-//plugin bootstrap minus and plus
-$('.btn-number').on('click', function(e) {
-    e.preventDefault();
-
-    fieldName = $(this).attr('data-field');
-    type = $(this).attr('data-type');
-    var input = $("input[name='" + fieldName + "']");
-    var currentVal = parseInt(input.val());
-    if (!isNaN(currentVal)) {
-        if (type == 'minus')
-            input.val(currentVal - 1);
-        else if (type == 'plus')
-            input.val(currentVal + 1);
-    } else {
-        input.val(0);
-    }
-});

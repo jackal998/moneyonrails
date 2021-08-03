@@ -401,7 +401,9 @@ textarea {
 
 button,
 input {
-  overflow: visible; }
+  overflow: visible;
+  width: 100%;
+  margin-top: 0.4em; }
 
 button,
 select {
@@ -480,7 +482,8 @@ progress {
   -webkit-appearance: button; }
 
 output {
-  display: inline-block; }
+  display: inline-block;
+  font-size: 1.2rem; }
 
 summary {
   display: list-item;
@@ -1364,10 +1367,6 @@ pre {
 .table-striped tbody tr:nth-of-type(odd) {
   background-color: rgba(0, 0, 0, 0.05); }
 
-.table-hover tbody tr:hover {
-  color: #BDBDC7;
-  background-color: rgba(0, 0, 0, 0.075); }
-
 .table-primary,
 .table-primary > th,
 .table-primary > td {
@@ -1588,6 +1587,7 @@ pre {
 .table-responsive {
   display: block;
   width: 100%;
+  max-height: 500px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch; }
   .table-responsive > .table-bordered {
@@ -7840,7 +7840,7 @@ li {
   list-style: none; }
 
 a {
-  color: #BDBDC7; }
+  color: #585858; }
   a:hover, a:focus, a.active {
     color: #593bdb;
     text-decoration: none; }
@@ -15986,8 +15986,6 @@ button {
 .progress {
   height: 6px;
   overflow: hidden; }
-  .progress-bar {
-    border-radius: 4px; }
 
 .progress-vertical {
   display: inline-block;
