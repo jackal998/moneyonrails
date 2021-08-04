@@ -30,6 +30,13 @@ class FundingsController < ApplicationController
     balances = ftx_wallet_balance
     balances[@coin.name] = {"amount"=>0.0, "usdValue"=>0.0} unless balances[@coin.name]
 
+    @funding_order = FundingOrder.new(
+      :coin => @coin, 
+      :coin_name => @coin.name,
+      :original_coin_amount => balances[@coin.name]["amount"],
+      :original_perp_amount => @position["netSize"]
+      )
+
     render locals: {balances: balances}
   end
 

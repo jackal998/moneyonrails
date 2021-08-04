@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_07_27_104648) do
+ActiveRecord::Schema.define(version: 2021_08_04_163401) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -51,6 +51,23 @@ ActiveRecord::Schema.define(version: 2021_07_27_104648) do
     t.datetime "updated_at", precision: 6, null: false
     t.decimal "rate"
     t.index ["coin_id"], name: "index_current_fund_stats_on_coin_id"
+  end
+
+  create_table "funding_orders", force: :cascade do |t|
+    t.integer "coin_id"
+    t.string "coin_name"
+    t.decimal "original_coin_amount"
+    t.decimal "original_perp_amount"
+    t.decimal "target_coin_amount"
+    t.decimal "target_perp_amount"
+    t.string "order_status", default: "close"
+    t.integer "acceleration", default: 1
+    t.decimal "threshold", default: "0.0"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["coin_id"], name: "index_funding_orders_on_coin_id"
+    t.index ["coin_name"], name: "index_funding_orders_on_coin_name"
+    t.index ["order_status"], name: "index_funding_orders_on_order_status"
   end
 
   create_table "rates", force: :cascade do |t|

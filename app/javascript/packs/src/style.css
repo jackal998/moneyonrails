@@ -383,6 +383,7 @@ label {
   margin-bottom: 0.5rem; }
 
 button {
+  margin-top: 0.4em;
   border-radius: 0; }
 
 button:focus {
@@ -403,7 +404,11 @@ button,
 input {
   overflow: visible;
   width: 100%;
-  margin-top: 0.4em; }
+   }
+
+input {
+  text-align: right !important;
+}
 
 button,
 select {
@@ -1348,6 +1353,11 @@ pre {
 .table-sm th,
 .table-sm td {
   padding: 0.3rem; }
+
+.table-sm .in-form-text {
+  line-height: 1.7rem;
+  text-align: center !important;
+}
 
 .table-bordered {
   border: 1px solid #EEEEEE; }
@@ -8044,7 +8054,7 @@ a {
 
 .nav-header {
   height: 5rem;
-  width: 17.1875rem;
+  width: 15rem;
   display: inline-block;
   text-align: left;
   position: fixed;
@@ -8057,9 +8067,6 @@ a {
     max-width: 30px; }
   .nav-header .logo-compact {
     display: none; }
-  @media only screen and (min-width: 1200px) and (max-width: 1350px) {
-    .nav-header {
-      width: 14.375rem; } }
   .nav-header .brand-logo {
     display: flex;
     height: 100%;
@@ -10290,15 +10297,15 @@ html[dir="rtl"] [direction="rtl"][data-sidebar-style="compact"]:not([data-layout
 
 .content-body {
   padding-top: 7rem;
-  margin-left: 17.1875rem;
+  margin-left: 15rem;
   z-index: 0;
   transition: all .2s ease; }
-  @media only screen and (min-width: 1200px) and (max-width: 1350px) {
+  @media only screen and (max-width: 767.98px) {
     .content-body {
-      margin-left: 14.375rem; } }
+      margin-left: 3.75rem; } }
 
 .quixnav {
-  width: 17.1875rem;
+  width: 15rem;
   padding-bottom: 112px;
   height: 100%;
   position: fixed;
@@ -10311,9 +10318,6 @@ html[dir="rtl"] [direction="rtl"][data-sidebar-style="compact"]:not([data-layout
   .quixnav .quixnav-scroll {
     position: relative;
     height: 100%; }
-  @media only screen and (min-width: 1200px) and (max-width: 1350px) {
-    .quixnav {
-      width: 14.375rem; } }
   .quixnav ul {
     padding: 0;
     margin: 0;
@@ -10382,16 +10386,6 @@ html[dir="rtl"] [direction="rtl"][data-sidebar-style="compact"]:not([data-layout
     .quixnav .metismenu .mm-active > .has-arrow:after {
       -webkit-transform: rotate(-135deg) translateY(-50%);
       transform: rotate(-135deg) translateY(-50%); }
-
-@media (max-width: 767px) {
-  .nav-header {
-    width: 3.75rem; }
-    .nav-header .brand-title {
-      display: none; }
-  .footer {
-    padding-left: 0; }
-  .quixnav {
-    left: 0; } }
 
 [data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .quixnav .metismenu > li.mega-menu > ul.collapse:not(.in),
 [data-sidebar-style="mini"][data-layout="vertical"] .quixnav .metismenu > li.mega-menu > ul.collapse:not(.in) {
@@ -10720,6 +10714,19 @@ Fixing Order => Base + Typography >> General Layout + Grid >> Page Layout + Comp
   [direction="rtl"][data-sidebar-style="full"][data-layout="vertical"] .menu-toggle + .footer {
     padding-left: 0;
     padding-right: 3.75rem; }
+
+@media only screen and (max-width: 768px) {
+  [data-sidebar-style="full"][data-layout="vertical"] .quixnav .nav-text,
+  [data-sidebar-style="full"][data-layout="vertical"] .quixnav .metismenu .nav-label,
+  [data-sidebar-style="full"][data-layout="vertical"] .quixnav .metismenu .nav-badge {
+    display: none; }
+  [data-sidebar-style="full"][data-layout="vertical"] .quixnav {
+    width: 3.75rem;}
+  [data-sidebar-style="full"][data-layout="vertical"] .quixnav .metismenu li a {
+    padding: 0.8125rem 0.9375rem; }
+  .quixnav .has-arrow:after {
+    display: none; }
+}
 
 /*
 0 - 600: Phone

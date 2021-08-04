@@ -27,7 +27,7 @@ class FtxClient
 
       signature_payload = ts + http_method + path
       signature = OpenSSL::HMAC.hexdigest(
-        "SHA256", 
+        "SHA256",
         Rails.application.credentials.dig(:ftx_moneyonrails_sec), 
         signature_payload)
 

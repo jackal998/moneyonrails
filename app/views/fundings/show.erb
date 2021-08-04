@@ -125,7 +125,7 @@
                                           aria-valuenow="<%= number_with_precision(@position["netSize"].abs, precision: precision) %>">
                                         <div>
                                           <div id="bias" style="display: inline; padding-right: 0.3rem;">(+0)</div>
-                                          <output for="a_slider" id="amount"><%= number_with_precision(@position["netSize"].abs, precision: precision) %></output>
+                                          <output for="a_slider" id="disp_amount"><%= number_with_precision(@position["netSize"].abs, precision: precision) %></output>
                                         </div>  
                                       </td>
                                     </tr>
@@ -143,40 +143,53 @@
                                           <div class="modal-dialog modal-dialog-centered">
                                             <div class="modal-content">
                                               <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">請確認</h5>
+                                                <h5 class="modal-title" id="exampleModalLabel">請確認以下資訊</h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                               </div>
                                               <div class="modal-body">
-
-<!-- formxxxx -->
-
-                                                  <div class="container-fluid">
+                                                  <div class="container-fluid table-sm">
+                                              <%= form_with model: @funding_order, url: funding_order_path do |form| %>
                                                       <div class="row">
-                                                          <div class="col-md-4">.col-md-4</div>
-                                                          <div class="col-md-4 ml-auto">.col-md-4 .ml-auto</div>
+                                                          <div class="text-center col-sm-4">MoneyOnRails</div>
+                                                          <div class="text-center col-sm-4"><%= "#{form.object.coin_name} 現貨" %></div>
+                                                          <div class="text-center col-sm-4"><%= "#{form.object.coin_name}-PERP" %></div>
                                                       </div>
                                                       <div class="row">
-                                                          <div class="col-md-3 ml-auto">.col-md-3 .ml-auto</div>
-                                                          <div class="col-md-2 ml-auto">.col-md-2 .ml-auto</div>
-                                                      </div>
-                                                      <div class="row">
-                                                          <div class="col-md-6 ml-auto">.col-md-6 .ml-auto</div>
-                                                      </div>
-                                                      <div class="row">
-                                                          <div class="col-sm-9">Level 1: .col-sm-9
-                                                              <div class="row">
-                                                                  <div class="col-8 col-sm-6">Level 2: .col-8 .col-sm-6
-                                                                  </div>
-                                                                  <div class="col-4 col-sm-6">Level 2: .col-4 .col-sm-6
-                                                                  </div>
-                                                              </div>
+                                                          <div class="col-sm-4 in-form-text">原始數量</div>
+                                                          <div class="text-right col-sm-4">
+                                                            <%= form.number_field :original_coin_amount, disabled: true %>
                                                           </div>
+                                                          <div class="text-right col-sm-4">
+                                                            <%= form.number_field :original_perp_amount, disabled: true %>
+                                                          </div>
+                                                      </div>
+                                                      <div class="row">
+                                                          <div class="in-form-text col-sm-4">目標數量</div>
+                                                          <div class="text-right col-sm-4">
+                                                            <%= form.number_field :target_coin_amount, disabled: true,
+                                                            id: (@position["netSize"] > 0 ? "neg_amount" : "pos_amount")  %>
+                                                          </div>
+                                                          <div class="text-right col-sm-4">
+                                                            <%= form.number_field :target_perp_amount, disabled: true,
+                                                            id: (@position["netSize"] > 0 ? "pos_amount" : "neg_amount")  %>
+                                                          </div>
+                                                      </div>
+                                                      <div class="row col-form-label">
+                                                          <div class="in-form-text col-sm-4">執行</div>
+                                                          <div class="in-form-text col-sm-8" id="biasinform"></div>
+                                                      </div>
+                                                      <div class="text-center row">
+                                                          <div class="in-form-text col-sm-4">價差控制</div>
+                                                          <div class="in-form-text col-sm-4 <%= 'text-primary'if @fund_stat.perp_over_spot > 1 %>">
+                                                            當前價差： <%= ((@fund_stat.perp_over_spot - 1) * 100).round(4) %>&nbsp;%</div>
+                                                          <div class="col-sm-4"><%= form.number_field :threshold, step: 0.0001, style: "width: 88%;", :value => 0.0000 %>&nbsp;%</div>
                                                       </div>
                                                   </div>
                                               </div>
                                               <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                <button type="button" class="btn btn-primary">Save changes</button>
+                                                <button type="button" class="btn btn-outline-secondary btn-rounded" data-bs-dismiss="modal">關 閉</button>
+                                                <%= form.submit "送 出", :class => "text-center btn btn-outline-primary btn-rounded" %>
+                                              <% end %>
                                               </div>
                                             </div>
                                           </div>

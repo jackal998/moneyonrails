@@ -3,6 +3,7 @@ Rails.application.routes.draw do
 
   get '/funding', :to => 'fundings#index'
   get '/funding/show', :to => 'fundings#show'
+  post '/funding/order', :to => 'fundings#createorder'
 
   root :to => redirect('/funding')
   # get "*path", to: redirect('/funding')

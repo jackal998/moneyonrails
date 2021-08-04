@@ -16,20 +16,32 @@ function readyFn( jQuery ) {
     });
 
     var a_slider = document.getElementById("a_slider");
-    var a_slider_initValue = parseFloat(document.getElementById("a_slider").value);
-    var amount = document.getElementById("amount");
-    var bias = document.getElementById("bias");
-    a_slider.oninput = function() {
+    slider_setup(a_slider)
 
-         function biasValue(cur_value) {
-            if (cur_value < a_slider_initValue) 
-                return "(-" + (a_slider_initValue - cur_value) + ")";
-            else
-                return "(+" + (cur_value - a_slider_initValue) + ")";
+    function slider_setup(a_slider) {
+        if (!a_slider) {
+            return;
+        }
+        var a_slider_initValue = parseFloat(document.getElementById("a_slider").value);
+        var disp_amount = document.getElementById("disp_amount");
+        var pos_amount = document.getElementById("pos_amount");
+        var neg_amount = document.getElementById("neg_amount");
+        var bias = document.getElementById("bias");
+        var biasinform = document.getElementById("biasinform");
+        a_slider.oninput = function() {
+            function biasValue(cur_value) {
+                if (cur_value < a_slider_initValue) 
+                    return "減倉 (-" + (a_slider_initValue - cur_value) + ")";
+                else
+                    return "加倉 (+" + (cur_value - a_slider_initValue) + ")";
             };
-        bias.innerHTML = biasValue(parseFloat(this.value));
-      amount.innerHTML = this.value;
-    }
+            bias.innerHTML = biasValue(parseFloat(this.value));
+            biasinform.innerHTML = bias.innerHTML;
+            disp_amount.innerHTML = this.value;
+            pos_amount.value = this.value;
+            neg_amount.value = -this.value;
+        }
+    };
 
     var body = $('body');
     var html = $('html');
