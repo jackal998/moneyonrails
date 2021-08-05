@@ -31,13 +31,22 @@ class FundingsController < ApplicationController
     balances[@coin.name] = {"amount"=>0.0, "usdValue"=>0.0} unless balances[@coin.name]
 
     @funding_order = FundingOrder.new(
-      :coin => @coin, 
+      :coin_id => @coin.id, 
       :coin_name => @coin.name,
       :original_coin_amount => balances[@coin.name]["amount"],
       :original_perp_amount => @position["netSize"]
       )
 
     render locals: {balances: balances}
+  end
+
+  def createorder
+    @funding_order = FundingOrder.new(createorder_params)
+    if @funding_order.target_perp_amount && @funding_order.target_perp_amount != @funding_order.original_perp_amount
+      @funding_order["order_status"] = "Underway"
+      # it works but need more check?
+      # @funding_order.save
+    end
   end
 
 private
@@ -52,5 +61,12 @@ private
       end
     end    
     return balances
+  end
+
+  def createorder_params
+    params.require(:funding_order).permit(:coin_id,:coin_name,
+                                          :original_coin_amount,:original_perp_amount,
+                                          :target_coin_amount,:target_perp_amount,
+                                          :acceleration,:threshold)
   end
 end

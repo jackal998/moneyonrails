@@ -61,7 +61,7 @@ ActiveRecord::Schema.define(version: 2021_08_04_163401) do
     t.decimal "target_coin_amount"
     t.decimal "target_perp_amount"
     t.string "order_status", default: "close"
-    t.integer "acceleration", default: 1
+    t.integer "acceleration", default: 3
     t.decimal "threshold", default: "0.0"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false

@@ -11,7 +11,7 @@ class CreateFundingOrders < ActiveRecord::Migration[6.1]
 
       t.string :order_status, default: "close", :index => true
 
-      t.integer :acceleration, default: 1
+      t.integer :acceleration, default: 3
 
       t.decimal :threshold, default: 0.00
 

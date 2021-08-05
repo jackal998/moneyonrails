@@ -97,7 +97,7 @@
                                         <%= "#{number_to_currency(@fund_stat.spot_ask_usd, precision: decimals(@fund_stat.spot_ask_usd) > 8 ? 8 : decimals(@fund_stat.spot_ask_usd))}" %>
                                       </td>
                                       <td class="text-right">
-                                        <%= "#{number_to_currency(@fund_stat.perp_bid_usd, precision: decimals(@fund_stat.perp_bid_usd) > 8 ? 8 : decimals(@fund_stat.spot_ask_usd))}" %>
+                                        <%= "#{number_to_currency(@fund_stat.perp_bid_usd, precision: decimals(@fund_stat.perp_bid_usd) > 8 ? 8 : decimals(@fund_stat.perp_bid_usd))}" %>
                                       </td>
                                     </tr>
                                     <tr>
@@ -138,66 +138,11 @@
                                         data-bs-toggle="modal" data-bs-target="#fund_order_form">
                                           確定
                                         </button>
-                                        <!-- Modal -->
-                                        <div class="modal fade" id="fund_order_form" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                          <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content">
-                                              <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">請確認以下資訊</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                              </div>
-                                              <div class="modal-body">
-                                                  <div class="container-fluid table-sm">
-                                              <%= form_with model: @funding_order, url: funding_order_path do |form| %>
-                                                      <div class="row">
-                                                          <div class="text-center col-sm-4">MoneyOnRails</div>
-                                                          <div class="text-center col-sm-4"><%= "#{form.object.coin_name} 現貨" %></div>
-                                                          <div class="text-center col-sm-4"><%= "#{form.object.coin_name}-PERP" %></div>
-                                                      </div>
-                                                      <div class="row">
-                                                          <div class="col-sm-4 in-form-text">原始數量</div>
-                                                          <div class="text-right col-sm-4">
-                                                            <%= form.number_field :original_coin_amount, disabled: true %>
-                                                          </div>
-                                                          <div class="text-right col-sm-4">
-                                                            <%= form.number_field :original_perp_amount, disabled: true %>
-                                                          </div>
-                                                      </div>
-                                                      <div class="row">
-                                                          <div class="in-form-text col-sm-4">目標數量</div>
-                                                          <div class="text-right col-sm-4">
-                                                            <%= form.number_field :target_coin_amount, disabled: true,
-                                                            id: (@position["netSize"] > 0 ? "neg_amount" : "pos_amount")  %>
-                                                          </div>
-                                                          <div class="text-right col-sm-4">
-                                                            <%= form.number_field :target_perp_amount, disabled: true,
-                                                            id: (@position["netSize"] > 0 ? "pos_amount" : "neg_amount")  %>
-                                                          </div>
-                                                      </div>
-                                                      <div class="row col-form-label">
-                                                          <div class="in-form-text col-sm-4">執行</div>
-                                                          <div class="in-form-text col-sm-8" id="biasinform"></div>
-                                                      </div>
-                                                      <div class="text-center row">
-                                                          <div class="in-form-text col-sm-4">價差控制</div>
-                                                          <div class="in-form-text col-sm-4 <%= 'text-primary'if @fund_stat.perp_over_spot > 1 %>">
-                                                            當前價差： <%= ((@fund_stat.perp_over_spot - 1) * 100).round(4) %>&nbsp;%</div>
-                                                          <div class="col-sm-4"><%= form.number_field :threshold, step: 0.0001, style: "width: 88%;", :value => 0.0000 %>&nbsp;%</div>
-                                                      </div>
-                                                  </div>
-                                              </div>
-                                              <div class="modal-footer">
-                                                <button type="button" class="btn btn-outline-secondary btn-rounded" data-bs-dismiss="modal">關 閉</button>
-                                                <%= form.submit "送 出", :class => "text-center btn btn-outline-primary btn-rounded" %>
-                                              <% end %>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
                                       </td>
                                     </tr>
                                   </thead>
                                 </table>
+
                             </div>
                         </div>
                     </div>
@@ -219,3 +164,87 @@
 <!--**********************************
   Content body end
 ***********************************-->
+
+
+<!-- Modal -->
+<div class="modal fade" id="fund_order_form" tabindex="-1" aria-labelledby="funding_order_modal" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <%= form_with model: @funding_order, url: funding_order_path do |form| %>
+      <div class="modal-header">
+        <h5 class="modal-title" id="funding_order_modal">子帳號： MoneyOnRails</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body table-sm">
+          <div class="container-fluid">
+               <%= form.hidden_field :coin_id %>
+               <%= form.hidden_field :coin_name %>
+              <div class="row">
+                  <div class="text-center col-sm-4"></div>
+                  <div class="text-center col-sm-4"><%= "#{form.object.coin_name} 現貨" %></div>
+                  <div class="text-center col-sm-4"><%= "#{form.object.coin_name}-PERP" %></div>
+              </div>
+              <div class="row">
+                  <div class="in-form-text col-sm-4">原始數量</div>
+                  <div class="text-right col-sm-4">
+                    <%= form.number_field :original_coin_amount, readonly: true, :class => "form-control" %>
+                  </div>
+                  <div class="text-right col-sm-4">
+                    <%= form.number_field :original_perp_amount, readonly: true, :class => "form-control" %>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="in-form-text col-sm-4">目標數量</div>
+                  <div class="text-right col-sm-4">
+                    <%= form.number_field :target_coin_amount, readonly: true, :class => "form-control",
+                    id: (@position["netSize"] > 0 ? "neg_amount" : "pos_amount")  %>
+                  </div>
+                  <div class="text-right col-sm-4">
+                    <%= form.number_field :target_perp_amount, readonly: true, :class => "form-control",
+                    id: (@position["netSize"] > 0 ? "pos_amount" : "neg_amount")  %>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="in-form-text col-sm-4">執行</div>
+                  <div class="in-form-text col-sm-8" id="biasinform"></div>
+              </div>
+              <div class="text-center row">
+                  <div class="in-form-text2 col-sm-4">價差設定</div>
+                  <div class="col-sm-4">
+                    <div class="in-form-text <%= 'text-primary'if @fund_stat.perp_over_spot > 1 %>">
+                      加倉價差： <%= ((@fund_stat.perp_over_spot - 1) * 100).round(3) %>&nbsp;%</div>
+                    <div class="in-form-text <%= 'text-primary'if @fund_stat.spot_over_perp > 1 %>">
+                      減倉價差： <%= ((@fund_stat.spot_over_perp - 1) * 100).round(3) %>&nbsp;%</div>
+                  </div>
+                  <div class="col-sm-4">
+                    <div class="input-group" style="padding-top: 1rem;">
+                      <%= form.number_field :threshold, step: 0.001, :value => 0.000, :class => "form-control" %>
+                      <div class="input-group-text">%</div>
+                    </div>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="in-form-text col-sm-4">加速設定</div>
+                  <div class="in-form-text col-sm-8" id="biasinform">
+                    
+                    <div class="input-group mb-3">
+                      <%= form.number_field :sizeIncrement, disabled: true, :class => "form-control", :value => @coin.sizeIncrement %>
+                      <span class="input-group-text"><i class="far fa-times"></i></span>
+                      <%= form.select(
+                        :acceleration, 
+                        ['1', '3', '5', '10', '20', '50', '100'],
+                        {},
+                        { :class => 'form-select' }) %>
+                    </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-rounded" data-bs-dismiss="modal">關 閉</button>
+        <%= form.submit "送 出", :class => "text-center btn btn-outline-primary btn-rounded" %>
+      </div>
+      <% end %>
+    </div>
+  </div>
+</div>
