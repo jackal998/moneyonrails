@@ -136,10 +136,10 @@
                               <%= "#{(coin.current_fund_stat.irr_past_month * 100).round(1).to_s}%" %>
                             </td>
                             <td class="text-right <%= 'text-primary'if coin.current_fund_stat.perp_over_spot > 1 %>">
-                              <%= "#{(coin.current_fund_stat.perp_over_spot * 100).round(2).to_s}%" %>
+                              <%= "#{((coin.current_fund_stat.perp_over_spot - 1) * 100).round(3).to_s}%" %>
                             </td>
                             <td class="text-right <%= 'text-primary'if coin.current_fund_stat.spot_over_perp > 1 %>">
-                              <%= "#{(coin.current_fund_stat.spot_over_perp * 100).round(2).to_s}%" %>
+                              <%= "#{((coin.current_fund_stat.spot_over_perp - 1) * 100).round(3).to_s}%" %>
                             </td>
                             <td class="text-right"><%= "#{number_to_currency(coin.current_fund_stat.spot_price_usd, precision: 5)}" %></td>
                             <td class="text-right"><%= "#{number_to_currency(coin.current_fund_stat.spot_volume)}" %></td>

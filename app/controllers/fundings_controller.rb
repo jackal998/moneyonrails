@@ -42,10 +42,13 @@ class FundingsController < ApplicationController
 
   def createorder
     @funding_order = FundingOrder.new(createorder_params)
+    
     if @funding_order.target_perp_amount && @funding_order.target_perp_amount != @funding_order.original_perp_amount
       @funding_order["order_status"] = "Underway"
+
+      @funding_order.save
+      OrderExecutorJob.perform_later(@funding_order.id)
       # it works but need more check?
-      # @funding_order.save
     end
   end
 
