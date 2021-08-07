@@ -32,46 +32,43 @@ class FtxClient
     # postOnly          boolean false       optional; default is false
     # clientId          string  null        optional; client order id
     # rejectOnPriceBand boolean false       optional; if the order should be rejected if its price would instead be adjusted due to price bands
+    
+    # if you order a size smaller then the "minProvideSize", 
+    # the order is automatically turned into a IOC order. You can find more info here
 
+    params = {
+      market: "BTC-PERP",
+      side: "buy",
+      price: 5000,
+      size: 0.001,
+      type: "limit"}
 
-
-    # ts = DateTime.now.strftime('%Q')
-p = {"market": "BTC-PERP", "side": "buy", "price": 8500, "size": 1, "type": "limit", "reduceOnly": false, "ioc": false, "postOnly": false, "clientId": nil}
-b = '{"market": "BTC-PERP", "side": "buy", "price": 8500, "size": 1, "type": "limit", "reduceOnly": false, "ioc": false, "postOnly": false, "clientId": null, "rejectOnPriceBand": false}'
-
-    # "{" + JSON.generate(p, {indent: ' ', space: ' ', allow_nan: false})[2..1000]
-
+    payload = "{" + JSON.generate(params, {indent: ' ', space: ' ', allow_nan: false})[2..1000]
 
     ts = DateTime.now.strftime('%Q')
-    signature_payload = ts.to_s + 'POST/api/orders' + b
+    signature_payload = ts.to_s + 'POST/api/orders' + payload
 
     req_url = "https://ftx.com/api/orders"
 
-    puts signature_payload
-
     signature = OpenSSL::HMAC.hexdigest(
       "SHA256",
-      Rails.application.credentials.dig(:ftx_moneyonrails_sec), 
+      "", 
       signature_payload)
 
     headers = {
-      'FTX-KEY' => Rails.application.credentials.dig(:ftx_moneyonrails_pub),
+      'FTX-KEY' => "",
       'FTX-SIGN' => signature,
       'FTX-TS' => ts,
-      'FTX-SUBACCOUNT' => "MoneyOnRails"}
-
-    response = RestClient.post(req_url, b, headers)
+      'FTX-SUBACCOUNT' => "MoneyOnRails",
+      'Content-Type' => 'application/json'}
 
     response = RestClient::Request.execute(
       :method => "POST".to_sym, 
       :url => req_url, 
-      b,
-      :headers => headers
-      )
+      :payload => payload,
+      :headers => headers)
 
-      # 'Quant-Funding'
-      # :payload => post_params, 
-      # :timeout => 9000000, 
+    # need a way handling 400
     return JSON.parse(response.body)
   end
 
