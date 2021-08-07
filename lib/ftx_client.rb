@@ -9,13 +9,24 @@ class FtxClient
   end
 
   def self.account
-    @ftxclient = FtxClient.new(:auth => true)
-    return @ftxclient._request(@ftxclient.method, "/api/account")
+    return FtxClient.new(:auth => true)._request("GET", "/api/account")
   end
 
   def self.wallet_balances
-    @ftxclient = FtxClient.new(:auth => true)
-    return @ftxclient._request(@ftxclient.method, "/api/wallet/balances")
+    return FtxClient.new(:auth => true)._request("GET", "/api/wallet/balances")
+  end
+
+  def self.positions
+    return FtxClient.new(:auth => true)._request("GET", "/api/positions")
+  end
+
+  def self.market_info(market)
+    # BTC/USD, BTC-PERP, BTC-0626
+    return FtxClient.new._request("GET", "/api/markets/#{market}")
+  end
+
+  def self.markets_info
+    return FtxClient.new._request("GET", "/api/markets")
   end
   
   def _request(http_method, path, params = {})
