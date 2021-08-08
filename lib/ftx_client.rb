@@ -49,7 +49,7 @@ class FtxClient
     # if you order a size smaller then the "minProvideSize", 
     # the order is automatically turned into a IOC order. You can find more info here
 
-    params = {market: "BTC-PERP",side: "buy",price: 5000,size: 0.001,type: "limit"}
+    # params = {market: "BTC-PERP", side: "buy", price: 5000, size: 0.001, type: "limit"}
 
     [:market, :side, :size, :type].each do |key|
       return "params: :#{key} is nil, please check." unless params[key]
