@@ -20,6 +20,19 @@ class FtxClient
     return FtxClient.new(:auth => true)._request("GET", "/api/positions")
   end
 
+  def self.funding_payments(params = {})
+    # start_time        number  1559881511  optional
+    # end_time          number  1559881711  optional
+    # future            string  BTC-PERP    optional
+
+    params_str = ""
+    unless params.empty?
+      params.each {|k,v| params_str += "&#{k}=#{v}"}
+      params_str[0]="?"
+    end
+
+    return FtxClient.new(:auth => true)._request("GET", "/api/funding_payments" + params_str)
+  end
 
   def self.place_order(params = {})
     # market            string  XRP-PERP    e.g. "BTC/USD" for spot, "XRP-PERP" for futures
@@ -36,40 +49,23 @@ class FtxClient
     # if you order a size smaller then the "minProvideSize", 
     # the order is automatically turned into a IOC order. You can find more info here
 
-    params = {
-      market: "BTC-PERP",
-      side: "buy",
-      price: 5000,
-      size: 0.001,
-      type: "limit"}
+    params = {market: "BTC-PERP",side: "buy",price: 5000,size: 0.001,type: "limit"}
 
-    payload = "{" + JSON.generate(params, {indent: ' ', space: ' ', allow_nan: false})[2..1000]
+    [:market, :side, :size, :type].each do |key|
+      return "params: :#{key} is nil, please check." unless params[key]
+    end
 
-    ts = DateTime.now.strftime('%Q')
-    signature_payload = ts.to_s + 'POST/api/orders' + payload
+    case params[:type]
+      when "market"
+        return 'Markettype is "market", but given price #{params[:price]} is not nil, please check.' if params[:price]
 
-    req_url = "https://ftx.com/api/orders"
+      when "limit"
+        return 'Market type is "limit", but price is nil, please check.' unless params[:price]
+    end
 
-    signature = OpenSSL::HMAC.hexdigest(
-      "SHA256",
-      "", 
-      signature_payload)
+    payload = params.to_json
 
-    headers = {
-      'FTX-KEY' => "",
-      'FTX-SIGN' => signature,
-      'FTX-TS' => ts,
-      'FTX-SUBACCOUNT' => "MoneyOnRails",
-      'Content-Type' => 'application/json'}
-
-    response = RestClient::Request.execute(
-      :method => "POST".to_sym, 
-      :url => req_url, 
-      :payload => payload,
-      :headers => headers)
-
-    # need a way handling 400
-    return JSON.parse(response.body)
+    return FtxClient.new(:auth => true)._request("POST", "/api/orders", {payload: payload})
   end
 
   def self.market_info(market)
@@ -82,14 +78,16 @@ class FtxClient
   end
   
   def _request(http_method, path, params = {})
-
+    
     req_url = self.url + path
+
+    payload = params[:payload] if params[:payload]
 
     if self.auth
       ts = DateTime.now.strftime('%Q')
 
       signature_payload = ts + http_method + path
-      signature_payload += params["payload"] if params["payload"]
+      signature_payload += payload if payload
 
       signature = OpenSSL::HMAC.hexdigest(
         "SHA256",
@@ -101,15 +99,15 @@ class FtxClient
         'FTX-SIGN' => signature,
         'FTX-TS' => ts,
         'FTX-SUBACCOUNT' => "MoneyOnRails"}
+      headers['Content-Type'] = 'application/json' if payload
     end
 
     response = RestClient::Request.execute(
       :method => http_method.to_sym, 
       :url => req_url, 
-      :headers => headers)
-      # 'Quant-Funding'
-      # :payload => post_params, 
-      # :timeout => 9000000, 
+      :payload => payload,
+      :headers => headers) {|response, request, result| response }
+
     return JSON.parse(response.body)
   end
 end

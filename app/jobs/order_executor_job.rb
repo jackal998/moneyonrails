@@ -9,41 +9,130 @@ class OrderExecutorJob < ApplicationJob
     return unless order_status == "Underway"
     
     @coin = Coin.find(@funding_order.coin_id)
-    coin_name = @coin.name
+
+    spot_name = @coin.name
     perp_name = "#{@coin.name}-PERP"
 
-    order_status = compare_account_with_order(coin_name, perp_name, @funding_order)
+    account_data = get_account_amount(spot_name,perp_name)
+
+puts 'account_data: #{account_data}'
+
+    if account_data["error_msg"]
+      order_status = account_data["error_msg"]
+    else
+      spot_bias = @funding_order.target_coin_amount - account_data[spot_name]
+      spot_steps = (spot_bias / @coin.sizeIncrement).round(0)
+
+puts 'spot_bias: #{spot_bias}'
+puts 'spot_steps: #{spot_steps}'
+
+      perp_bias = @funding_order.target_perp_amount - account_data[perp_name]
+      perp_steps = (perp_bias / @coin.sizeIncrement).round(0)
+
+puts 'perp_bias: #{perp_bias}'
+puts 'perp_steps: #{perp_steps}'
+
+      direction = spot_steps > perp_steps ? "more" : "less"
+      order_status = "Close" if spot_steps == 0 && perp_steps == 0
+
+puts 'direction: #{direction}'
+puts 'order_status: #{order_status}'
+
+    end
 
     puts "sidekiq OrderExecutorJob for funding_order_id: #{funding_order_id} starting..."
 
     while order_status == "Underway"
 
       # BTC/USD, BTC-PERP, BTC-0626
-      spot_data = FtxClient.market_info("#{coin_name}/USD")
+      spot_data = FtxClient.market_info("#{spot_name}/USD")
       perp_data = FtxClient.market_info(perp_name)
 
       order_status = "FtxClient.market_info result Error" unless spot_data["success"] && perp_data["success"]
 
-      current_ratio = ((perp_data["result"]["bid"] / spot_data["result"]["ask"] - 1 ) * 100)
-      puts "#{Time.now.strftime('%H:%M:%S')}: funding_order_id: #{funding_order_id}, #{coin_name}: Current ratio: #{current_ratio}" if Time.now.to_i % 20 == 0
+      case direction
+      when "more"
+        current_ratio = ((perp_data["result"]["bid"] / spot_data["result"]["ask"] - 1 ) * 100)
+
+puts 'perp_data["result"]["bid"]: #{perp_data["result"]["bid"]}'
+puts 'spot_data["result"]["ask"]: #{spot_data["result"]["ask"]}'
+
+      when "less"
+        current_ratio = ((spot_data["result"]["bid"] / perp_data["result"]["ask"] - 1 ) * 100)
+
+puts 'spot_data["result"]["bid"]: #{spot_data["result"]["bid"]}'
+puts 'perp_data["result"]["ask"]: #{perp_data["result"]["ask"]}'
+
+      end
+
+      puts "#{Time.now.strftime('%H:%M:%S')}: funding_order_id: #{funding_order_id}, #{spot_name}: Current ratio: #{current_ratio}" if Time.now.to_i % 20 == 0
 
       if current_ratio > @funding_order.threshold
 
-        payloadforspot = {
-          "market" => "#{coin_name}/USD",
-          "side" => "buy",
-          "type" => "market",
-          "size" => @coin.sizeIncrement
-        }
+        spot_size = spot_steps.abs >= @funding_order.acceleration ? @funding_order.acceleration : spot_steps.abs
+        perp_size = perp_steps.abs >= @funding_order.acceleration ? @funding_order.acceleration : perp_steps.abs
+
+        payload = {market: nil, side: nil, price: nil, type: "market", size: nil}
+
+        payload_spot = payload.merge({market: "#{spot_name}/USD", size: spot_size})
+        payload_perp = payload.merge({market: perp_name, size: perp_size})
+
+        case direction
+        when "more"
+          # 先買現貨，再空永續
+          payload_spot[:side] = "buy"
+          payload_perp[:side] = "sell"
         
-        FtxClient.place_order(payloadforspot)
+puts 'payload_spot: #{payload_spot}'
+puts 'payload_perp: #{payload_perp}'
+        
+# FtxClient.place_order(payload_spot)
+# FtxClient.place_order(payload_perp)
+
+        when "less"
+          # 先平永續，再賣現貨
+          payload_perp[:side] = "buy"
+          payload_spot[:side] = "sell"
+        
+puts 'payload_spot: #{payload_spot}'
+puts 'payload_perp: #{payload_perp}'
+
+# FtxClient.place_order(payload_perp)
+# FtxClient.place_order(payload_spot)
+
+        end
+        
+
+
+        account_data = get_account_amount(spot_name,perp_name)
+
+puts 'account_data: #{account_data}'
+
+        if account_data["error_msg"]
+          order_status = account_data["error_msg"]
+        else
+          spot_bias = @funding_order.target_coin_amount - account_data[spot_name]
+          spot_steps = (spot_bias / @coin.sizeIncrement).round(0)
+
+puts 'spot_bias: #{spot_bias}'
+puts 'spot_steps: #{spot_steps}'
+
+          perp_bias = @funding_order.target_perp_amount - account_data[perp_name]
+          perp_steps = (perp_bias / @coin.sizeIncrement).round(0)
+
+puts 'perp_bias: #{perp_bias}'
+puts 'perp_steps: #{perp_steps}'
+
+          direction = spot_steps > perp_steps ? "more" : "less"
+          order_status = "Close" if spot_steps == 0 && perp_steps == 0
+
+puts 'direction: #{direction}'
+puts 'order_status: #{order_status}'
+
+        end
 
 
 
-        puts "acceleration: 3"
-
-
-        order_status = compare_account_with_order(coin_name, perp_name, @funding_order)
       end
 
       if order_status == "Underway"
@@ -60,34 +149,32 @@ class OrderExecutorJob < ApplicationJob
     if order_status == "Close"
       puts "sidekiq OrderExecutorJob for funding_order_id: #{funding_order_id} complete."
     else
+      puts "sidekiq OrderExecutorJob for funding_order_id: #{funding_order_id} abort with errors:"
       puts order_status
     end
   end
 
-  def compare_account_with_order(coin_name,perp_name,funding_order)
-    order_status = funding_order["order_status"]
+  def get_account_amount(spot_name,perp_name)
 
-    coin_amount = 0
-    perp_amount = 0
+    tmp[spot_name] = 0
+    tmp[perp_name] = 0
 
     wallet_balances_data = FtxClient.wallet_balances
     positions_data = FtxClient.positions
 
-    order_status = "FtxClient.wallet_balances result Error" unless wallet_balances_data["success"]
-    order_status = "FtxClient.positions result Error" unless positions_data["success"]
+    tmp["error_msg"] = "FtxClient.wallet_balances result Error" unless wallet_balances_data["success"]
+    tmp["error_msg"] = "FtxClient.positions result Error" unless positions_data["success"]
     
-    if order_status == "Underway"
-      wallet_balances_data["result"].each do |result|
-        coin_amount = result["availableWithoutBorrow"] if result["coin"] == @coin.name
-      end
+    return order_status if order_status
 
-      positions_data["result"].each do |result|
-        perp_amount = result["netSize"] if result["future"] == perp_name
-      end
-
-      order_status = "Close" if @funding_order.target_perp_amount == perp_amount && ((coin_amount - @funding_order.target_coin_amount).abs / coin_amount) < 0.01
+    wallet_balances_data["result"].each do |result|
+      tmp[spot_name] = result["availableWithoutBorrow"] if result["coin"] == spot_name
     end
 
-    return order_status
+    positions_data["result"].each do |result|
+      tmp[perp_name] = result["netSize"] if result["future"] == perp_name
+    end
+
+    return tmp
   end
 end
