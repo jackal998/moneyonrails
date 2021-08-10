@@ -1344,6 +1344,10 @@ pre {
     padding: 0.75rem;
     vertical-align: top;
     border-top: 1px solid #EEEEEE; }
+  .table-fixhead thead {
+    position: sticky;
+    top: 0;
+    background: #fff;}
   .table thead th {
     vertical-align: bottom;
     border-bottom: 2px solid #EEEEEE; }
@@ -1611,7 +1615,8 @@ pre {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch; }
   .table-responsive > .table-bordered {
-    border: 0; }
+    border-spacing: 0px;
+    border-collapse: separate; }
 
 .form-select {
   padding: 0 0.6rem;
@@ -15626,7 +15631,8 @@ button {
   border: 0.1rem solid #593bdb; }
 
 .dropdown-menu {
-  font-size: inherit; }
+  max-height: 20rem;
+  overflow-y: auto;}
   [direction="rtl"] .dropdown-menu {
     right: auto !important; }
 
@@ -16686,7 +16692,7 @@ button {
     border-color: #424D63; }
 
 .table thead th {
-  border-bottom-width: 1px;
+  border-bottom-width: 1.04px;
   text-transform: uppercase;
   text-align: center;
   font-size: 12px;
