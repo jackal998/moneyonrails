@@ -22,19 +22,31 @@ function readyFn( jQuery ) {
         if (!a_slider) {
             return;
         }
-        var a_slider_initValue = parseFloat(document.getElementById("a_slider").value);
+        var a_slider_initValue = Number(document.getElementById("a_slider").value);
+        var form_trigger_btn = document.getElementById("fund_order_form_trigger");
         var disp_amount = document.getElementById("disp_amount");
         var pos_amount = document.getElementById("pos_amount");
         var neg_amount = document.getElementById("neg_amount");
         var bias = document.getElementById("bias");
         var biasinform = document.getElementById("biasinform");
+        var disp_digits = Number(disp_amount.getAttribute("digits"))
+
         a_slider.oninput = function() {
             function biasValue(cur_value) {
-                if (cur_value < a_slider_initValue) 
-                    return "減倉 (-" + (a_slider_initValue - cur_value) + ")";
-                else
-                    return "加倉 (+" + (cur_value - a_slider_initValue) + ")";
+                if (cur_value == a_slider_initValue) {
+                    form_trigger_btn.disabled = true;
+                    return "";
+                } else {
+                    form_trigger_btn.disabled = false;
+
+                    if (cur_value < a_slider_initValue) {
+                        return "減倉 (-" + (a_slider_initValue - cur_value).toFixed(disp_digits) + ")";
+                    } else {
+                        return "加倉 (+" + (cur_value - a_slider_initValue).toFixed(disp_digits) + ")";
+                    }
+                }
             };
+
             bias.innerHTML = biasValue(parseFloat(this.value));
             biasinform.innerHTML = bias.innerHTML;
             disp_amount.innerHTML = this.value;

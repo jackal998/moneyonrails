@@ -10,8 +10,13 @@ class FundingsController < ApplicationController
   end
 
   def show
+    @coins = Coin.includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
+
     @coin = params["coin"] ? Coin.find(params["coin"]) : Coin.find_by("name = ?", "BTC")
 
+    @funding_orders = FundingOrder.includes(:coin).all
+    @underway_order = @funding_orders.where(:order_status => "Underway").last
+    
     @position = {"netSize" => 0, "cost" => 0}
     FtxClient.account["result"]["positions"].each do |position|
       if position["future"].split("-")[0] == @coin.name
@@ -42,14 +47,22 @@ class FundingsController < ApplicationController
 
   def createorder
     @funding_order = FundingOrder.new(createorder_params)
-    
+
     if @funding_order.target_perp_amount && @funding_order.target_perp_amount != @funding_order.original_perp_amount
       @funding_order["order_status"] = "Underway"
 
       @funding_order.save
       OrderExecutorJob.perform_later(@funding_order.id)
-      # it works but need more check?
+
+      redirect_to funding_show_path(coin: @funding_order.coin_id)
     end
+  end
+
+  def abortorder
+    @funding_order = FundingOrder.find(params["funding_order"]["id"])
+    @funding_order.update(:order_status => "Abort")
+
+    redirect_to funding_show_path(coin: @funding_order.coin_id)
   end
 
 private
