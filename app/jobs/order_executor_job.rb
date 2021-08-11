@@ -52,17 +52,17 @@ class OrderExecutorJob < ApplicationJob
           # 先買現貨，再空永續
           payload_spot[:side] = "buy"
           payload_perp[:side] = "sell"
-        
-          spot_order_result = FtxClient.place_order(payload_spot)
-          perp_order_result = FtxClient.place_order(payload_perp)
+
+          spot_order_result = FtxClient.place_order(payload_spot) unless spot_order_size == 0
+          perp_order_result = FtxClient.place_order(payload_perp) unless perp_order_size == 0
 
         when "less"
           # 先平永續，再賣現貨
           payload_perp[:side] = "buy"
           payload_spot[:side] = "sell"
 
-          perp_order_result = FtxClient.place_order(payload_perp)
-          spot_order_result = FtxClient.place_order(payload_spot)
+          perp_order_result = FtxClient.place_order(payload_perp) unless perp_order_size == 0
+          spot_order_result = FtxClient.place_order(payload_spot) unless spot_order_size == 0
         end
         
 puts 'payload_spot:' + payload_spot.to_s

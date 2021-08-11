@@ -15,8 +15,10 @@ class FundingsController < ApplicationController
     @coin = params["coin"] ? Coin.find(params["coin"]) : Coin.find_by("name = ?", "BTC")
 
     @funding_orders = FundingOrder.includes(:coin).all
-    @underway_order = @funding_orders.where(:order_status => "Underway").last
     
+    @underway_order = @funding_orders.where(:order_status => "Underway").last
+    # 如果order_status有問題，要顯示出來
+
     @position = {"netSize" => 0, "cost" => 0}
     FtxClient.account["result"]["positions"].each do |position|
       if position["future"].split("-")[0] == @coin.name
@@ -60,9 +62,10 @@ class FundingsController < ApplicationController
 
   def abortorder
     @funding_order = FundingOrder.find(params["funding_order"]["id"])
-    @funding_order.update(:order_status => "Abort")
-
-    redirect_to funding_show_path(coin: @funding_order.coin_id)
+    @funding_order.update(:order_status => "Abort") if @funding_order.order_status == "Underway"
+    
+    # 如果order_status有問題，要顯示出來
+    redirect_to funding_show_path(coin: params["current_coin_id"])
   end
 
 private
