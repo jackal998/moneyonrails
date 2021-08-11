@@ -8,6 +8,7 @@ set :output, "#{path}/log/cron.log"
 set :environment, :development
 
 every '1 * * * *' do
+  rake "dev:update_funding_payment"
   rake "dev:update_rate"
 end
 
