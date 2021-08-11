@@ -14,7 +14,7 @@ class FundingsController < ApplicationController
 
     @coin = params["coin"] ? Coin.find(params["coin"]) : Coin.find_by("name = ?", "BTC")
 
-    @funding_orders = FundingOrder.includes(:coin).all
+    @funding_orders = FundingOrder.includes(coin: :current_fund_stat).all.order("created_at desc")
     
     @underway_order = @funding_orders.where(:order_status => "Underway").last
     # 如果order_status有問題，要顯示出來

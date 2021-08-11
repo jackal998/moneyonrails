@@ -13,6 +13,7 @@ import "channels"
 import "aos"
 import "./src/application.scss"
 import "bootstrap"
+import "bootstrap-table"
 import "chartkick/chart.js"
 
 import('./js/custom')

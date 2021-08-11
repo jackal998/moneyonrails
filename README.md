@@ -38,6 +38,9 @@ psql (13.3 (Ubuntu 13.3-1.pgdg20.04+1), server 12.7 (Ubuntu 12.7-0ubuntu0.20.04.
 
 notice that postgresql system was installed with the same location as my OS system(SSD) but data was set to another hareware(HDD) with different Disk name.
 
+to run on localhost with https://
+rails s -b 'ssl://localhost:3000?key=./localhost.key&cert=./localhost.crt'
+
 issues:
 1. ubuntu user name is some thing like this NAME_REGEX="^[a-z][-a-z0-9_]*$" and things like RAILS(uppercase) is not allowed
 2. i chose C rather than [Default locale] on postgresql installation. like the step 7. in this article

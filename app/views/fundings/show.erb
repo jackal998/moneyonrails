@@ -204,6 +204,76 @@
                 </div>
             </div>
         </div>
+        <div class="row">
+          <div class="col-xl-9 col-lg-9 col-md-9">
+            <div class="card">
+              <div class="card-header">
+                  <h4 class="card-title">歷史紀錄</h4>
+              </div>
+              <div class="card-body">
+                <table class="table table-sm mb-0 table-bordered table-hover table-fixhead table-responsive" data-toggle="table" >
+                    <thead>
+                      <tr>
+                        <th data-sortable="true">幣種</th>
+                        <th data-sortable="true">訂單建立時間</th>
+                        <th data-sortable="true">訂單狀態</th>
+                        <th>原始數量(永續:現貨)</th>
+                        <th>目標數量(永續:現貨)</th>
+                        <th>方向</th>
+                        <th>設定價差</th>
+                        <th>目前價差</th>
+                        <th>訂單id</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% @funding_orders.each do |f_order| %>
+                        <% direction = f_order.target_perp_amount.abs - f_order.original_perp_amount.abs > 0 ? "加倉" : "減倉" %>
+                        <% precision = decimals(f_order.coin.sizeIncrement) %>
+                        <tr>
+                          <td class="text-center"> 
+                            <%= link_to f_order.coin_name, funding_show_path(:coin => f_order.coin), 
+                            :class => "btn btn-rounded btn-outline-light #{'text-muted' unless f_order.coin.weight > 0}" %>
+                          </td>
+                          <td class="text-right"><%= "#{(f_order.created_at).to_s}" %></td>
+                            <% case f_order.order_status %>
+                            <% when "Close" %>
+                              <% order_st_style = "text-success" %>
+                            <% when "Abort" %>
+                              <% order_st_style = "text-light" %>
+                            <% else %>
+                              <% order_st_style = "text-warning" %>
+                            <% end %>
+                          <td class="text-right <%= order_st_style %>">
+                            <%= "#{f_order.order_status}" %>
+                          </td>
+                          <td class="text-center">
+                            <%= "#{number_with_precision(f_order.original_perp_amount, precision: precision).to_s} ： #{number_with_precision(f_order.original_coin_amount, precision: precision + 2).to_s}" %>
+                          </td>
+                          <td class="text-center">
+                            <%= "#{number_with_precision(f_order.target_perp_amount, precision: precision).to_s} ： #{number_with_precision(f_order.target_coin_amount, precision: precision).to_s}" %>
+                          </td>
+                          <td class="text-right">
+                            <%= "#{direction}" %>
+                          </td>
+                          <td class="text-right">
+                            <%= "#{f_order.threshold}" %>%
+                          </td>
+                          <td class="text-right">
+                            <% if f_order.order_status == "Underway" %>
+                              <%= ((f_order.coin.current_fund_stat.perp_over_spot - 1) * 100).round(3) if direction == "加倉" %>%
+                              <%= ((f_order.coin.current_fund_stat.spot_over_perp - 1) * 100).round(3) if direction == "減倉" %>%
+                            <% end %>
+                          </td>
+                          <td class="text-right"><%= f_order.id %></td>
+                        </tr>
+                      <% end %>
+                      <tr></tr>
+                    </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+      </div>
     </div>
 </div>
 <!--**********************************

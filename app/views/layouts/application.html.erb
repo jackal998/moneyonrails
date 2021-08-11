@@ -125,8 +125,8 @@
                         <span class="nav-text">FTX 交易機器人</span>
                       </a>
                       <ul aria-expanded="false">
-                        <li><%= link_to "資金費率即時報表", request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path %></li>
-                        <li><%= link_to "幣種資金費率報表", request.env['PATH_INFO'] == funding_show_path ? "javascript:void(0)" : funding_show_path %></li>
+                        <li><%= link_to "資金費率即時報表", request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path, data: { turbolinks: false } %></li>
+                        <li><%= link_to "幣種資金費率報表", request.env['PATH_INFO'] == funding_show_path ? "javascript:void(0)" : funding_show_path, data: { turbolinks: false } %></li>
                       </ul>
                     </li>
                     <li class="nav-label">Apps</li>

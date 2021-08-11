@@ -475,3 +475,18 @@ function readyFn( jQuery ) {
 
 $(window).on("load", readyFn);
 $(window).on("turbolinks:load", readyFn);
+
+funds_table_sort = (sortName, sortOrder, data) => {
+    var order = sortOrder === 'desc' ? -1 : 1
+    data.sort(function (a, b) {
+      var aa = +((a[sortName] + '').replace(/\%|\$/, ''))
+      var bb = +((b[sortName] + '').replace(/\%|\$/, ''))
+      if (aa < bb) {
+        return order * -1
+      }
+      if (aa > bb) {
+        return order
+      }
+        return 0
+    })
+}

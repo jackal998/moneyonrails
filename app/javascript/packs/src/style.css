@@ -1374,6 +1374,8 @@ pre {
 }
 
 .table-bordered {
+  border-spacing: 0px;
+  border-collapse: separate; 
   border: 1px solid #EEEEEE; }
   .table-bordered th,
   .table-bordered td {
@@ -1614,9 +1616,6 @@ pre {
   max-height: 500px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch; }
-  .table-responsive > .table-bordered {
-    border-spacing: 0px;
-    border-collapse: separate; }
 
 .form-select {
   padding: 0 0.6rem;
@@ -16687,6 +16686,7 @@ button {
 
 .table th,
 .table td {
+  width: 15vw;
   border-color: #eaeaea; }
   [data-theme-version="dark"] .table th, [data-theme-version="dark"] .table td {
     border-color: #424D63; }
