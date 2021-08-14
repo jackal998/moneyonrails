@@ -4063,6 +4063,9 @@ input[type="button"].btn-block {
     .progress-bar {
       transition: none; } }
 
+.progress-bar a{
+  color: #fff;}
+
 .progress-bar-striped {
   background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
   background-size: 1rem 1rem; }
@@ -15958,6 +15961,12 @@ button {
     color: #fff;
     box-shadow: none; }
 
+
+.custum-th-padding .table thead th {
+    padding: 0 calc((9.2vw - 150px)/2);}
+.custum-th-padding .bootstrap-table .fixed-table-container .table thead th {
+    padding: 0 calc((9.2vw - 150px)/2);}
+
 .bs-popover-top .arrow::after, .bs-popover-auto[x-placement^="top"] .arrow::after, .bs-popover-auto[x-placement^="top"] .arrow::after {
   bottom: 0px;
   border-top-color: #333333; }
@@ -16686,7 +16695,6 @@ button {
 
 .table th,
 .table td {
-  width: 15vw;
   border-color: #eaeaea; }
   [data-theme-version="dark"] .table th, [data-theme-version="dark"] .table td {
     border-color: #424D63; }
@@ -16695,9 +16703,9 @@ button {
   border-bottom-width: 1.04px;
   text-transform: uppercase;
   text-align: center;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.1rem;
   border-color: #eaeaea; }
   [data-theme-version="dark"] .table thead th {
     border-color: #424D63; }
