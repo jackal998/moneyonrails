@@ -156,7 +156,7 @@
                                             <% end %>
                                           </div>
                                           <div style="font-size: 1.2rem;">
-                                              <%= @underway_order.target_coin_amount.abs %>
+                                              <%= @underway_order.target_spot_amount.abs %>
                                           </div>  
                                         </td>
                                       </tr>
@@ -246,10 +246,10 @@
                             <%= "#{f_order.order_status}" %>
                           </td>
                           <td class="text-center">
-                            <%= "#{number_with_precision(f_order.original_perp_amount, precision: precision).to_s} ： #{number_with_precision(f_order.original_coin_amount, precision: precision + 1).to_s}" %>
+                            <%= "#{number_with_precision(f_order.original_perp_amount, precision: precision).to_s} ： #{number_with_precision(f_order.original_spot_amount, precision: precision + 1).to_s}" %>
                           </td>
                           <td class="text-center">
-                            <%= "#{number_with_precision(f_order.target_perp_amount, precision: precision).to_s} ： #{number_with_precision(f_order.target_coin_amount, precision: precision).to_s}" %>
+                            <%= "#{number_with_precision(f_order.target_perp_amount, precision: precision).to_s} ： #{number_with_precision(f_order.target_spot_amount, precision: precision).to_s}" %>
                           </td>
                           <td class="text-center">
                             <%= "#{direction}" %>
@@ -302,7 +302,7 @@
                 <div class="row">
                     <div class="in-form-text col-sm-4">原始數量</div>
                     <div class="text-right col-sm-4">
-                      <%= form.number_field :original_coin_amount, readonly: true, :class => "form-control" %>
+                      <%= form.number_field :original_spot_amount, readonly: true, :class => "form-control" %>
                     </div>
                     <div class="text-right col-sm-4">
                       <%= form.number_field :original_perp_amount, readonly: true, :class => "form-control" %>
@@ -311,7 +311,7 @@
                 <div class="row">
                     <div class="in-form-text col-sm-4">目標數量</div>
                     <div class="text-right col-sm-4">
-                      <%= form.number_field :target_coin_amount, readonly: true, :class => "form-control",
+                      <%= form.number_field :target_spot_amount, readonly: true, :class => "form-control",
                       id: (@position["netSize"] > 0 ? "neg_amount" : "pos_amount")  %>
                     </div>
                     <div class="text-right col-sm-4">

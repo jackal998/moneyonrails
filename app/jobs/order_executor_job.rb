@@ -123,7 +123,7 @@ end
 
     puts 'account_data:' + account_data.to_json
 
-    tmp["spot_bias"] = funding_order.target_coin_amount - account_data[spot_name]
+    tmp["spot_bias"] = funding_order.target_spot_amount - account_data[spot_name]
     tmp["spot_steps"] = (tmp["spot_bias"] / coin.sizeIncrement).round(0)
 
     tmp["perp_bias"] = funding_order.target_perp_amount - account_data[perp_name]

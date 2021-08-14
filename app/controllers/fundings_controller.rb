@@ -1,7 +1,7 @@
 class FundingsController < ApplicationController
   require 'ftx_client'
   def index
-    helpers.update_market_infos if Time.now - CurrentFundStat.last.updated_at > 15
+    helpers.update_market_infos
     @coins = Coin.includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
     @ftx_account = FtxClient.account
 
@@ -99,7 +99,7 @@ class FundingsController < ApplicationController
     @funding_order = FundingOrder.new(
       :coin_id => @coin.id, 
       :coin_name => @coin.name,
-      :original_coin_amount => balances[@coin.name]["amount"],
+      :original_spot_amount => balances[@coin.name]["amount"],
       :original_perp_amount => @position["netSize"]
       )
 
@@ -143,8 +143,8 @@ private
 
   def createorder_params
     params.require(:funding_order).permit(:coin_id,:coin_name,
-                                          :original_coin_amount,:original_perp_amount,
-                                          :target_coin_amount,:target_perp_amount,
+                                          :original_spot_amount,:original_perp_amount,
+                                          :target_spot_amount,:target_perp_amount,
                                           :acceleration,:threshold)
   end
 end
