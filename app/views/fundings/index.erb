@@ -114,7 +114,7 @@
                         <% @coins.each do |coin| %>
                           <tr>
                             <td class="text-center"> 
-                              <%= link_to coin.name, funding_show_path(:coin => coin), :class => ('text-muted' unless coin.weight > 0) %>
+                              <%= link_to coin.name, funding_show_path(:coin_name => coin.name), :class => ('text-muted' unless coin.weight > 0), data: { turbolinks: false } %>
                             </td>
                             <td class="text-right"><%= "#{(coin.current_fund_stat.rate * 100).round(4).to_s}%" %></td>
                             <td class="text-right"><%= "#{(coin.current_fund_stat.nextFundingRate * 100).round(4).to_s}%" %></td>

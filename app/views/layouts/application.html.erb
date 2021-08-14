@@ -38,7 +38,7 @@
             Nav header start
         ***********************************-->
         <div class="nav-header">
-          <%= link_to request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path, :class => "brand-logo" do %>
+          <%= link_to request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path, :class => "brand-logo", data: { turbolinks: false } do %>
             <%= image_pack_tag 'media/packs/images/favicon-bootstrap-logo.png',  :class => "logo-abbr" %>
             <div class="brand-title">Platform J</div>
           <% end %>

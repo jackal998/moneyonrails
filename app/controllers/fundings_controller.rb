@@ -5,14 +5,73 @@ class FundingsController < ApplicationController
     @coins = Coin.includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
     @ftx_account = FtxClient.account
 
+    list_index = {}
+    li = 0
     balances = ftx_wallet_balance
-    render locals: {balances: balances}
+    balances["USD"] = balances.delete("USD")
+    totalusdValue = balances["totalusdValue"].round(2)
+
+    @chart_balances_data = []
+    @chart_payment_data = []
+    balances.each do |k,v| 
+      if k != "totalusdValue" && v["usdValue"] > 0
+        if k != "USD"
+          list_index[k] = li
+          @chart_payment_data << {name: k, data:[]}
+          li += 1
+        end
+        @chart_balances_data << [k, v["usdValue"].round(2)]
+      end
+    end
+
+    db_data = FundingPayment.where("time > ?", 30.day.ago).order("time asc").pluck(:coin_name, :time, :payment, :rate).map { |coin_name, time, payment, rate| {coin_name: coin_name, time: time, payment: payment, rate: rate}}
+    fundingpayments = db_data.group_by{|fp| fp[:coin_name]}.transform_values {|k| k.group_by_day(format: '%F') { |fp| fp[:time] }}
+
+    payments ,costs = {}, {}
+    a_week_ago = 7.day.ago
+
+    data_init = {}
+    (30.day.ago.to_date..Date.today).each {|date| data_init[date.strftime('%F')] = 0 }
+
+    fundingpayments.each do |coin_name, dataset|
+
+      chart_payment_tmp = {coin_name => data_init.clone}
+      dataset.each do |day, data_arr|
+        data_arr.each do |data|
+
+          payment = 0 - data[:payment]
+          rate = 0 - data[:rate]
+
+          chart_payment_tmp[coin_name][day] += payment
+
+          payments[coin_name] = {weekly: 0, monthly: 0} unless payments[coin_name]
+          costs[coin_name] = {weekly: 0, monthly: 0} unless costs[coin_name]
+
+          payments[coin_name][:monthly] += payment
+          costs[coin_name][:monthly] += payment / rate unless rate == 0
+
+          if day > a_week_ago
+            payments[coin_name][:weekly] += payment
+            costs[coin_name][:weekly] += payment / rate unless rate == 0
+          end
+        end
+      end
+
+      unless list_index[coin_name]
+        list_index[coin_name] = list_index.size
+        @chart_payment_data << {name: coin_name, data: []}
+      end
+      @chart_payment_data[list_index[coin_name]][:data] = chart_payment_tmp[coin_name].to_a
+    end
+
+    render locals: {totalusdValue: totalusdValue, payments: payments, costs: costs, list_index: list_index}
   end
 
   def show
     @coins = Coin.includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
-
-    @coin = params["coin"] ? Coin.find(params["coin"]) : Coin.find_by("name = ?", "BTC")
+    
+    coin_name = params["coin_name"] ? params["coin_name"] : "BTC"
+    @coin = Coin.includes(:current_fund_stat).find_by("name = ?", coin_name)
 
     @funding_orders = FundingOrder.includes(coin: :current_fund_stat).all.order("created_at desc")
     
@@ -56,7 +115,7 @@ class FundingsController < ApplicationController
       @funding_order.save
       OrderExecutorJob.perform_later(@funding_order.id)
 
-      redirect_to funding_show_path(coin: @funding_order.coin_id)
+      redirect_to funding_show_path(coin_name: @funding_order.coin_name)
     end
   end
 
@@ -65,7 +124,7 @@ class FundingsController < ApplicationController
     @funding_order.update(:order_status => "Abort") if @funding_order.order_status == "Underway"
     
     # 如果order_status有問題，要顯示出來
-    redirect_to funding_show_path(coin: params["current_coin_id"])
+    redirect_to funding_show_path(coin_name: params["current_coin_name"])
   end
 
 private
