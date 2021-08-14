@@ -40,7 +40,7 @@ class FundingsController < ApplicationController
         data_arr.each do |data|
 
           payment = 0 - data[:payment]
-          rate = 0 - data[:rate]
+          rate = data[:rate]
 
           chart_payment_tmp[coin_name][day] += payment
 
