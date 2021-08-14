@@ -30,6 +30,53 @@ namespace :dev do
     end
   end
 
+  task :import_funding_payment_from_csv_file => :environment do
+    init_time = Time.now
+    coin = Coin.find_by(name: "")
+
+    puts "import_funding_payment_from_csv_file of #{coin.name} start at #{init_time}"
+
+    data_counts = 0
+    data_exists = 0
+    funding_payment_datas_tbu = []
+    funding_payment_datas_exist = []
+
+    CSV.foreach("#{Rails.root}/tmp/funding_payment.csv", headers: true) do |row|
+      rh = row.to_hash
+      next unless rh['future'].split('-')[0] == coin.name
+
+      funding_payment = FundingPayment.find_by(coin_name: coin.name, time: rh["time"].to_time)
+
+      if funding_payment.nil?
+        funding_payment = FundingPayment.new(
+          :coin_id => coin.id,
+          :coin_name => coin.name, 
+          :payment => rh["payment"],
+          :rate => rh["rate"],
+          :time => rh["time"],
+          :created_at => Time.now,
+          :updated_at => Time.now)
+          data_counts += 1
+          funding_payment_datas_tbu << funding_payment.attributes.except!("id")
+      else
+        # # Manual force updae start
+        # funding_payment[:payment] = rh["payment"]
+        # funding_payment[:updated_at] = Time.now
+        # data_counts += 1
+        # funding_payment_datas_tbu << funding_payment.attributes
+        # # Manual force updae end
+        
+        data_exists += 1
+        funding_payment_datas_exist << funding_payment[:id]
+      end
+    end
+    
+    FundingPayment.upsert_all(funding_payment_datas_tbu) unless funding_payment_datas_tbu.empty?
+
+    puts "#{data_exists} datas exists. \n#{funding_payment_datas_exist}" unless funding_payment_datas_exist.empty?
+    puts "import_funding_payment_from_csv_file of #{coin.name} with #{data_counts} new records ok => #{Time.now} (#{Time.now - init_time}s)"
+  end
+
   task :get_funding_infos => :environment do
     cst = Time.now
     coins = Coin.includes(:current_fund_stat).where("have_perp = ?", true)
@@ -55,7 +102,7 @@ namespace :dev do
 
     data = FtxClient.funding_payments({:start_time => now_time_i})
 
-    coins = Coin.includes(:funding_orders, :funding_payments).where(id: FundingOrder.where(:order_status => "Close").distinct.pluck(:coin_id))
+    coins = Coin.includes(:funding_orders, :funding_payments).where(id: FundingOrder.where(:order_status => ["Close","Underway"]).distinct.pluck(:coin_id))
 
     coins_to_update = coins.count
     last_1hr_funding_payments_count = FundingPayment.where("time >= ?",now_time).count
@@ -66,14 +113,11 @@ namespace :dev do
     case
     when datas_count == coins_to_update && last_2hr_funding_payments_count == coins_to_update * 2
       err_msg = "FundingPayments already up-to-date, no data was imported."
-    when datas_count > coins_to_update
-      err_msg = "Please update coins list first  => rails c > `helper.update_market_infos`
-               \rthen update history funding_payments data  => `rake dev:fetch_history_funding_payment`"
     else
       err_msg = "Update history funding_payments data first => `rake dev:fetch_history_funding_payment`"
     end
     unless coins_to_update == last_2hr_funding_payments_count && last_2hr_funding_payments_count == datas_count
-      puts "update_rate: abort: Data counts missmatch.
+      puts "update_funding_payment: abort: Data counts missmatch.
         \n\r#{err_msg}
         \n\rrecorded coins:                    #{coins_to_update}
           \rrecorded funding payments (1/2hr): #{last_1hr_funding_payments_count}/#{last_2hr_funding_payments_count}
@@ -82,7 +126,7 @@ namespace :dev do
     end
 
     # update start
-    puts "Updating rate... => #{now_time}"
+    # puts "Updating update_funding_payment... => #{now_time}"
 
     funding_payment_datas_tbu = []
     tmp = data["result"].index_by {|result| "#{result["future"].split('-')[0]}"}
@@ -112,7 +156,7 @@ namespace :dev do
 
     now_time_i = now_time.to_i
 
-    coins = Coin.includes(:funding_orders, :funding_payments).where(id: FundingOrder.where(:order_status => "Close").distinct.pluck(:coin_id))
+    coins = Coin.includes(:funding_orders, :funding_payments).where(id: FundingOrder.where(:order_status => ["Close","Underway"]).distinct.pluck(:coin_id))
 
     coin_counter = 0
     coins_to_updates = coins.count
@@ -123,11 +167,12 @@ namespace :dev do
 
       coin_counter += 1
 
-      funding_orders = c.funding_orders.where(:order_status => "Close").order("created_at asc")
-      funding_payments = c.funding_payments.order("created_at asc")
+      funding_orders = c.funding_orders.where(:order_status => ["Close","Underway"]).order("created_at asc")
+
+      funding_payments = c.funding_payments.order("time asc")
 
       if funding_payments.empty?
-        lastest_data_time = funding_orders.first.updated_at
+        lastest_data_time = funding_orders.first.created_at.beginning_of_hour
       else
         lastest_data_time = funding_payments.last.time
       end
@@ -204,7 +249,7 @@ namespace :dev do
     end
 
     # update start
-    puts "Updating rate... => #{now_time}"
+    # puts "Updating rate... => #{now_time}"
 
     rate_datas_tbu = []
     tmp = data["result"].index_by {|result| "#{result["future"].split('-')[0]}"}
