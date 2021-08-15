@@ -40,15 +40,10 @@
                                     </div>
                                 </div>
                                 <div class="progress">
-                                  <% pg_i = 0 %>
-                                  <% balances.each do |c, data| %>
-                                    <% next unless ["USD"].include?(c) %>
-                                    <% percent = (data["usdValue"] / balances["totalusdValue"]) * 100.round(0) %>
-                                    <div class="progress-bar <%= ["bg-success", "bg-primary"][pg_i] %>" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
-                                      <%= c %>
-                                    </div> 
-                                    <% pg_i += 1 %>
-                                  <% end %>
+                                  <% percent = (balances["USD"]["amount"] / balances["totalusdValue"]) * 100.round(0) %>
+                                  <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
+                                    USD
+                                  </div>
                                 </div>
                             </div>
                         </div>
@@ -242,7 +237,7 @@
                             <% else %>
                               <% order_st_style = "text-warning" %>
                             <% end %>
-                          <td class="text-center <%= order_st_style %>">
+                          <td class="text-center <%= order_st_style %>" title='<%= "id (#{f_order.id}): #{f_order.description}" if f_order.description %>'>
                             <%= "#{f_order.order_status}" %>
                           </td>
                           <td class="text-center">
