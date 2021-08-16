@@ -35,10 +35,10 @@ class OrderExecutorJob < ApplicationJob
 
       puts "#{Time.now.strftime('%H:%M:%S')}: funding_order_id: #{funding_order_id} => #{spot_name}, Current ratio: #{current_ratio}, Threshold: #{@funding_order.threshold}, Direction: #{order_config["direction"]}" if Time.now.to_i % 30 == 0
 
-      if current_ratio > @funding_order.threshold
+      spot_order_size = order_sizer("spot",@coin,@funding_order,order_config)
+      perp_order_size = order_sizer("perp",@coin,@funding_order,order_config)
 
-        spot_order_size = order_sizer("spot",@coin,@funding_order,order_config)
-        perp_order_size = order_sizer("perp",@coin,@funding_order,order_config)
+      if current_ratio > @funding_order.threshold
 
         payload = {market: nil, side: nil, price: nil, type: "market", size: nil}
 
@@ -64,33 +64,33 @@ class OrderExecutorJob < ApplicationJob
           sleep(0.5)
           spot_order_result = FtxClient.place_order(payload_spot) unless spot_order_size == 0
         end
-      end
 
-      unless spot_order_size == 0
-        puts 'payload_spot:' + payload_spot.to_s
-        puts 'spot_order_result:'
-        puts spot_order_result.to_json
-      end
+        # 有下單，但是API回傳還沒有更新的時候，會造成連續下單，在特別的條件會下超過指定部位，sleep 0.5秒試試看能不能避免這種問題
+        sleep(0.5)
+        next_config = set_order_config(@coin, @funding_order, spot_name, perp_name)
 
-      unless perp_order_size ==0
-        puts 'payload_perp:' + payload_perp.to_s
-        puts 'perp_order_result:'
-        puts perp_order_result.to_json
-      end
+        if order_config == next_config
+          # 下單前後甚麼事情都沒發生，只有可能出現在加倉時買不了幣(因為合約市價下單不太可能沒變化)
+          # 所以先平掉多餘的合約，不Loop直接退出
+          order_status = "Nothing Happened"
+          break
+        end
 
-      # 有下單，但是API回傳還沒有更新的時候，會造成連續下單，在特別的條件會下超過指定部位，sleep 0.5秒試試看能不能避免這種問題
-      sleep(0.5)
-      next_config = set_order_config(@coin,@funding_order,spot_name,perp_name)
+        order_config = next_config
+        order_status = order_config["order_status"] if order_config["order_status"]
 
-      if order_config == next_config
-        # 下單前後甚麼事情都沒發生，只有可能出現在加倉時買不了幣(因為合約市價下單不太可能沒變化)
-        # 所以先平掉多餘的合約，不Loop直接退出
-        order_status = "Nothing Happened"
-        break
+        unless spot_order_size == 0
+          puts 'payload_spot:' + payload_spot.to_s
+          puts 'spot_order_result:'
+          puts spot_order_result.to_json
+        end
+
+        unless perp_order_size ==0
+          puts 'payload_perp:' + payload_perp.to_s
+          puts 'perp_order_result:'
+          puts perp_order_result.to_json
+        end
       end
-      
-      order_config = next_config
-      order_status = order_config["order_status"] if order_config["order_status"]
 
       if order_status == "Underway" && Time.now.to_i % 5 == 0
         FundingOrder.uncached do
