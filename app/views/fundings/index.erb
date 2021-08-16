@@ -6,41 +6,7 @@
   <% colors = ["bg-success", "bg-secondary", "bg-info", "bg-warning", "bg-danger"] %>
   <div class="container-fluid">
       <div class="row">
-          <div class="col-lg-3 col-sm-6">
-              <div class="card">
-                  <div class="stat-widget-two card-body">
-                      <div class="stat-content">
-                        <% leverage = (@ftx_account["result"]["totalPositionSize"]/@ftx_account["result"]["collateral"]).round(2) if @ftx_account["result"]["collateral"] %>
-                        <% if leverage >= 1 %>
-                          <% percentage = (1 / leverage) * 100.round(0) %>
-                          <% percentage_over = 100 - percentage %>
-                        <% else %>
-                          <% percentage = leverage * 100.round(0) %>
-                          <% percentage_over = 0 %>
-                        <% end %>
-                        <div class="stat-text">持倉槓桿</div>
-                        <div class="stat-digit">
-                          <%= leverage %> <i class="far fa-times"></i>
-                        </div>
-                      </div>
-                      <div class="progress">
-                        <% lev_color = "bg-warning" if leverage >= 1 %>
-                        <div class="progress-bar bg-success" style="width: <%= percentage %>%" role="progressbar" aria-valuenow="<%= percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
-                        <div class="progress-bar progress-bar-striped progress-bar-animated <%= lev_color %>" style="width: <%= percentage_over %>%" role="progressbar" aria-valuenow="<%= percentage_over %>" aria-valuemin="0" aria-valuemax="100"></div>
-                      </div>
-                  </div>
-              </div>
-              <div class="card">
-                  <div class="stat-widget-two card-body">
-                      <div class="stat-content">
-                          <div class="stat-text">現貨價值</div>
-                          <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= totalusdValue %></div>
-                          <%= pie_chart @chart_balances_data, prefix: "$", donut: true, dataset: {borderWidth: 5, hoverOffset: 4,backgroundColor: ["#99b2e5","#ed9c88","#ffcc7f","#87ca8b","#cc7fcc","#9d9ed5","#7fcce2"]} %>
-                      </div>
-                  </div>
-              </div>
-          </div>
-          <div class="col-lg-3 col-sm-6">
+          <div class="col-xxl-3 col-lg-6 col-md-8 col-sm-6">
               <div class="card">
                   <div class="stat-widget-two card-body">
                       <div class="stat-content">
@@ -95,7 +61,41 @@
                   </div>
               </div>
           </div>
-          <div class="col-lg-6 col-sm-6">
+          <div class="col-xxl-3 col-lg-6 col-md-4 col-sm-6">
+              <div class="card">
+                  <div class="stat-widget-two card-body">
+                      <div class="stat-content">
+                        <% leverage = (@ftx_account["result"]["totalPositionSize"]/@ftx_account["result"]["collateral"]).round(2) if @ftx_account["result"]["collateral"] %>
+                        <% if leverage >= 1 %>
+                          <% percentage = (1 / leverage) * 100.round(0) %>
+                          <% percentage_over = 100 - percentage %>
+                        <% else %>
+                          <% percentage = leverage * 100.round(0) %>
+                          <% percentage_over = 0 %>
+                        <% end %>
+                        <div class="stat-text">持倉槓桿</div>
+                        <div class="stat-digit">
+                          <%= leverage %> <i class="far fa-times"></i>
+                        </div>
+                      </div>
+                      <div class="progress">
+                        <% lev_color = "bg-warning" if leverage >= 1 %>
+                        <div class="progress-bar bg-success" style="width: <%= percentage %>%" role="progressbar" aria-valuenow="<%= percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar progress-bar-striped progress-bar-animated <%= lev_color %>" style="width: <%= percentage_over %>%" role="progressbar" aria-valuenow="<%= percentage_over %>" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                  </div>
+              </div>
+              <div class="card">
+                  <div class="stat-widget-two card-body">
+                      <div class="stat-content">
+                          <div class="stat-text">現貨價值</div>
+                          <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= totalusdValue %></div>
+                          <%= pie_chart @chart_balances_data, prefix: "$", donut: true, dataset: {borderWidth: 5, hoverOffset: 4,backgroundColor: ["#99b2e5","#ed9c88","#ffcc7f","#87ca8b","#cc7fcc","#9d9ed5","#7fcce2"]} %>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div class="col-xxl-6 col-sm-12">
               <div class="card">
                   <div class="stat-widget-two card-body">
                       <div class="stat-content">
