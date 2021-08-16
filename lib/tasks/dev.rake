@@ -97,91 +97,134 @@ namespace :dev do
 
   task :update_funding_payment => :environment do
     init_time = Time.now
-    now_time = init_time.beginning_of_hour
-    now_time_i = now_time.to_i
+    query_end_time = init_time.beginning_of_hour
+    last_data_time = init_time.beginning_of_hour - 1.hour
 
-    data = FtxClient.funding_payments({:start_time => now_time_i})
+    funding_payments = {}
+    funding_payments[query_end_time] = {}
+    funding_payments[last_data_time] = {}
 
-    coins = Coin.includes(:funding_orders, :funding_payments).where(id: FundingOrder.where(:order_status => ["Close","Underway"]).distinct.pluck(:coin_id))
-
-    coins_to_update = coins.count
-    last_1hr_funding_payments_count = FundingPayment.where("time >= ?",now_time).count
-    last_2hr_funding_payments_count = FundingPayment.where("time >= ?",now_time - 1.hour).count
-    datas_count = data["result"].count
-
-    # check if datas are aligned and ready to be update
-    case
-    when datas_count == coins_to_update && last_2hr_funding_payments_count == coins_to_update * 2
-      err_msg = "FundingPayments already up-to-date, no data was imported."
-    else
-      err_msg = "Update history funding_payments data first => `rake dev:fetch_history_funding_payment`"
-    end
-    unless coins_to_update == last_2hr_funding_payments_count && last_2hr_funding_payments_count == datas_count
-      puts "update_funding_payment: abort: Data counts missmatch.
-        \n\r#{err_msg}
-        \n\rrecorded coins:                    #{coins_to_update}
-          \rrecorded funding payments (1/2hr): #{last_1hr_funding_payments_count}/#{last_2hr_funding_payments_count}
-          \rapi response datas:                #{datas_count}"
-      next # this means abort task ... do block
+    FundingPayment.where("time >= ?", last_data_time).map {|fp| funding_payments[fp[:time]][fp[:coin_name]] = fp }
+    
+    # next # this means abort task ... do block
+    if funding_payments[query_end_time].count > 0
+      err_msg = "FundingPayments with #{funding_payments[query_end_time].count} records already up-to-date, no data was imported."
+      puts err_msg
+      next
     end
 
-    # update start
-    # puts "Updating update_funding_payment... => #{now_time}"
+    updated_status = {}
+    funding_orders = {}
+    FundingOrder.includes(:coin).select('DISTINCT ON ("coin_id") *').where(:order_status => ["Close","Underway"]).order(:coin_id, created_at: :desc).map {|fo| funding_orders[fo[:coin_name]] = fo}
+
+    orders_to_be_updated = 0
+    funding_orders.each do |coin_name, funding_order|
+      case 
+      when (funding_order[:order_status] == "Close" && funding_order[:target_perp_amount] != 0 && funding_order[:updated_at] <= query_end_time) ||
+           (funding_order[:order_status] == "Underway" && funding_order[:original_perp_amount] != 0 && funding_order[:target_perp_amount] != 0) ||
+           (funding_order[:order_status] == "Underway" && funding_order[:target_perp_amount] == 0)
+        updated_status[coin_name] = "normal"
+        orders_to_be_updated += 1
+
+      when funding_order[:order_status] == "Close" && funding_order[:target_perp_amount] == 0 && funding_order[:updated_at] <= query_end_time
+        updated_status[coin_name] = "down"
+
+      when funding_order[:order_status] == "Underway"
+        updated_status[coin_name] = "underway"
+      end
+    end
 
     funding_payment_datas_tbu = []
-    tmp = data["result"].index_by {|result| "#{result["future"].split('-')[0]}"}
 
-    coins.each do |coin|
-      funding_payment = FundingPayment.new(
-        :coin_id => coin.id,
-        :coin_name => coin.name, 
-        :payment => tmp[coin.name]["payment"],
-        :rate => tmp[coin.name]["rate"],
-        :time => tmp[coin.name]["time"],
-        :created_at => Time.now,
-        :updated_at => Time.now)
+    data = FtxClient.funding_payments({:start_time => query_end_time.to_i})
+    data_results = data["result"].index_by {|result| "#{result["future"].split('-')[0]}"}
+    datas_count = data_results.count
 
-      funding_payment_datas_tbu << funding_payment.attributes.except!("id")
+    data_results.each do |coin_name, data_result|
+
+      case updated_status[coin_name]
+      when "normal"
+        updated_status[coin_name] = "missing data" unless funding_payments[last_data_time][coin_name]
+      when "underway"
+
+      when nil
+        # 沒有訂單，卻有data，原則上是手動建立的
+        updated_status[coin_name] = "missing order status"
+      end
     end
+
+    updated_status.each do |coin_name, status|
+      case status
+      when "down"
+        next
+      when "normal", "underway"
+        funding_payment = FundingPayment.new(
+          :coin_id => funding_orders[coin_name][:coin_id],
+          :coin_name => coin_name, 
+          :payment => data_results[coin_name]["payment"],
+          :rate => data_results[coin_name]["rate"],
+          :time => data_results[coin_name]["time"],
+          :created_at => Time.now,
+          :updated_at => Time.now)
+        funding_payment_datas_tbu << funding_payment.attributes.except!("id")
+      when "missing data"
+        puts "#{coin_name} Missing data, please check and update history rates data => `rake dev:fetch_history_funding_payment`"
+        exit
+      when "missing order status"
+        puts "#{coin_name} missing order status, please check."
+        exit
+      else
+        puts "Abort: #{coin_name} with #{status}"
+        exit
+      end
+    end
+
     FundingPayment.insert_all(funding_payment_datas_tbu)
 
-    puts "update_funding_payment of #{coins_to_update} coins ok => #{Time.now} (#{Time.now - init_time}s)"
+    puts "update_funding_payment of #{orders_to_be_updated} orders ok => #{query_end_time} (#{Time.now - init_time}s)"
   end
 
   task :fetch_history_funding_payment => :environment do
     init_time = Time.now
-    now_time = Time.now.beginning_of_hour
 
-    puts "Fetching history funding payment... => #{Time.now}"
+    puts "Fetching history funding payment... => #{init_time}"
 
-    now_time_i = now_time.to_i
+    funding_orders = {}
+    FundingOrder.select('DISTINCT ON ("coin_id") *').where(:order_status => ["Close","Underway"]).order(:coin_id, created_at: :desc).map {|fo| funding_orders[fo[:coin_name]] = fo}
 
-    coins = Coin.includes(:funding_orders, :funding_payments).where(id: FundingOrder.where(:order_status => ["Close","Underway"]).distinct.pluck(:coin_id))
+    funding_payments = {}
+    FundingPayment.select('DISTINCT ON ("coin_id") *').order(:coin_id, time: :desc).map {|fp| funding_payments[fp[:coin_name]] = fp}
 
-    coin_counter = 0
-    coins_to_updates = coins.count
+    order_counter = 0
+    order_zero_ed = 0
+    orders_to_updates = funding_orders.size
 
-    puts "#{coins_to_updates} coins to be updated"
+    puts "#{orders_to_updates} orders to be updated"
 
-    coins.each do |c|
+    funding_orders.each do |coin_name, funding_order|
 
-      coin_counter += 1
+      order_counter += 1
 
-      funding_orders = c.funding_orders.where(:order_status => ["Close","Underway"]).order("created_at asc")
+      funding_payment = funding_payments[coin_name]
 
-      funding_payments = c.funding_payments.order("time asc")
+      lastest_data_time = funding_payment ? funding_payment[:time] : funding_order[:created_at].beginning_of_hour
 
-      if funding_payments.empty?
-        lastest_data_time = funding_orders.first.created_at.beginning_of_hour
+      if funding_order[:order_status] == "Close" && funding_order[:target_perp_amount] == 0
+        query_end_time = funding_order[:updated_at].beginning_of_hour
+        order_zero_ed += 1
       else
-        lastest_data_time = funding_payments.last.time
+        query_end_time = init_time.beginning_of_hour
       end
 
-      datas_lag = ((Time.now - lastest_data_time)/3600).floor
+      lastest_data_time = lastest_data_time.to_i + 1
+      query_end_time = query_end_time.to_i + 1
 
-      print "(#{coin_counter}/#{coins_to_updates}) #{c.name}...#{datas_lag} to be updated..."
+      datas_lag = ((query_end_time - lastest_data_time)/3600).floor   
 
-      start_time = lastest_data_time.to_i + 1
+      print "(#{order_counter}/#{orders_to_updates}) #{coin_name}...#{datas_lag} to be updated..."
+
+      # params for Ftx query
+      start_time = lastest_data_time
       end_time = 0
 
       success = 0
@@ -189,7 +232,7 @@ namespace :dev do
 
       if datas_lag > 0
         # get first data from very early date
-        while end_time < now_time_i
+        while end_time < query_end_time
 
           start_time = end_time unless end_time == 0
           end_time = start_time + 495 * 3600 
@@ -197,10 +240,10 @@ namespace :dev do
           # start_time        number  1559881511  optional
           # end_time          number  1559881711  optional
           # future            string  BTC-PERP    optional
-          data = FtxClient.funding_payments({:future => "#{c.name}-PERP",:start_time => start_time,:end_time => end_time})
+          data = FtxClient.funding_payments({:future => "#{coin_name}-PERP",:start_time => start_time,:end_time => end_time})
 
           data["result"].each do |result|
-            r = FundingPayment.new(:coin_id => c.id, :coin_name => c.name, :payment => result["payment"], :rate => result["rate"], :time => result["time"])
+            r = FundingPayment.new(:coin_id => funding_order[:coin_id], :coin_name => coin_name, :payment => result["payment"], :rate => result["rate"], :time => result["time"])
 
             if r.save
               success += 1
@@ -213,7 +256,7 @@ namespace :dev do
       puts "Imported: #{success}/#{datas_lag}"
     end
 
-    puts "fetch_history_rate to time #{now_time} ok => #{Time.now} (#{Time.now - init_time}s)"
+    puts "fetch_history_rate to time #{init_time.beginning_of_hour} ok => #{Time.now} (#{Time.now - init_time}s)"
   end
 
   task :update_rate => :environment do
