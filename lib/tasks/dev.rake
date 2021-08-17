@@ -285,8 +285,9 @@ namespace :dev do
 
     funding_status_datas_tbu = []
 
-    days_rng = [90,60,30,14,7,3,1]
+    days_rng = [:historical,90,60,30,14,7,3,1]
 
+    total_funding_status = FundingStat.new(:coin_name => "total_of_coins", :created_at => init_time, :updated_at => init_time)
     fundingpayments.each do |coin_name, dataset|
       funding_status = FundingStat.new(:coin_id => dataset.first[1].first[:coin_id], :coin_name => coin_name, :created_at => init_time, :updated_at => init_time)
 
@@ -296,40 +297,43 @@ namespace :dev do
           payment = 0 - data[:payment]
           rate = data[:rate]
 
-          # irr used as tmp storage of cost for real irr calc
-          funding_status[:historical_payments] += payment
-          funding_status[:historical_irr] +=  payment / rate unless rate == 0
-
           days_rng.each do |d|
-            if day >= d.day.ago
-              sym_payment = "last_#{d}_day_payments".to_sym
-              sym_irr = "last_#{d}_day_irr".to_sym
-              
+            sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym
+            sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym
+            if d == :historical || day >= d.day.ago
               # irr used as tmp storage of cost for real irr calc
               funding_status[sym_payment] += payment
               funding_status[sym_irr] +=  payment / rate unless rate == 0
+
+              total_funding_status[sym_payment] += payment
+              total_funding_status[sym_irr] +=  payment / rate unless rate == 0
             else
               break
             end
           end
         end
-      end      
-      # irr used as tmp storage of cost for real irr calc
-      funding_status[:historical_irr] = ((funding_status[:historical_payments] / funding_status[:historical_irr])* 24 * 365 * 100).round(2)
-      funding_status[:historical_payments] = funding_status[:historical_payments].round(2)
-
+      end
+      
       days_rng.each do |d|
-        sym_payment = "last_#{d}_day_payments".to_sym
-        sym_irr = "last_#{d}_day_irr".to_sym
-
+        sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym
+        sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym
+        # irr used as tmp storage of cost for real irr calc
         funding_status[sym_irr] = ((funding_status[sym_payment] / funding_status[sym_irr])* 24 * 365 * 100).round(2) if funding_status[sym_irr] != 0
         funding_status[sym_payment] = funding_status[sym_payment].round(2)
       end
-
-    funding_status_datas_tbu << funding_status.attributes.except!("id")
-
+      funding_status_datas_tbu << funding_status.attributes.except!("id")
     end
-    
+
+    days_rng.each do |d|
+      sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym
+      sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym
+
+      total_funding_status[sym_irr] =  ((total_funding_status[sym_payment] / total_funding_status[sym_irr])* 24 * 365 * 100).round(2) if total_funding_status[sym_irr] != 0
+      total_funding_status[sym_payment] = total_funding_status[sym_payment].round(2)
+    end
+
+    funding_status_datas_tbu << total_funding_status.attributes.except!("id")
+
     FundingStat.delete_all
     FundingStat.upsert_all(funding_status_datas_tbu)
     puts "update_funding_status ok => #{Time.now} (#{Time.now - init_time}s)"

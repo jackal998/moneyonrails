@@ -75,38 +75,36 @@
                                   ：
                                   <%= number_with_precision(balances[coin_name]["amount"], precision: position["precision"], delimiter: ',') %>
                                 </td>
-                                <td class="text-right">
-                                  <%= number_to_currency(fundingstat[:last_1_day_payments]) %>
-                                </td>
-                                <td class="text-right">
-                                  <%= fundingstat[:last_1_day_irr] %>%
-                                </td>
-                                <td class="text-right">
-                                  <%= number_to_currency(fundingstat[:last_3_day_payments]) %>
-                                </td>
-                                <td class="text-right">
-                                  <%= fundingstat[:last_3_day_irr] %>%
-                                </td>
-                                <td class="text-right">
-                                  <%= number_to_currency(fundingstat[:last_7_day_payments]) %>
-                                </td>
-                                <td class="text-right">
-                                  <%= fundingstat[:last_7_day_irr] %>%
-                                </td>
-                                <td class="text-right">
-                                  <%= number_to_currency(fundingstat[:last_30_day_payments]) %>
-                                </td>
-                                <td class="text-right">
-                                  <%= fundingstat[:last_30_day_irr] %>%
-                                </td>
-                                <td class="text-right">
-                                  <%= number_to_currency(fundingstat[:historical_payments]) %>
-                                </td>
-                                <td class="text-right">
-                                  <%= fundingstat[:historical_irr] %>%
-                                </td>
+                                <td class="text-right"><%= number_to_currency(fundingstat[:last_1_day_payments]) %></td>
+                                <td class="text-right"><%= fundingstat[:last_1_day_irr] %>%</td>
+                                <td class="text-right"><%= number_to_currency(fundingstat[:last_3_day_payments]) %></td>
+                                <td class="text-right"><%= fundingstat[:last_3_day_irr] %>%</td>
+                                <td class="text-right"><%= number_to_currency(fundingstat[:last_7_day_payments]) %></td>
+                                <td class="text-right"><%= fundingstat[:last_7_day_irr] %>%</td>
+                                <td class="text-right"><%= number_to_currency(fundingstat[:last_30_day_payments]) %></td>
+                                <td class="text-right"><%= fundingstat[:last_30_day_irr] %>%</td>
+                                <td class="text-right"><%= number_to_currency(fundingstat[:historical_payments]) %></td>
+                                <td class="text-right"><%= fundingstat[:historical_irr] %>%</td>
                               </tr>
                             <% end %>
+                            <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == "total_of_coins"} %>
+                              <tr>
+                                <td class="text-center">
+                                  小計
+                                </td>
+                                <td class="text-right"><%= number_to_currency(@positions.map {|k,v| v["cost"]}.sum, precision: 2) %></td>
+                                <td class="text-center"></td>
+                                <td class="text-right"><%= number_to_currency(fundingstat[:last_1_day_payments]) %></td>
+                                <td class="text-right"><%= fundingstat[:last_1_day_irr] %>%</td>
+                                <td class="text-right"><%= number_to_currency(fundingstat[:last_3_day_payments]) %></td>
+                                <td class="text-right"><%= fundingstat[:last_3_day_irr] %>%</td>
+                                <td class="text-right"><%= number_to_currency(fundingstat[:last_7_day_payments]) %></td>
+                                <td class="text-right"><%= fundingstat[:last_7_day_irr] %>%</td>
+                                <td class="text-right"><%= number_to_currency(fundingstat[:last_30_day_payments]) %></td>
+                                <td class="text-right"><%= fundingstat[:last_30_day_irr] %>%</td>
+                                <td class="text-right"><%= number_to_currency(fundingstat[:historical_payments]) %></td>
+                                <td class="text-right"><%= fundingstat[:historical_irr] %>%</td>
+                              </tr>
                         </tbody>
                       </table>
                     </div>

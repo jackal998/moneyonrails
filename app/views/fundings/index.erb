@@ -10,7 +10,7 @@
               <div class="card">
                   <div class="stat-widget-two card-body">
                       <div class="stat-content">
-                        <table class="table table-sm mb-0">
+                        <table class="table table-sm">
                           <thead>
                             <tr>
                               <th>7 日</th>
@@ -31,6 +31,16 @@
                                   </td>
                                 </tr>
                               <% end %>
+                              <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == "total_of_coins"} %>
+                              <tr>
+                                <td class="text-center">
+                                  小計
+                                </td>
+                                <td class="text-right"><i class="far fa-dollar-sign"></i> <%= fundingstat[:last_7_day_payments] %></td>
+                                <td class="text-center">
+                                  <%= fundingstat[:last_7_day_irr] %> <i class="far fa-percent"></i>
+                                </td>                                
+                              </tr>
                           </tbody>
                         </table>
                         <table class="table table-sm mb-0">
@@ -55,6 +65,16 @@
                                   </td>
                                 </tr>
                               <% end %>
+                              <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == "total_of_coins"} %>
+                              <tr>
+                                <td class="text-center">
+                                  小計
+                                </td>
+                                <td class="text-right"><i class="far fa-dollar-sign"></i> <%= fundingstat[:last_30_day_payments] %></td>
+                                <td class="text-center">
+                                  <%= fundingstat[:last_30_day_irr] %> <i class="far fa-percent"></i>
+                                </td>                                
+                              </tr>
                           </tbody>
                         </table>
                       </div>
@@ -82,7 +102,7 @@
                   <div class="stat-widget-two card-body">
                       <div class="stat-content">
                           <div class="stat-text">30日收益</div>
-                          <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= @fundingstats.pluck(:last_30_day_payments).sum.round(2) %></div>
+                          <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= fundingstat[:last_30_day_payments] %></div>
                           <%= pie_chart @pie_chart_payment_data, prefix: "$", donut: true, dataset: {borderWidth: 5, hoverOffset: 4,backgroundColor: ["#99b2e5","#ed9c88","#ffcc7f","#87ca8b","#cc7fcc","#9d9ed5","#7fcce2"]} %>
                       </div>
                   </div>
