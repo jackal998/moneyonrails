@@ -28,178 +28,233 @@
     <div class="container-fluid">
         <!-- row -->
         <div class="row">
-            <div class="col-12">
-                <div class="row">
-                    <div class="col-xl-3 col-md-6 col-sm-12">
-                        <div class="card">
-                            <div class="stat-widget-two card-body">
-                                <div class="stat-content">
-                                    <div class="stat-text">USD可用餘額</div>
-                                    <div class="stat-digit">
-                                      <i class="far fa-dollar-sign"></i><%= balances["USD"]["amount"].round(2) %>
-                                    </div>
-                                </div>
-                                <div class="progress">
-                                  <% percent = (balances["USD"]["amount"] / balances["totalusdValue"]) * 100.round(0) %>
-                                  <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
-                                    USD
-                                  </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <div class="stat-widget-two card-body">
-                                <div class="stat-content">
-                                    <div class="stat-text">帳戶持倉</div>
-                                    <div class="stat-digit"><i class="far fa-dollar-sign"></i>123</div>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar" style="width: 25%" role="progressbar" aria-valuenow="<%= 25 %>" aria-valuemin="0" aria-valuemax="100">
-                                      <%= 25 %>
-                                    </div> 
-                                </div>
-                            </div>
-                        </div>
+          <div class="col-xl-6 col-md-12 col-sm-12">
+              <div class="card">
+                  <div class="stat-widget-two card-body">
+                    <div class="stat-content">
+                      <table class="table mb-0">
+                        <thead>
+                          <tr>
+                            <th>持倉狀態</th>
+                            <th>現貨</th>
+                            <th>永續</th>
+                            <th>永續面額</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                            <% @positions.each do |coin_name, position| %>
+                              <tr>
+                                <td class="text-center">
+                                  <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
+                                </td>
+                                <td class="text-right">
+                                  <%= number_with_precision(balances[coin_name]["amount"], precision: position["precision"], delimiter: ',') %>
+                                </td>
+                                <td class="text-right">
+                                  <%= number_with_precision(position["netSize"], precision: position["precision"], delimiter: ',') %>
+                                </td>
+                                <td class="text-right">
+                                  <%= number_to_currency(position["cost"], precision: 2) %>
+                                </td>
+                              </tr>
+                            <% end %>
+                        </tbody>
+                      </table>
                     </div>
-                    <div class="col-xl-3 col-md-6 col-sm-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h4 class="card-title"><%= "帳戶統計" %></h4>
-                            </div>
-                            <div class="card-body">
-                                <table class="table table-sm mb-0">
-                                  <thead>
-                                    <tr>
-                                      <th><%= "#{@coin.name}" %></th>
-                                      <th>現貨</th>
-                                      <th>永續</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    <tr>
-                                      <td class="text-right">持有數量</td>
-                                      <td class="text-right"><%= balances[@coin.name]["amount"] %></td>
-                                      <td class="text-right"><%= @position["netSize"] %></td>
-                                    </tr>
-                                    <tr>
-                                      <td class="text-right">美元價值</td>
-                                      <td class="text-right"><%= "#{number_to_currency(balances[@coin.name]["usdValue"], precision: 2)}" %></td>
-                                      <td class="text-right"><%= "#{number_to_currency(@position["cost"], precision: 2)}" %></td>
-                                    </tr>
-                                    <tr>
-                                      <td class="text-right">當前成交價</td>
-                                      <td class="text-right">
-                                        <%= "#{number_to_currency(@fund_stat.spot_ask_usd, precision: decimals(@fund_stat.spot_ask_usd) > 8 ? 8 : decimals(@fund_stat.spot_ask_usd))}" %>
-                                      </td>
-                                      <td class="text-right">
-                                        <%= "#{number_to_currency(@fund_stat.perp_bid_usd, precision: decimals(@fund_stat.perp_bid_usd) > 8 ? 8 : decimals(@fund_stat.perp_bid_usd))}" %>
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <% precision = decimals(@coin.sizeIncrement) %>
-                                      <% max_additional_amount = 
-                                        ((balances["USD"]["amount"] / @fund_stat.spot_ask_usd) / @coin.sizeIncrement).floor * @coin.sizeIncrement %>
-                                      <td class="text-right">最大購買量</td>
-                                      <td class="text-right">
-                                        <%= number_with_precision(max_additional_amount, precision: precision) %></td>
-                                      <td class="text-right"></td>
-                                    </tr>
-
-                                  </tbody>
-                                  <thead>
-                                    <% unless @underway_order %>
-                                      <tr>
-                                        <td class="align-bottom text-right" colspan="1">目標數量</td>
-                                        <td class="text-right" colspan="12">
-                                          <input type="range" id="a_slider"
-                                            min="0"
-                                            max="<%= number_with_precision(max_additional_amount + @position["netSize"].abs, precision: precision)%>"
-                                            value="<%= number_with_precision(@position["netSize"].abs, precision: precision) %>"
-                                            step="<%= number_with_precision(@coin.sizeIncrement ,precision: precision) %>"
-                                            aria-valuemin="0"
-                                            aria-valuemax="<%= number_with_precision(max_additional_amount + @position["netSize"].abs,precision: precision) %>"
-                                            aria-valuenow="<%= number_with_precision(@position["netSize"].abs, precision: precision) %>">
-                                          <div>
-                                            <div id="bias" style="display: inline; padding-right: 0.3rem;">(+0)</div>
-                                            <output for="a_slider" id="disp_amount" digits="<%= precision %>">
-                                              <%= number_with_precision(@position["netSize"].abs, precision: precision) %>
-                                            </output>
-                                          </div>  
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td colspan="1">
-                                        </td>
-                                        <td colspan="2">
-                                          <!-- Button fund_order_form_trigger -->
-                                          <button type="button" id="fund_order_form_trigger" class="btn btn-outline-secondary btn-rounded" 
-                                          data-bs-toggle="modal" data-bs-target="#fund_order_form" disabled="true">
-                                            確定
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    <% else %>
-                                      <tr>
-                                        <td class="align-bottom text-right" colspan="1">目標數量</td>
-                                        <td class="text-right" colspan="12">
-
-                                          <div class="align-bottom text-left text-primary" colspan="3">
-                                            <% if @coin.id == @underway_order.coin_id %>
-                                              系統已有訂單執行中
-                                            <% else %>
-                                              系統已有訂單執行中：<%= link_to " #{@underway_order.coin_name}", funding_show_path(coin_name: @underway_order.coin_name), data: { turbolinks: false } %>
-                                            <% end %>
-                                          </div>
-                                          <div style="font-size: 1.2rem;">
-                                              <%= @underway_order.target_spot_amount.abs %>
-                                          </div>  
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                      </tr>
-                                      <tr>
-                                        <td colspan="1">
-                                        </td>
-                                        <td colspan="2">
-                                          <!-- Button change to abort -->
-                                          <button type="button" class="btn btn-outline-danger btn-rounded" 
-                                          data-bs-toggle="modal" data-bs-target="#fund_order_abort_alert">
-                                            終止訂單？
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    <% end %>
-                                  </thead>
-                                </table>
-                            </div>
-                        </div>
+                  </div>
+              </div>
+          </div>
+          <div class="col-xl-6 col-md-12 col-sm-12">
+              <div class="card">
+                  <div class="card-header">
+                    <div class="dropdown card-title">
+                      <a class="btn btn-rounded btn-outline-light dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                        <%= "#{@coin.name}-PERP" %>
+                      </a>
+                      <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                        <% @coins.each do |coin| %>
+                          <li>
+                          <%= link_to coin.name, funding_show_path(:coin_name => coin.name), :class => "dropdown-item #{('text-muted' unless coin.weight > 0)}", data: { turbolinks: false } %>
+                          </li>
+                        <% end %>
+                      </ul>
                     </div>
-                    <div class="col-xl-6 col-md-12 col-sm-12">
-                        <div class="card">
-                            <div class="card-header">
-                              <div class="dropdown card-title">
-                                <a class="btn btn-rounded btn-outline-light dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
-                                  <%= "#{@coin.name}-PERP" %>
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                                  <% @coins.each do |coin| %>
-                                    <li>
-                                    <%= link_to coin.name, funding_show_path(:coin_name => coin.name), :class => "dropdown-item #{('text-muted' unless coin.weight > 0)}", data: { turbolinks: false } %>
-                                    </li>
-                                  <% end %>
-                                </ul>
-                              </div>
-                            </div>
-                            <div class="card-body">
-                              <%= line_chart [{name: "費率", data:  @line_chart_data},{name: "", data: @zeros}], id: "funding-rates", points: false, suffix: "%", colors: ["#6cc30ca1","#593bdba1"], height: "300px", loading: "Loading...",dataset: {borderWidth: 1.5}, discrete: true %>
-                            </div>
-                        </div>
+                  </div>
+                  <div class="card-body">
+                    <%= line_chart [{name: "費率", data:  @line_chart_data},{name: "", data: @zeros}], id: "funding-rates", points: false, suffix: "%", colors: ["#6cc30ca1","#593bdba1"], height: "300px", loading: "Loading...",dataset: {borderWidth: 1.5}, discrete: true %>
+                  </div>
+              </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-xl-3 col-md-6 col-sm-12">
+            <div class="card">
+                <div class="stat-widget-two card-body">
+                    <div class="stat-content">
+                      <% leverage = (@ftx_account["result"]["totalPositionSize"]/@ftx_account["result"]["collateral"]).round(2) if @ftx_account["result"]["collateral"] %>
+                      <% if leverage >= 1 %>
+                        <% percentage = (1 / leverage) * 100.round(0) %>
+                        <% percentage_over = 100 - percentage %>
+                      <% else %>
+                        <% percentage = leverage * 100.round(0) %>
+                        <% percentage_over = 0 %>
+                      <% end %>
+                      <div class="stat-text">持倉槓桿</div>
+                      <div class="stat-digit">
+                        <%= leverage %> <i class="far fa-times"></i>
+                      </div>
+                    </div>
+                    <div class="progress">
+                      <% lev_color = "bg-warning" if leverage >= 1 %>
+                      <div class="progress-bar bg-success" style="width: <%= percentage %>%" role="progressbar" aria-valuenow="<%= percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
+                      <div class="progress-bar progress-bar-striped progress-bar-animated <%= lev_color %>" style="width: <%= percentage_over %>%" role="progressbar" aria-valuenow="<%= percentage_over %>" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="row">
-          <div class="col-xl-9 col-lg-9 col-md-9">
+            <div class="card">
+                <div class="stat-widget-two card-body">
+                    <div class="stat-content">
+                        <div class="stat-text">現貨價值</div>
+                        <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= balances["totalusdValue"].round(2) %></div>
+                        <%= pie_chart @pie_chart_balances_data, prefix: "$", donut: true, dataset: {borderWidth: 5, hoverOffset: 4,backgroundColor: ["#99b2e5","#ed9c88","#ffcc7f","#87ca8b","#cc7fcc","#9d9ed5","#7fcce2"]} %>
+                    </div>
+                </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6 col-sm-12">
+            <div class="card">
+                <div class="stat-widget-two card-body">
+                    <div class="stat-content">
+                        <div class="stat-text">USD可用餘額</div>
+                        <div class="stat-digit">
+                          <i class="far fa-dollar-sign"></i><%= balances["USD"]["amount"].round(2) %>
+                        </div>
+                    </div>
+                    <div class="progress">
+                      <% percent = (balances["USD"]["amount"] / balances["totalusdValue"]) * 100.round(0) %>
+                      <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
+                        USD
+                      </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title"><%= "開單設定" %></h4>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                      <% precision = decimals(@coin.sizeIncrement) %>
+                      <% max_additional_amount = 
+                        ((balances["USD"]["amount"] / @fund_stat.spot_ask_usd) / @coin.sizeIncrement).floor * @coin.sizeIncrement %>
+                      <thead>
+                        <tr>
+                          <th><%= "#{@coin.name}" %></th>
+                          <th>現貨</th>
+                          <th>永續</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="text-right">持有數量</td>
+                          <td class="text-right">
+                            <%= number_with_precision(balances[@coin.name]["amount"], precision: precision, delimiter: ',') %>
+                          </td>
+                          <td class="text-right">
+                            <%= number_with_precision(@positions[@coin.name]["netSize"], precision: precision, delimiter: ',') %>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td class="text-right">美元價值</td>
+                          <td class="text-right"><%= "#{number_to_currency(balances[@coin.name]["usdValue"], precision: 2)}" %></td>
+                          <td class="text-right"><%= "#{number_to_currency(@positions[@coin.name]["cost"], precision: 2)}" %></td>
+                        </tr>
+                        <tr>
+                          <td class="text-right">當前成交價</td>
+                          <td class="text-right">
+                            <%= "#{number_to_currency(@fund_stat.spot_ask_usd, precision: decimals(@fund_stat.spot_ask_usd) > 8 ? 8 : decimals(@fund_stat.spot_ask_usd))}" %>
+                          </td>
+                          <td class="text-right">
+                            <%= "#{number_to_currency(@fund_stat.perp_bid_usd, precision: decimals(@fund_stat.perp_bid_usd) > 8 ? 8 : decimals(@fund_stat.perp_bid_usd))}" %>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td class="text-right">最大購買量</td>
+                          <td class="text-right">
+                            <%= number_with_precision(max_additional_amount, precision: precision) %></td>
+                          <td class="text-right"></td>
+                        </tr>
+
+                      </tbody>
+                      <thead>
+                        <% unless @underway_order %>
+                          <tr>
+                            <td class="align-bottom text-right" colspan="1">目標數量</td>
+                            <td class="text-right" colspan="12">
+                              <input type="range" id="a_slider"
+                                min="0"
+                                max="<%= number_with_precision(max_additional_amount + @positions[@coin.name]["netSize"].abs, precision: precision)%>"
+                                value="<%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>"
+                                step="<%= number_with_precision(@coin.sizeIncrement ,precision: precision) %>"
+                                aria-valuemin="0"
+                                aria-valuemax="<%= number_with_precision(max_additional_amount + @positions[@coin.name]["netSize"].abs,precision: precision) %>"
+                                aria-valuenow="<%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>">
+                              <div>
+                                <div id="bias" style="display: inline; padding-right: 0.3rem;">(+0)</div>
+                                <output for="a_slider" id="disp_amount" digits="<%= precision %>">
+                                  <%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>
+                                </output>
+                              </div>  
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="1">
+                            </td>
+                            <td colspan="2">
+                              <!-- Button fund_order_form_trigger -->
+                              <button type="button" id="fund_order_form_trigger" class="btn btn-outline-secondary btn-rounded" 
+                              data-bs-toggle="modal" data-bs-target="#fund_order_form" disabled="true">
+                                確定
+                              </button>
+                            </td>
+                          </tr>
+                        <% else %>
+                          <tr>
+                            <td class="align-bottom text-right" colspan="1">目標數量</td>
+                            <td class="text-right" colspan="12">
+
+                              <div class="align-bottom text-left text-primary" colspan="3">
+                                <% if @coin.id == @underway_order.coin_id %>
+                                  系統已有訂單執行中
+                                <% else %>
+                                  系統已有訂單執行中：<%= link_to " #{@underway_order.coin_name}", funding_show_path(coin_name: @underway_order.coin_name), data: { turbolinks: false } %>
+                                <% end %>
+                              </div>
+                              <div style="font-size: 1.2rem;">
+                                  <%= @underway_order.target_spot_amount.abs %>
+                              </div>  
+                            </td>
+                          </tr>
+                          <tr>
+                          </tr>
+                          <tr>
+                            <td colspan="1">
+                            </td>
+                            <td colspan="2">
+                              <!-- Button change to abort -->
+                              <button type="button" class="btn btn-outline-danger btn-rounded" 
+                              data-bs-toggle="modal" data-bs-target="#fund_order_abort_alert">
+                                終止訂單？
+                              </button>
+                            </td>
+                          </tr>
+                        <% end %>
+                      </thead>
+                    </table>
+                </div>
+            </div>
+          </div>
+          <div class="col-xl-6 col-lg-6 col-md-6">
             <div class="card">
               <div class="card-header">
                   <h4 class="card-title">歷史紀錄</h4>
@@ -307,11 +362,11 @@
                     <div class="in-form-text col-sm-4">目標數量</div>
                     <div class="text-right col-sm-4">
                       <%= form.number_field :target_spot_amount, readonly: true, :class => "form-control",
-                      id: (@position["netSize"] > 0 ? "neg_amount" : "pos_amount")  %>
+                      id: (@positions[@coin.name]["netSize"] > 0 ? "neg_amount" : "pos_amount")  %>
                     </div>
                     <div class="text-right col-sm-4">
                       <%= form.number_field :target_perp_amount, readonly: true, :class => "form-control",
-                      id: (@position["netSize"] > 0 ? "pos_amount" : "neg_amount")  %>
+                      id: (@positions[@coin.name]["netSize"] > 0 ? "pos_amount" : "neg_amount")  %>
                     </div>
                 </div>
                 <div class="row">

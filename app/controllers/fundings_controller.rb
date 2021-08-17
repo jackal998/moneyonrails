@@ -8,19 +8,16 @@ class FundingsController < ApplicationController
     list_index = {}
     li = 0
     balances = ftx_wallet_balance
-    balances["USD"] = balances.delete("USD")
-    totalusdValue = balances["totalusdValue"].round(2)
 
-    @chart_balances_data = []
-    @chart_payment_data = []
+    @col_chart_payment_data = []
+    @pie_chart_payment_data = []
+
     balances.each do |k,v| 
-      if k != "totalusdValue" && v["usdValue"] > 0
-        if k != "USD"
-          list_index[k] = li
-          @chart_payment_data << {name: k, data:[]}
-          li += 1
-        end
-        @chart_balances_data << [k, v["usdValue"].round(2)]
+      if k != "totalusdValue" && v["usdValue"] > 0.001 && k != "USD"
+        list_index[k] = li
+        @col_chart_payment_data << {name: k, data:[]}
+        @pie_chart_payment_data << [k, nil]
+        li += 1
       end
     end
 
@@ -34,15 +31,17 @@ class FundingsController < ApplicationController
     (30.day.ago.to_date..Date.today).each {|date| data_init[date.strftime('%F')] = 0 }
 
     fundingpayments.each do |coin_name, dataset|
+      sum_payment = 0
+      col_chart_payment_tmp = {coin_name => data_init.clone}
 
-      chart_payment_tmp = {coin_name => data_init.clone}
       dataset.each do |day, data_arr|
         data_arr.each do |data|
 
           payment = 0 - data[:payment]
           rate = data[:rate]
 
-          chart_payment_tmp[coin_name][day] += payment
+          col_chart_payment_tmp[coin_name][day] += payment
+          sum_payment += payment
 
           payments[coin_name] = {weekly: 0, monthly: 0} unless payments[coin_name]
           costs[coin_name] = {weekly: 0, monthly: 0} unless costs[coin_name]
@@ -56,35 +55,44 @@ class FundingsController < ApplicationController
           end
         end
       end
-
+      
       unless list_index[coin_name]
         list_index[coin_name] = list_index.size
-        @chart_payment_data << {name: coin_name, data: []}
+        @col_chart_payment_data << {name: coin_name, data: []}
+        @pie_chart_payment_data << [coin_name, nil]
       end
-      @chart_payment_data[list_index[coin_name]][:data] = chart_payment_tmp[coin_name].to_a
+
+      @pie_chart_payment_data[list_index[coin_name]] = [coin_name, sum_payment]
+      @col_chart_payment_data[list_index[coin_name]][:data] = col_chart_payment_tmp[coin_name].to_a
     end
 
-    render locals: {totalusdValue: totalusdValue, payments: payments, costs: costs, list_index: list_index}
+    render locals: {balances: balances, payments: payments, costs: costs, list_index: list_index}
   end
 
   def show
     @coins = Coin.includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
     
     coin_name = params["coin_name"] ? params["coin_name"] : "BTC"
-    @coin = Coin.includes(:current_fund_stat).find_by("name = ?", coin_name)
+    @coin = @coins.detect { |coin| coin[:name] == coin_name }
 
     @funding_orders = FundingOrder.includes(coin: :current_fund_stat).where(system: false).order("created_at desc")
     
-    @underway_order = @funding_orders.where(:order_status => "Underway").last
+    @underway_order = @funding_orders.detect { |funding_order| funding_order[:order_status] == "Underway" }
     # 如果order_status有問題，要顯示出來
 
-    @position = {"netSize" => 0, "cost" => 0}
+    @positions = {}
+    @positions[coin_name] = {"netSize" => 0, "cost" => 0}
     FtxClient.account["result"]["positions"].each do |position|
-      if position["future"].split("-")[0] == @coin.name
-        @position = {
+      next if position["netSize"] == 0
+
+      p_coin_name = position["future"].split("-")[0]
+      precision = 0
+      @coins.each { |coin| precision = helpers.decimals(coin[:sizeIncrement]) if coin[:name] == p_coin_name }
+
+      @positions[position["future"].split("-")[0]] = {
           "netSize" => position["netSize"],
-          "cost" => position["cost"]}
-      end
+          "cost" => position["cost"],
+          "precision" => precision}
     end
 
     @fund_stat = @coin.current_fund_stat
@@ -93,14 +101,21 @@ class FundingsController < ApplicationController
     @line_chart_data = rates.map { |r| [r.time.strftime('%m/%d %H:%M'),r.rate*100]}
     @zeros = @line_chart_data.map { |t,r| [t,0] }
 
+    @ftx_account = FtxClient.account
     balances = ftx_wallet_balance
-    balances[@coin.name] = {"amount"=>0.0, "usdValue"=>0.0} unless balances[@coin.name]
+    balances[coin_name] = {"amount"=>0.0, "usdValue"=>0.0} unless balances[coin_name]
+
+    @pie_chart_balances_data = []
+    
+    balances.each do |k,v| 
+      @pie_chart_balances_data << [k, v["usdValue"].round(2)] if k != "totalusdValue" && v["usdValue"] > 0.001
+    end
 
     @funding_order = FundingOrder.new(
       :coin_id => @coin.id, 
-      :coin_name => @coin.name,
-      :original_spot_amount => balances[@coin.name]["amount"],
-      :original_perp_amount => @position["netSize"]
+      :coin_name => coin_name,
+      :original_spot_amount => balances[coin_name]["amount"],
+      :original_perp_amount => @positions[coin_name]["netSize"]
       )
 
     render locals: {balances: balances}
@@ -138,6 +153,8 @@ private
         balances["totalusdValue"] += result["usdValue"]
       end
     end    
+
+    balances["USD"] = balances.delete("USD") if balances["USD"]
     return balances
   end
 

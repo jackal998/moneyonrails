@@ -10,7 +10,7 @@
               <div class="card">
                   <div class="stat-widget-two card-body">
                       <div class="stat-content">
-                        <table class="table mb-0">
+                        <table class="table table-sm mb-0">
                           <thead>
                             <tr>
                               <th>7 日</th>
@@ -33,7 +33,7 @@
                               <% end %>
                           </tbody>
                         </table>
-                        <table class="table mb-0">
+                        <table class="table table-sm mb-0">
                               <% disp_days = 30 %>
                           <thead>
                             <tr>
@@ -65,32 +65,25 @@
               <div class="card">
                   <div class="stat-widget-two card-body">
                       <div class="stat-content">
-                        <% leverage = (@ftx_account["result"]["totalPositionSize"]/@ftx_account["result"]["collateral"]).round(2) if @ftx_account["result"]["collateral"] %>
-                        <% if leverage >= 1 %>
-                          <% percentage = (1 / leverage) * 100.round(0) %>
-                          <% percentage_over = 100 - percentage %>
-                        <% else %>
-                          <% percentage = leverage * 100.round(0) %>
-                          <% percentage_over = 0 %>
-                        <% end %>
-                        <div class="stat-text">持倉槓桿</div>
-                        <div class="stat-digit">
-                          <%= leverage %> <i class="far fa-times"></i>
-                        </div>
+                          <div class="stat-text">USD可用餘額</div>
+                          <div class="stat-digit">
+                            <i class="far fa-dollar-sign"></i><%= balances["USD"]["amount"].round(2) %>
+                          </div>
                       </div>
                       <div class="progress">
-                        <% lev_color = "bg-warning" if leverage >= 1 %>
-                        <div class="progress-bar bg-success" style="width: <%= percentage %>%" role="progressbar" aria-valuenow="<%= percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
-                        <div class="progress-bar progress-bar-striped progress-bar-animated <%= lev_color %>" style="width: <%= percentage_over %>%" role="progressbar" aria-valuenow="<%= percentage_over %>" aria-valuemin="0" aria-valuemax="100"></div>
+                        <% percent = (balances["USD"]["amount"] / balances["totalusdValue"]) * 100.round(0) %>
+                        <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
+                          USD
+                        </div>
                       </div>
                   </div>
               </div>
               <div class="card">
                   <div class="stat-widget-two card-body">
                       <div class="stat-content">
-                          <div class="stat-text">現貨價值</div>
-                          <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= totalusdValue %></div>
-                          <%= pie_chart @chart_balances_data, prefix: "$", donut: true, dataset: {borderWidth: 5, hoverOffset: 4,backgroundColor: ["#99b2e5","#ed9c88","#ffcc7f","#87ca8b","#cc7fcc","#9d9ed5","#7fcce2"]} %>
+                          <div class="stat-text">30日收益</div>
+                          <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= payments.sum{|k,v| v[:monthly]}.round(2) %></div>
+                          <%= pie_chart @pie_chart_payment_data, prefix: "$", donut: true, dataset: {borderWidth: 5, hoverOffset: 4,backgroundColor: ["#99b2e5","#ed9c88","#ffcc7f","#87ca8b","#cc7fcc","#9d9ed5","#7fcce2"]} %>
                       </div>
                   </div>
               </div>
@@ -101,7 +94,7 @@
                       <div class="stat-content">
                           <div class="stat-text">30 日收益</div>
                           <div>
-                            <%= column_chart  @chart_payment_data, height: "511px", prefix: "$ ", stacked: true, dataset: {borderWidth: 0} %>
+                            <%= column_chart @col_chart_payment_data, height: "511px", prefix: "$ ", stacked: true, dataset: {borderWidth: 0} %>
                           </div>
                       </div>
                   </div>

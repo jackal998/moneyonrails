@@ -12,6 +12,6 @@ every '1 * * * *' do
   rake "dev:update_rate"
 end
 
-every '*/3 * * * *' do
+every '*/16 * * * *' do
   rake "dev:get_funding_infos"
 end
