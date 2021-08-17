@@ -117,9 +117,22 @@ namespace :dev do
     funding_orders = {}
     FundingOrder.includes(:coin).select('DISTINCT ON ("coin_id") *').where(:order_status => ["Close","Underway"]).order(:coin_id, created_at: :desc).map {|fo| funding_orders[fo[:coin_name]] = fo}
 
+    recent_orders = FundingOrder.includes(:coin).where("created_at > ?", last_data_time).where(:order_status => ["Close","Underway"]).order(:coin_id, created_at: :asc).group_by(&:coin_name)
+
     orders_to_be_updated = 0
     funding_orders.each do |coin_name, funding_order|
-      case 
+      case
+      when recent_orders[coin_name]
+        case 
+        when recent_orders[coin_name].first[:original_perp_amount] == 0 && recent_orders[coin_name].last[:target_perp_amount] != 0
+          updated_status[coin_name] = "new"
+          orders_to_be_updated += 1
+        when recent_orders[coin_name].first[:original_perp_amount] != 0 && recent_orders[coin_name].last[:target_perp_amount] != 0
+          updated_status[coin_name] = "normal"
+          orders_to_be_updated += 1
+        when  recent_orders[coin_name].last[:target_perp_amount] == 0
+          updated_status[coin_name] = "down"
+        end  
       when (funding_order[:order_status] == "Close" && funding_order[:target_perp_amount] != 0 && funding_order[:updated_at] <= query_end_time) ||
            (funding_order[:order_status] == "Underway" && funding_order[:original_perp_amount] != 0 && funding_order[:target_perp_amount] != 0) ||
            (funding_order[:order_status] == "Underway" && funding_order[:target_perp_amount] == 0)
@@ -145,7 +158,7 @@ namespace :dev do
       case updated_status[coin_name]
       when "normal"
         updated_status[coin_name] = "missing data" unless funding_payments[last_data_time][coin_name]
-      when "underway"
+      when "new", "underway"
 
       when nil
         # 沒有訂單，卻有data，原則上是手動建立的
@@ -157,18 +170,23 @@ namespace :dev do
       case status
       when "down"
         next
-      when "normal", "underway"
-        funding_payment = FundingPayment.new(
-          :coin_id => funding_orders[coin_name][:coin_id],
-          :coin_name => coin_name, 
-          :payment => data_results[coin_name]["payment"],
-          :rate => data_results[coin_name]["rate"],
-          :time => data_results[coin_name]["time"],
-          :created_at => Time.now,
-          :updated_at => Time.now)
-        funding_payment_datas_tbu << funding_payment.attributes.except!("id")
+      when "normal", "underway", "new"
+        if data_results[coin_name]
+          funding_payment = FundingPayment.new(
+            :coin_id => funding_orders[coin_name][:coin_id],
+            :coin_name => coin_name, 
+            :payment => data_results[coin_name]["payment"],
+            :rate => data_results[coin_name]["rate"],
+            :time => data_results[coin_name]["time"],
+            :created_at => Time.now,
+            :updated_at => Time.now)
+          funding_payment_datas_tbu << funding_payment.attributes.except!("id")
+        else
+          puts "#{coin_name} order #{funding_orders[coin_name][:id]} status normal, but no data from FTX" if status == "normal"
+        end
+
       when "missing data"
-        puts "#{coin_name} Missing data, please check and update history rates data => `rake dev:fetch_history_funding_payment`"
+        puts "#{coin_name} missing data, please check and update history rates data => `rake dev:fetch_history_funding_payment`"
         exit
       when "missing order status"
         puts "#{coin_name} missing order status, please check."
@@ -181,7 +199,7 @@ namespace :dev do
 
     FundingPayment.insert_all(funding_payment_datas_tbu)
 
-    puts "update_funding_payment of #{orders_to_be_updated} orders ok => #{query_end_time} (#{Time.now - init_time}s)"
+    puts "update_funding_payment of #{orders_to_be_updated} orders ok => #{Time.now} (#{Time.now - init_time}s)"
   end
 
   task :fetch_history_funding_payment => :environment do
