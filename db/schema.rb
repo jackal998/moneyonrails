@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_08_14_192525) do
+ActiveRecord::Schema.define(version: 2021_08_17_123340) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -84,6 +84,31 @@ ActiveRecord::Schema.define(version: 2021_08_14_192525) do
     t.index ["coin_id"], name: "index_funding_payments_on_coin_id"
     t.index ["coin_name"], name: "index_funding_payments_on_coin_name"
     t.index ["time"], name: "index_funding_payments_on_time"
+  end
+
+  create_table "funding_stats", force: :cascade do |t|
+    t.integer "coin_id"
+    t.string "coin_name"
+    t.decimal "last_1_day_payments"
+    t.decimal "last_1_day_irr"
+    t.decimal "last_3_day_payments"
+    t.decimal "last_3_day_irr"
+    t.decimal "last_7_day_payments"
+    t.decimal "last_7_day_irr"
+    t.decimal "last_14_day_payments"
+    t.decimal "last_14_day_irr"
+    t.decimal "last_30_day_payments"
+    t.decimal "last_30_day_irr"
+    t.decimal "last_60_day_payments"
+    t.decimal "last_60_day_irr"
+    t.decimal "last_90_day_payments"
+    t.decimal "last_90_day_irr"
+    t.decimal "historical_payments"
+    t.decimal "historical_irr"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["coin_id"], name: "index_funding_stats_on_coin_id"
+    t.index ["coin_name"], name: "index_funding_stats_on_coin_name"
   end
 
   create_table "rates", force: :cascade do |t|
