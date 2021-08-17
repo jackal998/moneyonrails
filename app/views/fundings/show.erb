@@ -62,7 +62,7 @@
                         </thead>
                         <tbody>
                             <% @positions.each do |coin_name, position| %>
-                              <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
+                              <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
                               <tr>
                                 <td class="text-center">
                                   <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
