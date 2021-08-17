@@ -20,14 +20,14 @@
                           </thead>
                           <tbody>
                               <% list_index.each do |coin_name, i| %>
-                                <% next if payments[coin_name].nil? %>
+                                <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
                                 <tr>
                                   <td class="text-center">
                                     <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
                                   </td>
-                                  <td class="text-right"><i class="far fa-dollar-sign"></i> <%= payments[coin_name][:weekly].round(2) %></td>
+                                  <td class="text-right"><i class="far fa-dollar-sign"></i> <%= fundingstat[:last_7_day_payments] %></td>
                                   <td class="text-center">
-                                    <%= ((payments[coin_name][:weekly] / costs[coin_name][:weekly])* 24 * 365 * 100).round(2) %> <i class="far fa-percent"></i>
+                                    <%= fundingstat[:last_7_day_irr] %> <i class="far fa-percent"></i>
                                   </td>
                                 </tr>
                               <% end %>
@@ -44,14 +44,14 @@
                           </thead>
                           <tbody>
                               <% list_index.each do |coin_name, i| %>
-                                <% next if payments[coin_name].nil? %>
+                                <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
                                 <tr>
                                   <td class="text-center">
                                     <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
                                   </td>
-                                  <td class="text-right"><i class="far fa-dollar-sign"></i> <%= payments[coin_name][:monthly].round(2) %></td>
+                                  <td class="text-right"><i class="far fa-dollar-sign"></i> <%= fundingstat[:last_30_day_payments] %></td>
                                   <td class="text-center">
-                                    <%= ((payments[coin_name][:monthly] / costs[coin_name][:monthly])* 24 * 365 * 100).round(2) %> <i class="far fa-percent"></i>
+                                    <%= fundingstat[:last_30_day_irr] %> <i class="far fa-percent"></i>
                                   </td>
                                 </tr>
                               <% end %>
@@ -82,7 +82,7 @@
                   <div class="stat-widget-two card-body">
                       <div class="stat-content">
                           <div class="stat-text">30日收益</div>
-                          <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= payments.sum{|k,v| v[:monthly]}.round(2) %></div>
+                          <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= @fundingstats.pluck(:last_30_day_payments).sum.round(2) %></div>
                           <%= pie_chart @pie_chart_payment_data, prefix: "$", donut: true, dataset: {borderWidth: 5, hoverOffset: 4,backgroundColor: ["#99b2e5","#ed9c88","#ffcc7f","#87ca8b","#cc7fcc","#9d9ed5","#7fcce2"]} %>
                       </div>
                   </div>

@@ -28,33 +28,82 @@
     <div class="container-fluid">
         <!-- row -->
         <div class="row">
-          <div class="col-xl-6 col-md-12 col-sm-12">
+          <div class="col-xl-8 col-md-12 col-sm-12">
               <div class="card">
                   <div class="stat-widget-two card-body">
                     <div class="stat-content">
-                      <table class="table mb-0">
+                      <table class="table table-hover table-fixhead table-responsive mb-0">
                         <thead>
                           <tr>
-                            <th>持倉狀態</th>
-                            <th>現貨</th>
-                            <th>永續</th>
-                            <th>永續面額</th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th colspan="2">1日</th>
+                            <th colspan="2">3日</th>
+                            <th colspan="2">7日</th>
+                            <th colspan="2">30日</th>
+                            <th colspan="2">歷史</th>
+                          </tr>
+                          <tr>
+                            <th></th>
+                            <th>持倉</th>
+                            <th>永續：現貨</th>
+                            <th>收益</th>
+                            <th>年化</th>
+                            <th>收益</th>
+                            <th>年化</th>
+                            <th>收益</th>
+                            <th>年化</th>
+                            <th>收益</th>
+                            <th>年化</th>
+                            <th>收益</th>
+                            <th>年化</th>
                           </tr>
                         </thead>
                         <tbody>
                             <% @positions.each do |coin_name, position| %>
+                              <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
                               <tr>
                                 <td class="text-center">
                                   <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
                                 </td>
                                 <td class="text-right">
+                                  <%= number_to_currency(position["cost"], precision: 2) %>
+                                </td>
+                                <td class="text-center">
+                                  <%= number_with_precision(position["netSize"], precision: position["precision"], delimiter: ',') %>
+                                  ：
                                   <%= number_with_precision(balances[coin_name]["amount"], precision: position["precision"], delimiter: ',') %>
                                 </td>
                                 <td class="text-right">
-                                  <%= number_with_precision(position["netSize"], precision: position["precision"], delimiter: ',') %>
+                                  <%= number_to_currency(fundingstat[:last_1_day_payments]) %>
                                 </td>
                                 <td class="text-right">
-                                  <%= number_to_currency(position["cost"], precision: 2) %>
+                                  <%= fundingstat[:last_1_day_irr] %>%
+                                </td>
+                                <td class="text-right">
+                                  <%= number_to_currency(fundingstat[:last_3_day_payments]) %>
+                                </td>
+                                <td class="text-right">
+                                  <%= fundingstat[:last_3_day_irr] %>%
+                                </td>
+                                <td class="text-right">
+                                  <%= number_to_currency(fundingstat[:last_7_day_payments]) %>
+                                </td>
+                                <td class="text-right">
+                                  <%= fundingstat[:last_7_day_irr] %>%
+                                </td>
+                                <td class="text-right">
+                                  <%= number_to_currency(fundingstat[:last_30_day_payments]) %>
+                                </td>
+                                <td class="text-right">
+                                  <%= fundingstat[:last_30_day_irr] %>%
+                                </td>
+                                <td class="text-right">
+                                  <%= number_to_currency(fundingstat[:historical_payments]) %>
+                                </td>
+                                <td class="text-right">
+                                  <%= fundingstat[:historical_irr] %>%
                                 </td>
                               </tr>
                             <% end %>
@@ -64,7 +113,7 @@
                   </div>
               </div>
           </div>
-          <div class="col-xl-6 col-md-12 col-sm-12">
+          <div class="col-xl-4 col-md-12 col-sm-12">
               <div class="card">
                   <div class="card-header">
                     <div class="dropdown card-title">
@@ -254,7 +303,7 @@
                 </div>
             </div>
           </div>
-          <div class="col-xl-6 col-lg-6 col-md-6">
+          <div class="col-xl-6 col-lg-12 col-md-12">
             <div class="card">
               <div class="card-header">
                   <h4 class="card-title">歷史紀錄</h4>

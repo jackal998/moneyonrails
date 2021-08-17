@@ -16,57 +16,31 @@ class FundingsController < ApplicationController
       if k != "totalusdValue" && v["usdValue"] > 0.001 && k != "USD"
         list_index[k] = li
         @col_chart_payment_data << {name: k, data:[]}
-        @pie_chart_payment_data << [k, nil]
+        @pie_chart_payment_data << [k, 0]
         li += 1
       end
     end
 
-    db_data = FundingPayment.where("time > ?", 30.day.ago).order("time asc").pluck(:coin_name, :time, :payment, :rate).map { |coin_name, time, payment, rate| {coin_name: coin_name, time: time, payment: payment, rate: rate}}
-    fundingpayments = db_data.group_by{|fp| fp[:coin_name]}.transform_values {|k| k.group_by_day(format: '%F') { |fp| fp[:time] }}
+    coin_name = ""
 
-    payments ,costs = {}, {}
-    a_week_ago = 7.day.ago
+    fundingpayments = FundingPayment.where("time > ?", 30.day.ago).group(:coin_name).group_by_day(:time, format: '%F').sum(:payment)
+    @fundingstats = FundingStat.all
 
-    data_init = {}
-    (30.day.ago.to_date..Date.today).each {|date| data_init[date.strftime('%F')] = 0 }
-
-    fundingpayments.each do |coin_name, dataset|
-      sum_payment = 0
-      col_chart_payment_tmp = {coin_name => data_init.clone}
-
-      dataset.each do |day, data_arr|
-        data_arr.each do |data|
-
-          payment = 0 - data[:payment]
-          rate = data[:rate]
-
-          col_chart_payment_tmp[coin_name][day] += payment
-          sum_payment += payment
-
-          payments[coin_name] = {weekly: 0, monthly: 0} unless payments[coin_name]
-          costs[coin_name] = {weekly: 0, monthly: 0} unless costs[coin_name]
-
-          payments[coin_name][:monthly] += payment
-          costs[coin_name][:monthly] += payment / rate unless rate == 0
-
-          if day > a_week_ago
-            payments[coin_name][:weekly] += payment
-            costs[coin_name][:weekly] += payment / rate unless rate == 0
-          end
+    fundingpayments.each do |coin_day, payment|
+      # coin_day = ["BAO", "2021-08-18"]
+      if coin_name != coin_day[0]
+        coin_name = coin_day[0]
+        unless list_index[coin_name]
+          list_index[coin_name] = list_index.size
+          @col_chart_payment_data << {name: coin_name, data: []}
+          @pie_chart_payment_data << [coin_name, 0]
         end
       end
-      
-      unless list_index[coin_name]
-        list_index[coin_name] = list_index.size
-        @col_chart_payment_data << {name: coin_name, data: []}
-        @pie_chart_payment_data << [coin_name, nil]
-      end
 
-      @pie_chart_payment_data[list_index[coin_name]] = [coin_name, sum_payment]
-      @col_chart_payment_data[list_index[coin_name]][:data] = col_chart_payment_tmp[coin_name].to_a
+      @pie_chart_payment_data[list_index[coin_name]][1] += (0 - payment)
+      @col_chart_payment_data[list_index[coin_name]][:data] << [coin_day[1], (0 - payment)]
     end
-
-    render locals: {balances: balances, payments: payments, costs: costs, list_index: list_index}
+    render locals: {balances: balances, list_index: list_index}
   end
 
   def show
@@ -80,8 +54,7 @@ class FundingsController < ApplicationController
     @underway_order = @funding_orders.detect { |funding_order| funding_order[:order_status] == "Underway" }
     # 如果order_status有問題，要顯示出來
 
-    @positions = {}
-    @positions[coin_name] = {"netSize" => 0, "cost" => 0}
+    @positions = {coin_name => {"netSize" => 0, "cost" => 0}}
     FtxClient.account["result"]["positions"].each do |position|
       next if position["netSize"] == 0
 
@@ -96,9 +69,9 @@ class FundingsController < ApplicationController
     end
 
     @fund_stat = @coin.current_fund_stat
-    rates = @coin.rates.where("time > ?", Time.now - 6.weeks).order("time asc")
+    @fundingstats = FundingStat.all
 
-    @line_chart_data = rates.map { |r| [r.time.strftime('%m/%d %H:%M'),r.rate*100]}
+    @line_chart_data = @coin.rates.where("time > ?", Time.now - 6.weeks).order("time asc").map { |r| [r.time.strftime('%m/%d %H:%M'),r.rate*100]}
     @zeros = @line_chart_data.map { |t,r| [t,0] }
 
     @ftx_account = FtxClient.account

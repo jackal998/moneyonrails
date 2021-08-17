@@ -276,6 +276,64 @@ namespace :dev do
 
     puts "fetch_history_rate to time #{init_time.beginning_of_hour} ok => #{Time.now} (#{Time.now - init_time}s)"
   end
+  
+  task :update_funding_status => :environment do
+    init_time = Time.now
+
+    db_data = FundingPayment.order("time asc").pluck(:coin_id, :coin_name, :time, :payment, :rate).map { |coin_id, coin_name, time, payment, rate| {coin_id: coin_id, coin_name: coin_name, time: time, payment: payment, rate: rate}}
+    fundingpayments = db_data.group_by{|fp| fp[:coin_name]}.transform_values {|k| k.group_by_day(format: '%F') { |fp| fp[:time] }}
+
+    funding_status_datas_tbu = []
+
+    days_rng = [90,60,30,14,7,3,1]
+
+    fundingpayments.each do |coin_name, dataset|
+      funding_status = FundingStat.new(:coin_id => dataset.first[1].first[:coin_id], :coin_name => coin_name, :created_at => init_time, :updated_at => init_time)
+
+      dataset.each do |day, data_arr|
+        data_arr.each do |data|
+
+          payment = 0 - data[:payment]
+          rate = data[:rate]
+
+          # irr used as tmp storage of cost for real irr calc
+          funding_status[:historical_payments] += payment
+          funding_status[:historical_irr] +=  payment / rate unless rate == 0
+
+          days_rng.each do |d|
+            if day >= d.day.ago
+              sym_payment = "last_#{d}_day_payments".to_sym
+              sym_irr = "last_#{d}_day_irr".to_sym
+              
+              # irr used as tmp storage of cost for real irr calc
+              funding_status[sym_payment] += payment
+              funding_status[sym_irr] +=  payment / rate unless rate == 0
+            else
+              break
+            end
+          end
+        end
+      end      
+      # irr used as tmp storage of cost for real irr calc
+      funding_status[:historical_irr] = ((funding_status[:historical_payments] / funding_status[:historical_irr])* 24 * 365 * 100).round(2)
+      funding_status[:historical_payments] = funding_status[:historical_payments].round(2)
+
+      days_rng.each do |d|
+        sym_payment = "last_#{d}_day_payments".to_sym
+        sym_irr = "last_#{d}_day_irr".to_sym
+
+        funding_status[sym_irr] = ((funding_status[sym_payment] / funding_status[sym_irr])* 24 * 365 * 100).round(2) if funding_status[sym_irr] != 0
+        funding_status[sym_payment] = funding_status[sym_payment].round(2)
+      end
+
+    funding_status_datas_tbu << funding_status.attributes.except!("id")
+
+    end
+    
+    FundingStat.delete_all
+    FundingStat.upsert_all(funding_status_datas_tbu)
+    puts "update_funding_status ok => #{Time.now} (#{Time.now - init_time}s)"
+  end
 
   task :update_rate => :environment do
     init_time = Time.now
