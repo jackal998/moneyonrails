@@ -129,6 +129,17 @@
                         <li><%= link_to "幣種收益報表", request.env['PATH_INFO'] == funding_show_path ? "javascript:void(0)" : funding_show_path, data: { turbolinks: false } %></li>
                       </ul>
                     </li>
+                    <li>
+                      <a class="has-arrow" href="javascript:void()" aria-expanded="false">
+                        <i>
+                          <%= image_pack_tag 'media/packs/images/ftx-logo.png'%>
+                        </i>
+                        <span class="nav-text">FTX 網格機器人</span>
+                      </a>
+                      <ul aria-expanded="false">
+                        <li><%= link_to "網格設定", request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path, data: { turbolinks: false } %></li>
+                      </ul>
+                    </li>
                     <li class="nav-label">Apps</li>
                     <li>
                       <a class="has-arrow" href="javascript:void()" aria-expanded="false">
