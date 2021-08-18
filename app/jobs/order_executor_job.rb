@@ -51,18 +51,18 @@ class OrderExecutorJob < ApplicationJob
           payload_spot[:side] = "buy"
           payload_perp[:side] = "sell"
 
-          spot_order_result = FtxClient.place_order(payload_spot) unless spot_order_size == 0
+          spot_order_result = FtxClient.place_order("MoneyOnRails", payload_spot) unless spot_order_size == 0
           sleep(0.5)
-          perp_order_result = FtxClient.place_order(payload_perp) unless perp_order_size == 0
+          perp_order_result = FtxClient.place_order("MoneyOnRails", payload_perp) unless perp_order_size == 0
 
         when "less"
           # 先平永續，再賣現貨
           payload_perp[:side] = "buy"
           payload_spot[:side] = "sell"
 
-          perp_order_result = FtxClient.place_order(payload_perp) unless perp_order_size == 0
+          perp_order_result = FtxClient.place_order("MoneyOnRails", payload_perp) unless perp_order_size == 0
           sleep(0.5)
-          spot_order_result = FtxClient.place_order(payload_spot) unless spot_order_size == 0
+          spot_order_result = FtxClient.place_order("MoneyOnRails", payload_spot) unless spot_order_size == 0
         end
 
         # 有下單，但是API回傳還沒有更新的時候，會造成連續下單，在特別的條件會下超過指定部位，sleep 0.5秒試試看能不能避免這種問題
@@ -113,7 +113,7 @@ class OrderExecutorJob < ApplicationJob
       puts msg_frefix + "manually abort!"
     when "Nothing Happened"
       payload_perp = {market: perp_name, side: "buy", price: nil, type: "market", size: spot_order_size}
-      perp_order_result = FtxClient.place_order(payload_perp)
+      perp_order_result = FtxClient.place_order("MoneyOnRails", payload_perp)
       
       
       error_msg = "System Close when order(s) were not executed for funding_order_id: #{funding_order_id}"
@@ -203,8 +203,8 @@ class OrderExecutorJob < ApplicationJob
     tmp[spot_name] = 0
     tmp[perp_name] = 0
 
-    wallet_balances_data = FtxClient.wallet_balances
-    positions_data = FtxClient.positions
+    wallet_balances_data = FtxClient.wallet_balances("MoneyOnRails")
+    positions_data = FtxClient.positions("MoneyOnRails")
 
     tmp["error_msg"] = "FtxClient.wallet_balances result Error" unless wallet_balances_data["success"]
     tmp["error_msg"] = "FtxClient.positions result Error" unless positions_data["success"]

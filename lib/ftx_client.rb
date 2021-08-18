@@ -1,26 +1,25 @@
 class FtxClient
-  attr_accessor :method, :auth, :api_key, :api_secret, :subaccount_name, :url, :end_point, :headers, :payload
+  attr_accessor :method, :auth, :subaccount, :url
 
   def initialize params = {}
     init = {method: "GET", url: "https://ftx.com", auth: false}
 
-    init.each { |key, value| send "#{key}=", value.to_s }
-    params.each { |key, value| send "#{key}=", value.to_s }
+    init.merge(params).each { |key, value| send "#{key}=", value }
   end
 
-  def self.account
-    return FtxClient.new(:auth => true)._request("GET", "/api/account")
+  def self.account(subaccount)
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/account")
   end
 
-  def self.wallet_balances
-    return FtxClient.new(:auth => true)._request("GET", "/api/wallet/balances")
+  def self.wallet_balances(subaccount)
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/wallet/balances")
   end
 
-  def self.positions
-    return FtxClient.new(:auth => true)._request("GET", "/api/positions")
+  def self.positions(subaccount)
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/positions")
   end
 
-  def self.funding_payments(params = {})
+  def self.funding_payments(subaccount, params = {})
     # start_time        number  1559881511  optional
     # end_time          number  1559881711  optional
     # future            string  BTC-PERP    optional
@@ -31,10 +30,10 @@ class FtxClient
       params_str[0]="?"
     end
 
-    return FtxClient.new(:auth => true)._request("GET", "/api/funding_payments" + params_str)
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/funding_payments" + params_str)
   end
 
-  def self.place_order(params = {})
+  def self.place_order(subaccount, params = {})
     # market            string  XRP-PERP    e.g. "BTC/USD" for spot, "XRP-PERP" for futures
     # side              string  sell        "buy" or "sell"
     # price             number  0.306525    Send null for market orders.
@@ -65,7 +64,7 @@ class FtxClient
 
     payload = params.to_json
 
-    return FtxClient.new(:auth => true)._request("POST", "/api/orders", {payload: payload})
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("POST", "/api/orders", {payload: payload})
   end
  
   def self.future_stats(future_name)
@@ -94,7 +93,6 @@ class FtxClient
   def _request(http_method, path, params = {})
     
     req_url = self.url + path
-
     payload = params[:payload] if params[:payload]
 
     if self.auth
@@ -105,14 +103,14 @@ class FtxClient
 
       signature = OpenSSL::HMAC.hexdigest(
         "SHA256",
-        Rails.application.credentials.dig(:ftx_moneyonrails_sec), 
+        Rails.application.credentials.ftx[self.subaccount.to_sym][:sec], 
         signature_payload)
-
+      
       headers = {
-        'FTX-KEY' => Rails.application.credentials.dig(:ftx_moneyonrails_pub),
+        'FTX-KEY' => Rails.application.credentials.ftx[self.subaccount.to_sym][:pub],
         'FTX-SIGN' => signature,
         'FTX-TS' => ts,
-        'FTX-SUBACCOUNT' => "MoneyOnRails"}
+        'FTX-SUBACCOUNT' => self.subaccount}
       headers['Content-Type'] = 'application/json' if payload
     end
 

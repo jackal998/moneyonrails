@@ -149,7 +149,7 @@ namespace :dev do
 
     funding_payment_datas_tbu = []
 
-    data = FtxClient.funding_payments({:start_time => query_end_time.to_i})
+    data = FtxClient.funding_payments("MoneyOnRails",{:start_time => query_end_time.to_i})
     data_results = data["result"].index_by {|result| "#{result["future"].split('-')[0]}"}
     datas_count = data_results.count
 
@@ -258,7 +258,7 @@ namespace :dev do
           # start_time        number  1559881511  optional
           # end_time          number  1559881711  optional
           # future            string  BTC-PERP    optional
-          data = FtxClient.funding_payments({:future => "#{coin_name}-PERP",:start_time => start_time,:end_time => end_time})
+          data = FtxClient.funding_payments("MoneyOnRails", {:future => "#{coin_name}-PERP",:start_time => start_time,:end_time => end_time})
 
           data["result"].each do |result|
             r = FundingPayment.new(:coin_id => funding_order[:coin_id], :coin_name => coin_name, :payment => result["payment"], :rate => result["rate"], :time => result["time"])

@@ -3,7 +3,7 @@ class FundingsController < ApplicationController
   def index
     helpers.update_market_infos
     @coins = Coin.includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
-    @ftx_account = FtxClient.account
+    @ftx_account = FtxClient.account("MoneyOnRails")
 
     list_index = {}
     li = 0
@@ -55,7 +55,7 @@ class FundingsController < ApplicationController
     # 如果order_status有問題，要顯示出來
 
     @positions = {coin_name => {"netSize" => 0, "cost" => 0}}
-    FtxClient.account["result"]["positions"].each do |position|
+    FtxClient.account("MoneyOnRails")["result"]["positions"].each do |position|
       next if position["netSize"] == 0
 
       p_coin_name = position["future"].split("-")[0]
@@ -74,7 +74,7 @@ class FundingsController < ApplicationController
     @line_chart_data = @coin.rates.where("time > ?", Time.now - 6.weeks).order("time asc").map { |r| [r.time.strftime('%m/%d %H:%M'),r.rate*100]}
     @zeros = @line_chart_data.map { |t,r| [t,0] }
 
-    @ftx_account = FtxClient.account
+    @ftx_account = FtxClient.account("MoneyOnRails")
     balances = ftx_wallet_balance
     balances[coin_name] = {"amount"=>0.0, "usdValue"=>0.0} unless balances[coin_name]
 
@@ -119,7 +119,7 @@ private
   def ftx_wallet_balance
     balances = {"totalusdValue" => 0.00}
 
-    ftx_wallet_balances_response = FtxClient.wallet_balances
+    ftx_wallet_balances_response = FtxClient.wallet_balances("MoneyOnRails")
     if ftx_wallet_balances_response["success"] 
       ftx_wallet_balances_response["result"].each do |result|
         balances[result["coin"]] = {"amount" => result["availableWithoutBorrow"], "usdValue" => result["usdValue"]}
