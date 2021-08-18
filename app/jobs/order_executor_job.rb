@@ -66,7 +66,7 @@ class OrderExecutorJob < ApplicationJob
         end
 
         # 有下單，但是API回傳還沒有更新的時候，會造成連續下單，在特別的條件會下超過指定部位，sleep 0.5秒試試看能不能避免這種問題
-        sleep(0.5)
+        sleep(0.8)
         next_config = set_order_config(@coin, @funding_order, spot_name, perp_name)
 
         if order_config == next_config
