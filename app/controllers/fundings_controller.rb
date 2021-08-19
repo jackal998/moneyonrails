@@ -3,6 +3,11 @@ class FundingsController < ApplicationController
   def index
     helpers.update_market_infos
     @coins = Coin.includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
+    
+    coin_name = params["coin_name"] ? params["coin_name"] : "BTC"
+    @coin = @coins.detect { |coin| coin[:name] == coin_name }
+    @coin = Coin.find_by("name = ?", coin_name) unless @coin
+
     @ftx_account = FtxClient.account("MoneyOnRails")
 
     list_index = {}

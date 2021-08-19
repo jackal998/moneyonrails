@@ -5,9 +5,89 @@
     <div class="container-fluid">
         <!-- row -->
         <div class="row">
-            <div class="col-12">
-    hello grid!
+          <div class="col-xl-3 col-md-6 col-sm-12">
+            <div class="card">
+                <div class="stat-widget-two card-body">
+                    <div class="stat-content">
+                        <div class="stat-text">USD可用餘額</div>
+                        <div class="stat-digit">
+                          <i class="far fa-dollar-sign"></i><%= balances["USD"]["amount"].round(2) %>
+                        </div>
+                    </div>
+                    <div class="progress">
+                      <% percent = (balances["USD"]["amount"] / balances["totalusdValue"]) * 100.round(0) %>
+                      <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
+                        USD
+                      </div>
+                    </div>
+                </div>
             </div>
+          </div>
+          <div class="col-xl-3 col-md-6 col-sm-12">
+            <div class="card">
+              <%= form_with model: @grid_setting, url: grid_create_path do |form| %>
+                <div class="card-header">                  
+                  <h4 class="card-title"><%= "#{form.object.coin_name}" %> 網格機器人設定</h4>
+                </div>
+                <div class="card-body">
+                  <% sizestep = @coin.spotsizeIncrement > @coin.perpsizeIncrement ? @coin.spotsizeIncrement : @coin.perpsizeIncrement %>
+                  <% pricestep = @coin.spotpriceIncrement > @coin.perppriceIncrement ? @coin.spotpriceIncrement : @coin.perppriceIncrement %>
+                  <table class="table table-sm mb-0 table-borderless">
+                      <%= form.hidden_field :coin_id %>
+                      <%= form.hidden_field :coin_name %>
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>區間上限</td>
+                          <td>區間下限</td>
+                        </tr>
+                        <tr>
+                          <td><%= form.number_field :lower_limit, step: pricestep, min: 0, :class => "form-control" %></td>
+                          <td><%= form.number_field :upper_limit, step: pricestep, min: 0, :class => "form-control" %></td>
+                        </tr>
+                        <tr>
+                          <td>網格數量</td>
+                          <td>網格價差</td>
+                        </tr>
+                        <tr>
+                          <td><%= form.number_field :girds, min: 2, :class => "form-control" %></td>
+                          <td><%= form.number_field :grid_gap, step: pricestep, min: 0, :class => "form-control" %></td>
+                        </tr>
+                        <tr>
+                          <td>投資數量(USD)</td>
+                          <td><%= "投資數量(#{form.object.coin_name})" %></td>
+                        </tr>
+                        <tr>
+                          <td><%= form.number_field :input_USD_amount, min: 0, :class => "form-control" %></td>
+                          <td><%= form.number_field :input_spot_amount, step: sizestep, min: 0, :class => "form-control" %></td>
+                        </tr>
+                        <tr>
+                          <td>開單價格</td>
+                          <td>開單價差</td>
+                        </tr>
+                        <tr>
+                          <td><%= form.number_field :trigger_price, step: pricestep, min: 0, :class => "form-control" %></td>
+                          <td><%= form.number_field :threshold, step: 0.001, :class => "form-control" %></td>
+                        </tr>
+                        <tr>
+                          <td>止損價格</td>
+                          <td>止盈價格</td>
+                        </tr>
+                        <tr>
+                          <td><%= form.number_field :stop_loss_price, step: pricestep, min: 0, :class => "form-control" %></td>
+                          <td><%= form.number_field :take_profit_price, step: pricestep, min: 0, :class => "form-control" %></td>
+                        </tr>
+                      </tbody>
+                  </table>
+                <%= form.submit "送 出", :class => "text-center btn btn-outline-primary btn-rounded" %>
+              <% end %>
+            </div>
+          </div>
         </div>
     </div>
 </div>

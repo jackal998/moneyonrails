@@ -8,6 +8,7 @@ Rails.application.routes.draw do
   put '/funding/order', :to => 'fundings#abortorder'
 
   get '/grid', :to => 'grid#index'
+  post '/grid/create', :to => 'grid#creategrid'
   
   # should be authed
   mount Sidekiq::Web => '/sidekiq'

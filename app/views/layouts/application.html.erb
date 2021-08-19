@@ -117,6 +117,7 @@
             <div class="quixnav-scroll">
                 <ul class="metismenu" id="menu">
                     <li class="nav-label first">量化交易機器人</li>
+                    <% coin_name = @coin.name %>
                     <li>
                       <a class="has-arrow" href="javascript:void()" aria-expanded="false">
                         <i>
@@ -125,8 +126,8 @@
                         <span class="nav-text">FTX 資費機器人</span>
                       </a>
                       <ul aria-expanded="false">
-                        <li><%= link_to "資金費率報表", request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path, data: { turbolinks: false } %></li>
-                        <li><%= link_to "幣種收益報表", request.env['PATH_INFO'] == funding_show_path ? "javascript:void(0)" : funding_show_path, data: { turbolinks: false } %></li>
+                        <li><%= link_to "資金費率報表", request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path(:coin_name => coin_name), data: { turbolinks: false } %></li>
+                        <li><%= link_to "幣種收益報表", request.env['PATH_INFO'] == funding_show_path ? "javascript:void(0)" : funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %></li>
                       </ul>
                     </li>
                     <li>
@@ -137,7 +138,7 @@
                         <span class="nav-text">FTX 網格機器人</span>
                       </a>
                       <ul aria-expanded="false">
-                        <li><%= link_to "網格設定", request.env['PATH_INFO'] == grid_path ? "javascript:void(0)" : grid_path, data: { turbolinks: false } %></li>
+                        <li><%= link_to "網格設定", request.env['PATH_INFO'] == grid_path ? "javascript:void(0)" : grid_path(:coin_name => coin_name), data: { turbolinks: false } %></li>
                       </ul>
                     </li>
                     <li class="nav-label">Apps</li>
