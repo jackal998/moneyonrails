@@ -186,119 +186,120 @@
                 </div>
             </div>
             <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title"><%= "開單設定" %></h4>
-                </div>
-                <div class="card-body">
-                    <table class="table table-sm mb-0">
-                      <% precision = decimals(@coin.sizeIncrement) %>
-                      <% max_additional_amount = 
-                        ((balances["USD"]["amount"] / @fund_stat.spot_ask_usd) / @coin.sizeIncrement).floor * @coin.sizeIncrement %>
-                      <thead>
-                        <tr>
-                          <th><%= "#{@coin.name}" %></th>
-                          <th>現貨</th>
-                          <th>永續</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td class="text-right">持有數量</td>
-                          <td class="text-right">
-                            <%= number_with_precision(balances[@coin.name]["amount"], precision: precision, delimiter: ',') %>
-                          </td>
-                          <td class="text-right">
-                            <%= number_with_precision(@positions[@coin.name]["netSize"], precision: precision, delimiter: ',') %>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td class="text-right">美元價值</td>
-                          <td class="text-right"><%= "#{number_to_currency(balances[@coin.name]["usdValue"], precision: 2)}" %></td>
-                          <td class="text-right"><%= "#{number_to_currency(@positions[@coin.name]["cost"], precision: 2)}" %></td>
-                        </tr>
-                        <tr>
-                          <td class="text-right">當前成交價</td>
-                          <td class="text-right">
-                            <%= "#{number_to_currency(@fund_stat.spot_ask_usd, precision: decimals(@fund_stat.spot_ask_usd) > 8 ? 8 : decimals(@fund_stat.spot_ask_usd))}" %>
-                          </td>
-                          <td class="text-right">
-                            <%= "#{number_to_currency(@fund_stat.perp_bid_usd, precision: decimals(@fund_stat.perp_bid_usd) > 8 ? 8 : decimals(@fund_stat.perp_bid_usd))}" %>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td class="text-right">最大購買量</td>
-                          <td class="text-right">
-                            <%= number_with_precision(max_additional_amount, precision: precision) %></td>
-                          <td class="text-right"></td>
-                        </tr>
+              <div class="card-header">
+                  <h4 class="card-title"><%= "開單設定" %></h4>
+              </div>
+              <div class="card-body">
+                  <table class="table table-sm mb-0">
+                    <% size = @coin[:spotsizeIncrement] > @coin[:perpsizeIncrement] ? @coin[:spotsizeIncrement] : @coin[:perpsizeIncrement] %>
+                    <% precision = decimals(size) %>
+                    <% max_additional_amount = 
+                      ((balances["USD"]["amount"] / @fund_stat.spot_ask_usd) / size).floor * size %>
+                    <thead>
+                      <tr>
+                        <th><%= "#{@coin.name}" %></th>
+                        <th>現貨</th>
+                        <th>永續</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="text-right">持有數量</td>
+                        <td class="text-right">
+                          <%= number_with_precision(balances[@coin.name]["amount"], precision: precision, delimiter: ',') %>
+                        </td>
+                        <td class="text-right">
+                          <%= number_with_precision(@positions[@coin.name]["netSize"], precision: precision, delimiter: ',') %>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="text-right">美元價值</td>
+                        <td class="text-right"><%= "#{number_to_currency(balances[@coin.name]["usdValue"], precision: 2)}" %></td>
+                        <td class="text-right"><%= "#{number_to_currency(@positions[@coin.name]["cost"], precision: 2)}" %></td>
+                      </tr>
+                      <tr>
+                        <td class="text-right">當前成交價</td>
+                        <td class="text-right">
+                          <%= "#{number_to_currency(@fund_stat.spot_ask_usd, precision: decimals(@fund_stat.spot_ask_usd) > 8 ? 8 : decimals(@fund_stat.spot_ask_usd))}" %>
+                        </td>
+                        <td class="text-right">
+                          <%= "#{number_to_currency(@fund_stat.perp_bid_usd, precision: decimals(@fund_stat.perp_bid_usd) > 8 ? 8 : decimals(@fund_stat.perp_bid_usd))}" %>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="text-right">最大購買量</td>
+                        <td class="text-right">
+                          <%= number_with_precision(max_additional_amount, precision: precision) %></td>
+                        <td class="text-right"></td>
+                      </tr>
 
-                      </tbody>
-                      <thead>
-                        <% unless @underway_order %>
-                          <tr>
-                            <td class="align-bottom text-right" colspan="1">目標數量</td>
-                            <td class="text-right" colspan="12">
-                              <input type="range" id="a_slider"
-                                min="0"
-                                max="<%= number_with_precision(max_additional_amount + @positions[@coin.name]["netSize"].abs, precision: precision)%>"
-                                value="<%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>"
-                                step="<%= number_with_precision(@coin.sizeIncrement ,precision: precision) %>"
-                                aria-valuemin="0"
-                                aria-valuemax="<%= number_with_precision(max_additional_amount + @positions[@coin.name]["netSize"].abs,precision: precision) %>"
-                                aria-valuenow="<%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>">
-                              <div>
-                                <div id="bias" style="display: inline; padding-right: 0.3rem;">(+0)</div>
-                                <output for="a_slider" id="disp_amount" digits="<%= precision %>">
-                                  <%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>
-                                </output>
-                              </div>  
-                            </td>
-                          </tr>
-                          <tr>
-                            <td colspan="1">
-                            </td>
-                            <td colspan="2">
-                              <!-- Button fund_order_form_trigger -->
-                              <button type="button" id="fund_order_form_trigger" class="btn btn-outline-secondary btn-rounded" 
-                              data-bs-toggle="modal" data-bs-target="#fund_order_form" disabled="true">
-                                確定
-                              </button>
-                            </td>
-                          </tr>
-                        <% else %>
-                          <tr>
-                            <td class="align-bottom text-right" colspan="1">目標數量</td>
-                            <td class="text-right" colspan="12">
+                    </tbody>
+                    <thead>
+                      <% unless @underway_order %>
+                        <tr>
+                          <td class="align-bottom text-right" colspan="1">目標數量</td>
+                          <td class="text-right" colspan="12">
+                            <input type="range" id="a_slider"
+                              min="0"
+                              max="<%= number_with_precision(max_additional_amount + @positions[@coin.name]["netSize"].abs, precision: precision)%>"
+                              value="<%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>"
+                              step="<%= number_with_precision(size ,precision: precision) %>"
+                              aria-valuemin="0"
+                              aria-valuemax="<%= number_with_precision(max_additional_amount + @positions[@coin.name]["netSize"].abs,precision: precision) %>"
+                              aria-valuenow="<%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>">
+                            <div>
+                              <div id="bias" style="display: inline; padding-right: 0.3rem;">(+0)</div>
+                              <output for="a_slider" id="disp_amount" digits="<%= precision %>">
+                                <%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>
+                              </output>
+                            </div>  
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colspan="1">
+                          </td>
+                          <td colspan="2">
+                            <!-- Button fund_order_form_trigger -->
+                            <button type="button" id="fund_order_form_trigger" class="btn btn-outline-secondary btn-rounded" 
+                            data-bs-toggle="modal" data-bs-target="#fund_order_form" disabled="true">
+                              確定
+                            </button>
+                          </td>
+                        </tr>
+                      <% else %>
+                        <tr>
+                          <td class="align-bottom text-right" colspan="1">目標數量</td>
+                          <td class="text-right" colspan="12">
 
-                              <div class="align-bottom text-left text-primary" colspan="3">
-                                <% if @coin.id == @underway_order.coin_id %>
-                                  系統已有訂單執行中
-                                <% else %>
-                                  系統已有訂單執行中：<%= link_to " #{@underway_order.coin_name}", funding_show_path(coin_name: @underway_order.coin_name), data: { turbolinks: false } %>
-                                <% end %>
-                              </div>
-                              <div style="font-size: 1.2rem;">
-                                  <%= @underway_order.target_spot_amount.abs %>
-                              </div>  
-                            </td>
-                          </tr>
-                          <tr>
-                          </tr>
-                          <tr>
-                            <td colspan="1">
-                            </td>
-                            <td colspan="2">
-                              <!-- Button change to abort -->
-                              <button type="button" class="btn btn-outline-danger btn-rounded" 
-                              data-bs-toggle="modal" data-bs-target="#fund_order_abort_alert">
-                                終止訂單？
-                              </button>
-                            </td>
-                          </tr>
-                        <% end %>
-                      </thead>
-                    </table>
-                </div>
+                            <div class="align-bottom text-left text-primary" colspan="3">
+                              <% if @coin.id == @underway_order.coin_id %>
+                                系統已有訂單執行中
+                              <% else %>
+                                系統已有訂單執行中：<%= link_to " #{@underway_order.coin_name}", funding_show_path(coin_name: @underway_order.coin_name), data: { turbolinks: false } %>
+                              <% end %>
+                            </div>
+                            <div style="font-size: 1.2rem;">
+                                <%= @underway_order.target_spot_amount.abs %>
+                            </div>  
+                          </td>
+                        </tr>
+                        <tr>
+                        </tr>
+                        <tr>
+                          <td colspan="1">
+                          </td>
+                          <td colspan="2">
+                            <!-- Button change to abort -->
+                            <button type="button" class="btn btn-outline-danger btn-rounded" 
+                            data-bs-toggle="modal" data-bs-target="#fund_order_abort_alert">
+                              終止訂單？
+                            </button>
+                          </td>
+                        </tr>
+                      <% end %>
+                    </thead>
+                  </table>
+              </div>
             </div>
           </div>
           <div class="col-xl-6 col-lg-12 col-md-12">
@@ -324,7 +325,8 @@
                     <tbody>
                       <% @funding_orders.each do |f_order| %>
                         <% direction = f_order.target_perp_amount.abs - f_order.original_perp_amount.abs > 0 ? "加倉" : "減倉" %>
-                        <% precision = decimals(f_order.coin.sizeIncrement) %>
+                        <% size = f_order.coin[:spotsizeIncrement] > f_order.coin[:perpsizeIncrement] ? f_order.coin[:spotsizeIncrement] : f_order.coin[:perpsizeIncrement] %>
+                        <% precision = decimals(size) %>
                         <tr>
                           <td class="text-center"> 
                             <%= link_to f_order.coin_name, funding_show_path(:coin_name => f_order.coin_name), 
@@ -440,7 +442,8 @@
                     <div class="in-form-text col-sm-8" id="biasinform">
                       
                       <div class="input-group mb-3">
-                        <%= form.number_field :sizeIncrement, disabled: true, :class => "form-control", :value => @coin.sizeIncrement %>
+                        <% size = @coin[:spotsizeIncrement] > @coin[:perpsizeIncrement] ? @coin[:spotsizeIncrement] : @coin[:perpsizeIncrement] %>
+                        <%= form.number_field :sizeIncrement, disabled: true, :class => "form-control", :value => size %>
                         <span class="input-group-text"><i class="far fa-times"></i></span>
                         <%= form.select(
                           :acceleration, 

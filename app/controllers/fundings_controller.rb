@@ -64,8 +64,8 @@ class FundingsController < ApplicationController
       next if position["netSize"] == 0
 
       p_coin_name = position["future"].split("-")[0]
-      precision = 0
-      @coins.each { |coin| precision = helpers.decimals(coin[:sizeIncrement]) if coin[:name] == p_coin_name }
+      p_coin = @coins.detect { |coin| coin[:name] == p_coin_name }
+      precision = helpers.decimals(p_coin[:spotsizeIncrement] > p_coin[:perpsizeIncrement] ? p_coin[:spotsizeIncrement] : p_coin[:perpsizeIncrement])
 
       @positions[position["future"].split("-")[0]] = {
           "netSize" => position["netSize"],

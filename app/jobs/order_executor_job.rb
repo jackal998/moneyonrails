@@ -35,8 +35,8 @@ class OrderExecutorJob < ApplicationJob
 
       puts "#{Time.now.strftime('%H:%M:%S')}: funding_order_id: #{funding_order_id} => #{spot_name}, Current ratio: #{current_ratio}, Threshold: #{@funding_order.threshold}, Direction: #{order_config["direction"]}" if Time.now.to_i % 30 == 0
 
-      spot_order_size = order_sizer("spot",@coin,@funding_order,order_config)
-      perp_order_size = order_sizer("perp",@coin,@funding_order,order_config)
+      spot_order_size = order_sizer("spot", @coin, @funding_order, order_config)
+      perp_order_size = order_sizer("perp", @coin, @funding_order, order_config)
 
       if current_ratio > @funding_order.threshold
 
@@ -145,10 +145,12 @@ class OrderExecutorJob < ApplicationJob
       config_type = "perp_steps"
     end
 
+    size = coin.spotsizeIncrement > coin.perpsizeIncrement ? coin.spotsizeIncrement : coin.perpsizeIncrement 
+
     if order_config[config_type].abs >= funding_order.acceleration
-      return funding_order.acceleration * coin.sizeIncrement
+      return funding_order.acceleration * size
     else
-      return order_config[config_type].abs * coin.sizeIncrement
+      return order_config[config_type].abs * size
     end
   end
 
@@ -163,12 +165,14 @@ class OrderExecutorJob < ApplicationJob
     end 
 
     puts 'account_data:' + account_data.to_json
+    
+    size = coin.spotsizeIncrement > coin.perpsizeIncrement ? coin.spotsizeIncrement : coin.perpsizeIncrement 
 
     tmp["spot_bias"] = funding_order.target_spot_amount - account_data[spot_name]
-    tmp["spot_steps"] = (tmp["spot_bias"] / coin.sizeIncrement).round(0)
+    tmp["spot_steps"] = (tmp["spot_bias"] / size).round(0)
 
     tmp["perp_bias"] = funding_order.target_perp_amount - account_data[perp_name]
-    tmp["perp_steps"] = (tmp["perp_bias"] / coin.sizeIncrement).round(0)
+    tmp["perp_steps"] = (tmp["perp_bias"] / size).round(0)
 
     step_bias = tmp["spot_steps"] + tmp["perp_steps"]
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_08_17_123340) do
+ActiveRecord::Schema.define(version: 2021_08_19_075737) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -22,8 +22,10 @@ ActiveRecord::Schema.define(version: 2021_08_17_123340) do
     t.boolean "have_perp"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.decimal "priceIncrement"
-    t.decimal "sizeIncrement"
+    t.decimal "perppriceIncrement"
+    t.decimal "perpsizeIncrement"
+    t.decimal "spotpriceIncrement"
+    t.decimal "spotsizeIncrement"
     t.index ["name"], name: "index_coins_on_name", unique: true
   end
 
@@ -109,6 +111,31 @@ ActiveRecord::Schema.define(version: 2021_08_17_123340) do
     t.datetime "updated_at", precision: 6, null: false
     t.index ["coin_id"], name: "index_funding_stats_on_coin_id"
     t.index ["coin_name"], name: "index_funding_stats_on_coin_name"
+  end
+
+  create_table "grid_settings", force: :cascade do |t|
+    t.integer "coin_id"
+    t.string "coin_name"
+    t.decimal "lower_limit"
+    t.boolean "dyn_lower_limit", default: false
+    t.decimal "upper_limit"
+    t.boolean "dyn_upper_limit", default: false
+    t.integer "girds"
+    t.decimal "grid_gap"
+    t.boolean "constant_gap", default: true
+    t.decimal "input_USD_amount"
+    t.decimal "input_spot_amount"
+    t.decimal "input_totalUSD_amount"
+    t.decimal "trigger_price"
+    t.decimal "stop_loss_price"
+    t.decimal "take_profit_price"
+    t.decimal "threshold", default: "0.0"
+    t.string "status", default: "waiting"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["coin_id"], name: "index_grid_settings_on_coin_id"
+    t.index ["coin_name"], name: "index_grid_settings_on_coin_name"
+    t.index ["status"], name: "index_grid_settings_on_status"
   end
 
   create_table "rates", force: :cascade do |t|

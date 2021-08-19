@@ -1,4 +1,6 @@
 class Coin < ApplicationRecord
+  self.filter_attributes=[]
+
   has_many :rates
   has_many :funding_orders
   has_many :funding_payments
@@ -13,11 +15,11 @@ class Coin < ApplicationRecord
     require'csv'
     file = "#{Rails.root}/public/coin_data.csv"
     coins = Coin.order(:name)
-    headers = ["id","name","weight", "have_perp","priceIncrement","sizeIncrement","minProvideSize"]
+    headers = ["id","name","weight", "have_perp","spotpriceIncrement","spotsizeIncrement","minProvideSize"]
 
     CSV.open(file, 'w', write_headers: true, headers: headers) do |writer|
       coins.each do |coin| 
-        writer << [coin.id,coin.name,coin.weight,coin.have_perp,coin.priceIncrement,coin.sizeIncrement,coin.minProvideSize] 
+        writer << [coin.id,coin.name,coin.weight,coin.have_perp,coin.spotpriceIncrement,coin.spotsizeIncrement,coin.minProvideSize] 
       end
     end
   end

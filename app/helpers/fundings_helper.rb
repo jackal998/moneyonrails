@@ -29,14 +29,15 @@ require 'ftx_client'
 
       tmp[coin_name] = {:market_type => "", :have_perp => false} unless tmp[coin_name]
       case result["type"]
+
       when "future"
         tmp[coin_name].merge!({
           :perp_price_usd => result["price"],
           :perp_bid_usd => result["bid"],
           :perp_ask_usd => result["ask"],
           :perp_volume => result["volumeUsd24h"],
-          :priceIncrement => result["priceIncrement"],
-          :sizeIncrement => result["sizeIncrement"],
+          :perppriceIncrement => result["priceIncrement"],
+          :perpsizeIncrement => result["sizeIncrement"],
           :minProvideSize => result["minProvideSize"],
           :have_perp => true})
         tmp[coin_name][:market_type] += "f"
@@ -46,7 +47,9 @@ require 'ftx_client'
           :spot_price_usd => result["price"],
           :spot_bid_usd => result["bid"],
           :spot_ask_usd => result["ask"],
-          :spot_volume => result["volumeUsd24h"]})
+          :spot_volume => result["volumeUsd24h"],
+          :spotpriceIncrement => result["priceIncrement"],
+          :spotsizeIncrement => result["sizeIncrement"]})
         tmp[coin_name][:market_type] += "s"
       end
       
@@ -93,8 +96,10 @@ require 'ftx_client'
   private
   def append_coin_data(coin, data, data_arr)
     coin.assign_attributes(
-      :priceIncrement => data[:priceIncrement],
-      :sizeIncrement => data[:sizeIncrement],
+      :spotpriceIncrement => data[:spotpriceIncrement],
+      :spotsizeIncrement => data[:spotsizeIncrement],
+      :perppriceIncrement => data[:perppriceIncrement],
+      :perpsizeIncrement => data[:perpsizeIncrement],
       :minProvideSize => data[:minProvideSize],
       :have_perp => data[:have_perp],
       :updated_at => Time.now)
