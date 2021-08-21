@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_08_19_075737) do
+ActiveRecord::Schema.define(version: 2021_08_20_140457) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -120,7 +120,7 @@ ActiveRecord::Schema.define(version: 2021_08_19_075737) do
     t.boolean "dyn_lower_limit", default: false
     t.decimal "upper_limit"
     t.boolean "dyn_upper_limit", default: false
-    t.integer "girds"
+    t.integer "grids"
     t.decimal "grid_gap"
     t.boolean "constant_gap", default: true
     t.decimal "input_USD_amount"
@@ -133,6 +133,7 @@ ActiveRecord::Schema.define(version: 2021_08_19_075737) do
     t.string "status", default: "waiting"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.decimal "order_size"
     t.index ["coin_id"], name: "index_grid_settings_on_coin_id"
     t.index ["coin_name"], name: "index_grid_settings_on_coin_name"
     t.index ["status"], name: "index_grid_settings_on_status"

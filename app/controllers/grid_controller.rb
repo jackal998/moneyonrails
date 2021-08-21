@@ -4,9 +4,12 @@ class GridController < ApplicationController
   def index
     coin_name = params["coin_name"] ? params["coin_name"] : "BTC"
     @coin = Coin.find_by("name = ?", coin_name)
+
+    @market = FtxClient.market_info("#{coin_name}/USD")["result"]
     
-    @grid_setting = GridSetting.new(:coin_id => @coin.id, :coin_name => @coin.name)
+    @grid_setting = GridSetting.new(:coin_id => @coin.id, :coin_name => coin_name)
     balances = ftx_wallet_balance
+    balances[coin_name] = {"amount"=>0.0, "usdValue"=>0.0} unless balances[coin_name]
 
     render locals: {balances: balances}
   end
@@ -15,9 +18,10 @@ class GridController < ApplicationController
     @grid_setting = GridSetting.new(creategrid_params)
 
     @grid_setting["status"] = "active"
+
+    puts @grid_setting.attributes
     # @grid_setting.save
-    # OrderExecutorJob.perform_later(@funding_order.id)
-    GridExecutorJob.perform_later(@grid_setting[:coin_name])
+    # GridExecutorJob.perform_later(@grid_setting[:id])
 
     redirect_to grid_path(:coin_name => @grid_setting[:coin_name])
   end
@@ -37,10 +41,10 @@ private
     balances["USD"] = balances.delete("USD") if balances["USD"]
     return balances
   end
-
+ 
   def creategrid_params
-    params.require(:grid_setting).permit(:coin_id,:coin_name,
-                                          :lower_limit,:upper_limit,:girds,:grid_gap,
+    params.require(:grid_setting).permit(:coin_id,:coin_name, :order_size,
+                                          :lower_limit,:upper_limit,:grids,:grid_gap,
                                           :input_USD_amount,:input_spot_amount,
                                           :trigger_price,:threshold,
                                           :stop_loss_price,:take_profit_price)

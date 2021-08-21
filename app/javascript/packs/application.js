@@ -17,6 +17,7 @@ import "bootstrap-table"
 import "chartkick/chart.js"
 
 import('./js/custom')
+import('./js/grid')
 
 Rails.start()
 Turbolinks.start()

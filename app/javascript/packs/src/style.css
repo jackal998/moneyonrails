@@ -1879,15 +1879,14 @@ textarea.form-control {
   border-radius: 0.25rem; }
 
 .was-validated .form-control:invalid, .form-control.is-invalid {
-  border-color: #FF1616;
+  border-color: #dc3545;
   padding-right: calc(1.5em + 0.75rem);
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23FF1616' viewBox='-2 -2 7 7'%3e%3cpath stroke='%23FF1616' d='M0 0l3 3m0-3L0 3'/%3e%3ccircle r='.5'/%3e%3ccircle cx='3' r='.5'/%3e%3ccircle cy='3' r='.5'/%3e%3ccircle cx='3' cy='3' r='.5'/%3e%3c/svg%3E");
   background-repeat: no-repeat;
   background-position: center right calc(0.375em + 0.1875rem);
   background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem); }
   .was-validated .form-control:invalid:focus, .form-control.is-invalid:focus {
-    border-color: #FF1616;
-    box-shadow: 0 0 0 0.2rem rgba(255, 22, 22, 0.25); }
+    border-color: #dc3545;
+    box-shadow: none; }
   .was-validated .form-control:invalid ~ .invalid-feedback,
   .was-validated .form-control:invalid ~ .invalid-tooltip, .form-control.is-invalid ~ .invalid-feedback,
   .form-control.is-invalid ~ .invalid-tooltip {
@@ -13638,24 +13637,6 @@ input[type="checkbox"]:checked:after {
     width: 0.875rem;
     height: 0.875rem;
     top: 1px; }
-
-.form-control.is-valid {
-  border-color: #7ED321 !important;
-  border-right: 0px !important; }
-  .form-control.is-valid:focus {
-    box-shadow: none; }
-
-.form-control.is-warning {
-  border-color: #FFAA16 !important;
-  border-right: 0px !important; }
-  .form-control.is-warning:focus {
-    box-shadow: none; }
-
-.form-control.is-invalid {
-  border-color: #FF1616 !important;
-  border-right: 0px !important; }
-  .form-control.is-invalid:focus {
-    box-shadow: none; }
 
 .is-valid .input-group-prepend .input-group-text i {
   color: #7ED321; }
