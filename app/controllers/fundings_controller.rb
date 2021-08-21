@@ -40,6 +40,14 @@ class FundingsController < ApplicationController
       @pie_chart_payment_data[list_index[coin_name]][1] += (0 - payment)
       @col_chart_payment_data[list_index[coin_name]][:data] << [coin_day[1], (0 - payment)]
     end
+    
+    @pie_chart_payment_data.delete_if do |data|
+      next if data[1] >= 0.01
+      coin_name = data[0]
+      list_index.except!(coin_name)
+      @col_chart_payment_data.delete_if {|dataset| dataset[:name] == coin_name }
+    end
+
     render locals: {balances: balances, list_index: list_index}
   end
 
