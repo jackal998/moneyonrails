@@ -83,7 +83,7 @@
                           <td><%= "投資數量(#{form.object.coin_name})" %></td>
                         </tr>
                         <tr>
-                          <td><%= form.number_field :input_USD_amount, step: 0.01, value: 0.01, min: 0.01, max: balances["USD"]["amount"],:id => "input_USD_amount",:class => "form-control" %></td>
+                          <td><%= form.number_field :input_USD_amount, step: 0.01, value: 0.01, min: 0, max: balances["USD"]["amount"],:id => "input_USD_amount",:class => "form-control" %></td>
                           <td><%= form.number_field :input_spot_amount, step: sizestep, value: 0, min: 0, max: balances[@coin.name]["amount"],:id => "input_spot_amount", :class => "form-control" %></td>
                         </tr>
                         <tr>

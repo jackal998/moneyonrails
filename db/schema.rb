@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_08_20_140457) do
+ActiveRecord::Schema.define(version: 2021_08_22_183532) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -113,6 +113,30 @@ ActiveRecord::Schema.define(version: 2021_08_20_140457) do
     t.index ["coin_name"], name: "index_funding_stats_on_coin_name"
   end
 
+  create_table "grid_orders", force: :cascade do |t|
+    t.integer "coin_id"
+    t.string "coin_name"
+    t.integer "grid_setting_id"
+    t.decimal "ftx_order_id"
+    t.string "market", default: ""
+    t.string "order_type", default: ""
+    t.string "side", default: ""
+    t.decimal "price"
+    t.decimal "size"
+    t.string "status", default: "new"
+    t.decimal "filledSize"
+    t.decimal "remainingSize"
+    t.decimal "avgFillPrice"
+    t.datetime "createdAt"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["coin_id"], name: "index_grid_orders_on_coin_id"
+    t.index ["coin_name"], name: "index_grid_orders_on_coin_name"
+    t.index ["ftx_order_id"], name: "index_grid_orders_on_ftx_order_id"
+    t.index ["grid_setting_id"], name: "index_grid_orders_on_grid_setting_id"
+    t.index ["status"], name: "index_grid_orders_on_status"
+  end
+
   create_table "grid_settings", force: :cascade do |t|
     t.integer "coin_id"
     t.string "coin_name"
@@ -134,6 +158,7 @@ ActiveRecord::Schema.define(version: 2021_08_20_140457) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.decimal "order_size"
+    t.string "description"
     t.index ["coin_id"], name: "index_grid_settings_on_coin_id"
     t.index ["coin_name"], name: "index_grid_settings_on_coin_name"
     t.index ["status"], name: "index_grid_settings_on_status"

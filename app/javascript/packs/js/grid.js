@@ -126,7 +126,7 @@ function gridreadyFn( jQuery ) {
               order_size.value = size_value.toNearest(size_step, Decimal.ROUND_HALF_UP);
             } else {
               usd_value = usd_step.mul(size_value.div(size_step));
-              input_USD_amount.value = usd_value.add(input_USD_amount.min).toFixed(2);
+              input_USD_amount.value = usd_value.toFixed(2);
             }
 
             if (usd_value.gt(input_USD_amount.max) || usd_value.lt(input_USD_amount.min)) {

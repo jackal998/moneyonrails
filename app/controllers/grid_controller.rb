@@ -20,8 +20,8 @@ class GridController < ApplicationController
     @grid_setting["status"] = "active"
 
     puts @grid_setting.attributes
-    # @grid_setting.save
-    # GridExecutorJob.perform_later(@grid_setting[:id])
+    @grid_setting.save
+    GridExecutorJob.perform_later(@grid_setting[:id])
 
     redirect_to grid_path(:coin_name => @grid_setting[:coin_name])
   end

@@ -33,6 +33,17 @@ class FtxClient
     return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/funding_payments" + params_str)
   end
 
+  def self.order_history(subaccount, params = {})
+    
+    params_str = ""
+    unless params.empty?
+      params.each {|k,v| params_str += "&#{k}=#{v}"}
+      params_str[0]="?"
+    end
+
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/orders/history" + params_str)
+  end
+
   def self.place_order(subaccount, params = {})
     # market            string  XRP-PERP    e.g. "BTC/USD" for spot, "XRP-PERP" for futures
     # side              string  sell        "buy" or "sell"
@@ -89,7 +100,18 @@ class FtxClient
   def self.markets_info
     return FtxClient.new._request("GET", "/api/markets")
   end
-  
+
+  def self.orderbook(market, params = {})
+    params_str = ""
+
+    unless params.empty?
+      params.each {|k,v| params_str += "&#{k}=#{v}"}
+      params_str[0]="?"
+    end
+
+    return FtxClient.new._request("GET", "/api/markets/#{market}/orderbook" + params_str)
+  end
+
   def _request(http_method, path, params = {})
     
     req_url = self.url + path
