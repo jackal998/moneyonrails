@@ -39,6 +39,28 @@
                 </div>
             </div>
           </div>
+          <% @grid_settings.each do |grid_setting| %>
+            <div class="col-xl-3 col-md-6 col-sm-12">
+              <div class="card">
+                  <div class="card-header">                  
+                    <h4 class="card-title"><%= "#{grid_setting.coin_name}/USD" %></h4>
+                    <% duration = Time.now - grid_setting.created_at %>
+                    <% day_ = duration.divmod(86400) %>
+                    <% hour_ = day_[1].divmod(3600) %>
+                    <% min_ = hour_[1].divmod(60) %>
+                    <%= grid_setting.created_at.strftime('%F %T') %> 建立<br/>
+                    <%= "(已運行 #{day_[0]} 日 #{hour_[0]} 時 #{min_[0]} 分)" %>
+                  </div>
+                  <div class="card-header">
+                    <h6>投入金額(USD)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_USD_amount %></h6>
+                    <h6>投入金額(<%= grid_setting.coin_name %>)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_spot_amount %></h6>
+                  </div>
+                  <div class="card-body">
+                    <%= "#{grid_setting.grid_orders.count}" %>
+                  </div>
+              </div>
+            </div>
+          <% end %>
           <div class="col-xl-3 col-md-6 col-sm-12">
             <div class="card">
               <%= form_with model: @grid_setting, url: grid_create_path do |form| %>
