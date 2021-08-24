@@ -78,6 +78,10 @@ class FtxClient
     return FtxClient.new(:auth => true, :subaccount => subaccount)._request("POST", "/api/orders", {payload: payload})
   end
  
+  def self.cancel_order(subaccount, order_id)
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("DELETE", "/api/orders/#{order_id}")
+  end
+
   def self.future_stats(future_name)
     return FtxClient.new._request("GET", "/api/futures/#{future_name}/stats")
   end

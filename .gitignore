@@ -26,6 +26,8 @@ pickle-email-*.html
 # Ignore all logfiles and tempfiles.
 /log/*
 /tmp/*
+
+# Ignore redis binary dump (dump.rdb) files
 *.rdb
 
 # Ignore uploaded files in development.

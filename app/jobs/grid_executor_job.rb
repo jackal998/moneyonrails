@@ -5,8 +5,8 @@ class GridExecutorJob < ApplicationJob
   def perform(grid_setting_id)
     @grid_setting = GridSetting.find(grid_setting_id)
     coin_name = @grid_setting["coin_name"]
-
-    return unless @grid_setting["status"] == "active"
+    setting_status = @grid_setting["status"]
+    return unless setting_status == "active"
     
     puts "sidekiq GridExecutorJob for grid_setting_id: #{grid_setting_id} starting..."
     error_msg = ""
@@ -71,11 +71,12 @@ class GridExecutorJob < ApplicationJob
     end
 
     # update market buy order status from ftx
-    update_order_status!(coin_name, bought_order_ids)
+    update_order_status!(coin_name, order_ids: bought_order_ids)
 
+    ref_price = ref_calc(market_on_grid_value, upper_value, lower_value)
     # native check if grids value is integer
     (1..sell_grids).each do |i|
-      order_price = market_on_grid_value + gap_value * i
+      order_price = ref_price + gap_value * i
 
       payload_limit_sell = payload_limit.merge({side: "sell", price: order_price})
 
@@ -89,7 +90,7 @@ class GridExecutorJob < ApplicationJob
     end
 
     (1..buy_grids).each do |i|
-      order_price = market_on_grid_value - gap_value * i
+      order_price = ref_price - gap_value * i
 
       payload_limit_buy = payload_limit.merge({side: "buy", price: order_price})
 
@@ -102,6 +103,74 @@ class GridExecutorJob < ApplicationJob
       puts order_result.to_json
     end
     # buy spots and grids init ok
+
+    while setting_status == "active"
+      open_orders = @grid_setting.grid_orders.where(status: ["new", "open"])
+      updated_ids = []
+      while updated_ids.empty?
+        # grids check ever 8 second
+        sleep(8)
+        updated_ids = update_order_status!(coin_name, orders: open_orders)
+
+        GridSetting.uncached do
+          setting_status = GridSetting.find(grid_setting_id).status
+        end
+
+        unless setting_status == "active"
+          to_cancel_order_ids = @grid_setting.grid_orders.where(status: ["new", "open"]).pluck(:ftx_order_id).map(&:to_i)
+
+          to_cancel_order_ids.each do |order_id|
+            cancel_result = FtxClient.cancel_order("GridOnRails", order_id.to_i)
+            # puts cancel_result.to_json
+          end
+
+          updated_ids = update_order_status!(coin_name, order_ids: to_cancel_order_ids)
+        end
+      end
+      break unless setting_status == "active"
+
+      @market = FtxClient.market_info("#{coin_name}/USD")["result"]
+      market_value = @market["price"]
+      market_on_grid_value = ((market_value - lower_value) / gap_value).round(0) * gap_value + lower_value
+      ref_price = ref_calc(market_on_grid_value, upper_value, lower_value)
+
+      buy_grids = grids_calc("buy", ref_price, upper_value, lower_value, gap_value)
+      sell_grids = grids_calc("sell", ref_price, upper_value, lower_value, gap_value)
+
+      (1..sell_grids).each do |i|
+        order_price = ref_price + gap_value * i
+        
+        break if open_orders.detect {|order| order["price"] == order_price}
+
+        payload_limit_sell = payload_limit.merge({side: "sell", price: order_price})
+
+        order_result = FtxClient.place_order("GridOnRails", payload_limit_sell)
+        
+        save_order_result!(@grid_setting, order_result) if order_result["success"]
+
+        puts 'payload_limit_sell:' + payload_limit_sell.to_s
+        puts 'payload_limit_sell_result:'
+        puts order_result.to_json
+      end
+
+      (1..buy_grids).each do |i|
+        order_price = ref_price - gap_value * i
+
+        break if open_orders.detect {|order| order["price"] == order_price}
+
+        payload_limit_buy = payload_limit.merge({side: "buy", price: order_price})
+
+        order_result = FtxClient.place_order("GridOnRails", payload_limit_buy)
+
+        save_order_result!(@grid_setting, order_result) if order_result["success"]
+
+        puts 'payload_limit_buy:' + payload_limit_buy.to_s
+        puts 'payload_limit_buy_result:'
+        puts order_result.to_json
+      end
+    end
+
+    puts "Grids were cleaned, See You!"
   end
 
   def ftx_wallet_balance
@@ -123,7 +192,7 @@ class GridExecutorJob < ApplicationJob
       return (market_on_grid_value - lower_value) / gap_value if market_on_grid_value > lower_value
       return 0
     when "sell"
-      return (upper_value - lower_value) / gap_value + 1 if market_on_grid_value < lower_value
+      return (upper_value - lower_value) / gap_value if market_on_grid_value <= lower_value
       return (upper_value - market_on_grid_value) / gap_value if market_on_grid_value < upper_value
       return 0
     end
@@ -138,6 +207,12 @@ class GridExecutorJob < ApplicationJob
     sell_grids_USD_required = sell_grids * market_on_grid_value
 
     return grid_setting["input_USD_amount"] == ((sell_grids_USD_required + buy_grids_USD_required) * grid_setting["order_size"]).round(2)
+  end
+
+  def ref_calc(market_on_grid_value, upper_value, lower_value)
+    return upper_value if market_on_grid_value >= upper_value
+    return lower_value if market_on_grid_value <= lower_value
+    return market_on_grid_value
   end
 
   def to_buy_amount_calc(coin_name, to_buy_total_amount, curr_balances, init_balances, size_step)
@@ -171,17 +246,20 @@ class GridExecutorJob < ApplicationJob
     return order_result["result"]["id"]
   end
 
-  def update_order_status!(coin_name, order_ids)
-    orders = GridOrder.where("ftx_order_id = ?", order_ids)
+  def update_order_status!(coin_name, order_ids: nil , orders: nil)
+    updated = []
 
-    orders_result = {}
+    orders = GridOrder.where(ftx_order_id: order_ids) unless orders
+    order_ids = orders.pluck(:ftx_order_id).map(&:to_i)
+    return updated if orders.empty?
+
     ftx_order_history_response = FtxClient.order_history("GridOnRails", market: "#{coin_name}/USD")
 
     ftx_order_history_response["result"].each do |result|
       if order_ids.include?(result["id"])
         order = orders.detect {|order| order["ftx_order_id"] == result["id"]}
 
-        order.update(
+        order.attributes = {
            "market"=> result["market"],
            "order_type"=> result["type"],
            "side"=> result["side"],
@@ -191,9 +269,14 @@ class GridExecutorJob < ApplicationJob
            "filledSize"=> result["filledSize"],
            "remainingSize"=> result["remainingSize"],
            "avgFillPrice"=> result["avgFillPrice"],
-           "createdAt"=> result["createdAt"])
+           "createdAt"=> result["createdAt"]}
+
+        if order.changed?
+          order.save
+          updated << result["id"]
+        end
       end
     end
-    
+    return updated
   end
 end

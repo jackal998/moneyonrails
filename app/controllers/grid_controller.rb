@@ -8,6 +8,7 @@ class GridController < ApplicationController
     @market = FtxClient.market_info("#{coin_name}/USD")["result"]
     
     @grid_setting = GridSetting.new(:coin_id => @coin.id, :coin_name => coin_name)
+    @grid_settings = GridSetting.includes(:grid_orders).where(status: "active")
     balances = ftx_wallet_balance
     balances[coin_name] = {"amount"=>0.0, "usdValue"=>0.0} unless balances[coin_name]
 
