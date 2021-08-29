@@ -140,12 +140,27 @@ class FtxClient
       headers['Content-Type'] = 'application/json' if payload
     end
 
-    response = RestClient::Request.execute(
-      :method => http_method.to_sym, 
-      :url => req_url, 
-      :payload => payload,
-      :headers => headers) {|response, request, result| response }
+    response_is_JSON = false
+    retry_time = 0
 
-    return JSON.parse(response.body)
+    until response_is_JSON || retry_time >= 5
+      response = RestClient::Request.execute(
+        :method => http_method.to_sym, 
+        :url => req_url, 
+        :payload => payload,
+        :headers => headers) {|response, request, result| response }
+      begin
+        return_data = JSON.parse(response.body)
+        response_is_JSON = true
+      rescue
+        retry_time += 1
+        puts "(attempt: #{retry_time}) FtxClient request of #{req_url} is not JSON. => " + Nokogiri::HTML.parse(response.body).title
+        sleep(5)
+        return_data = Nokogiri::HTML.parse(response.body).title
+        response_is_JSON = false
+      end
+    end
+    
+    return return_data
   end
 end
