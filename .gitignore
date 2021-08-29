@@ -28,7 +28,7 @@ pickle-email-*.html
 /tmp/*
 
 # Ignore redis binary dump (dump.rdb) files
-*.rdb
+dump.rdb
 
 # Ignore uploaded files in development.
 /storage/*
