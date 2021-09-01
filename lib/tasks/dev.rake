@@ -350,9 +350,16 @@ namespace :dev do
     coins_to_update = coins.count
     last_1hr_rates_count = Rate.where("time >= ?",now_time).count
     last_2hr_rates_count = Rate.where("time >= ?",now_time - 1.hour).count
-    datas_count = data["result"].count
+
+    rate_datas_tbu = []
+    tmp = data["result"].index_by {|result| "#{result["future"].split('-')[0]}"}
+
+    tmp.except!("DMG")
+    datas_count = tmp.count
 
     # check if datas are aligned and ready to be update
+    # 2021/09/02 DMG 在亂...FTX上面沒有PERP，但API回傳有他的Rate...，先手動當例外處裡(149coins)
+    puts 'tmp.except!("DMG")'
     case
     when datas_count == coins_to_update && last_2hr_rates_count == coins_to_update * 2
       err_msg = "Rates already up-to-date, no data was imported."
@@ -364,19 +371,14 @@ namespace :dev do
     end
     unless coins_to_update == last_2hr_rates_count && last_2hr_rates_count == datas_count
       puts "update_rate: abort: Data counts missmatch.
-        \n\r#{err_msg}
-        \n\rrecorded coins:         #{coins_to_update}
+          \r#{err_msg}
+          \rrecorded coins:         #{coins_to_update}
           \rrecorded rates (1/2hr): #{last_1hr_rates_count}/#{last_2hr_rates_count}
           \rapi response datas:     #{datas_count}"
       next # this means abort task ... do block
     end
-
+    
     # update start
-    # puts "Updating rate... => #{now_time}"
-
-    rate_datas_tbu = []
-    tmp = data["result"].index_by {|result| "#{result["future"].split('-')[0]}"}
-
     coins.each do |coin|
       rate = Rate.new(
         :coin_id => coin.id,
