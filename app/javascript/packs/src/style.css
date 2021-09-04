@@ -1697,6 +1697,11 @@ select.form-control:focus::-ms-value {
     padding-right: 0;
     padding-left: 0; }
 
+.form-control-detail {
+  font-size: 80%;
+  color: #6c757d;
+  text-align: right !important;}
+
 .form-control-sm {
   height: calc(1.5em + 0.5rem + 2px);
   padding: 0.25rem 0.5rem;

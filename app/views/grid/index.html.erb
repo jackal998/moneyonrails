@@ -27,7 +27,8 @@
                     <div class="stat-content">
                         <div class="stat-text"><%= "#{@coin.name}" %>可用餘額</div>
                         <div class="stat-digit">
-                          <%= balances["#{@coin.name}"]["amount"].round(2) %> / <i class="far fa-dollar-sign"></i><%= balances["#{@coin.name}"]["usdValue"].round(2) %>
+                          <% spot_precision = decimals(@coin.spotsizeIncrement) %>
+                          <%= balances["#{@coin.name}"]["amount"].round(spot_precision) %> / <i class="far fa-dollar-sign"></i><%= balances["#{@coin.name}"]["usdValue"].round(2) %>
                         </div>
                     </div>
                     <div class="progress">
@@ -105,8 +106,12 @@
                           <td><%= "投資數量(#{form.object.coin_name})" %></td>
                         </tr>
                         <tr>
-                          <td><%= form.number_field :input_USD_amount, step: 0.01, value: 0.01, min: 0, max: balances["USD"]["amount"],:id => "input_USD_amount",:class => "form-control" %></td>
-                          <td><%= form.number_field :input_spot_amount, step: sizestep, value: 0, min: 0, max: balances[@coin.name]["amount"],:id => "input_spot_amount", :class => "form-control" %></td>
+                          <td><%= form.number_field :input_USD_amount, step: 0.01, value: 0.01, min: 0, max: balances["USD"]["amount"],:id => "input_USD_amount",:class => "form-control" %>
+                            <div id="input_USD_detail" class="form-control-detail">&nbsp;</div>
+                          </td>
+                          <td><%= form.number_field :input_spot_amount, step: sizestep, value: 0, min: 0, max: balances[@coin.name]["amount"],:id => "input_spot_amount", :class => "form-control" %>
+                            <div id="input_spot_detail" class="form-control-detail">&nbsp;</div>
+                          </td>
                         </tr>
                         <tr>
                           <td>開單價格</td>
@@ -126,6 +131,7 @@
                         </tr>
                       </tbody>
                   </table>
+                  &nbsp;
                 <%= form.submit "送 出", :class => "text-center btn btn-outline-primary btn-rounded" %>
               <% end %>
             </div>
