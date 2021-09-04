@@ -166,6 +166,7 @@ namespace :dev do
       end
     end
 
+    orders_updated = 0
     updated_status.each do |coin_name, status|
       case status
       when "down"
@@ -180,6 +181,7 @@ namespace :dev do
             :time => data_results[coin_name]["time"],
             :created_at => Time.now,
             :updated_at => Time.now)
+          orders_updated += 1
           funding_payment_datas_tbu << funding_payment.attributes.except!("id")
         else
           puts "#{coin_name} order #{funding_orders[coin_name][:id]} status normal, but no data from FTX" if status == "normal"
@@ -199,7 +201,7 @@ namespace :dev do
 
     FundingPayment.insert_all(funding_payment_datas_tbu)
 
-    puts "update_funding_payment of #{orders_to_be_updated} orders ok => #{Time.now} (#{Time.now - init_time}s)"
+    puts "update_funding_payment of #{orders_updated} orders ok => #{Time.now} (#{Time.now - init_time}s)"
   end
 
   task :fetch_history_funding_payment => :environment do
@@ -377,7 +379,7 @@ namespace :dev do
           \rapi response datas:     #{datas_count}"
       next # this means abort task ... do block
     end
-    
+
     # update start
     coins.each do |coin|
       rate = Rate.new(
