@@ -25,6 +25,8 @@ class GridExecutorJob < ApplicationJob
     gap_value = @grid_setting["grid_gap"]
     size_value = @grid_setting["order_size"]
 
+    price_precision = decimals(gap_value)
+
     spot_in_amount = @grid_setting["input_spot_amount"]
 
     error_msg += "grids_value(#{grids_value}) invalid. " if grids_value > ((upper_value - lower_value)/price_step + 1)
@@ -47,13 +49,14 @@ class GridExecutorJob < ApplicationJob
     updated_ids = update_order_status!(coin_name, orders: init_open_orders)
     # init_open_orders was changed by .detect & .save in update_order_status!
 
-puts "setting upper_limit      = #{upper_value}"
-puts "setting lower_value      = #{lower_value}"
-puts "setting grids_value      = #{grids_value}"
-puts "setting gap_value        = #{gap_value}"
-puts "setting size_value       = #{size_value}"
-puts "setting total buy_grids  = #{buy_grids}"
-puts "setting total sell_grids = #{sell_grids}"
+    puts "setting upper_limit      = #{upper_value}"
+    puts "setting lower_value      = #{lower_value}"
+    puts "setting grids_value      = #{grids_value}"
+    puts "setting gap_value        = #{gap_value}"
+    puts "setting size_value       = #{size_value}"
+    puts "setting price_precision  = #{price_precision}"
+    puts "setting total buy_grids  = #{buy_grids}"
+    puts "setting total sell_grids = #{sell_grids}"
 
     spot_bought = 0
     spot_inuse = 0
@@ -144,13 +147,13 @@ puts "setting total sell_grids = #{sell_grids}"
     # buy spots and grids init ok
 
     while setting_status == "active"
+      puts "#{Time.now.strftime('%H:%M:%S')}: market_value: #{market_value} / market_on_grid_value: #{market_on_grid_value}"
       puts "#{Time.now.strftime('%H:%M:%S')}: ref_price: #{ref_price} / sell_grids: #{sell_grids} / buy_grids: #{buy_grids}"
 
       (1..sell_grids).each do |i|
-        order_price = ref_price + gap_value * i
+        order_price = (ref_price + gap_value * i).round(price_precision)
         sleep(0.25)
-        
-        next if open_orders.detect {|order| order["price"] == order_price}
+        next if open_orders.detect {|order| order["price"].round(price_precision) == order_price}
 
         payload_limit_sell = payload_limit.merge({side: "sell", price: order_price})
 
@@ -159,15 +162,13 @@ puts "setting total sell_grids = #{sell_grids}"
         save_order_result!(@grid_setting, order_result) if order_result["success"]
 
         puts 'payload_limit_sell:' + payload_limit_sell.to_s
-        puts 'payload_limit_sell_result:'
-        puts order_result.to_json
+        puts 'payload_limit_sell_result:' + order_result.to_json
       end
 
       (1..buy_grids).each do |i|
-        order_price = ref_price - gap_value * i
+        order_price = (ref_price - gap_value * i).round(price_precision)
         sleep(0.25)
-
-        next if open_orders.detect {|order| order["price"] == order_price}
+        next if open_orders.detect {|order| order["price"].round(price_precision) == order_price}
 
         payload_limit_buy = payload_limit.merge({side: "buy", price: order_price})
 
@@ -176,8 +177,7 @@ puts "setting total sell_grids = #{sell_grids}"
         save_order_result!(@grid_setting, order_result) if order_result["success"]
 
         puts 'payload_limit_buy:' + payload_limit_buy.to_s
-        puts 'payload_limit_buy_result:'
-        puts order_result.to_json
+        puts 'payload_limit_buy_result:' + order_result.to_json
       end
 
       GridSetting.uncached do
@@ -192,9 +192,11 @@ puts "setting total sell_grids = #{sell_grids}"
         puts "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting_id} status: active." if Time.now.to_i % 60 == 0
         updated_ids = update_order_status!(coin_name, orders: open_orders)
 
-        # set to every 15s
-        GridSetting.uncached do
-          setting_status = GridSetting.find(grid_setting_id).status
+        # set to every 10s
+        if Time.now.to_i % 10 == 0
+          GridSetting.uncached do
+            setting_status = GridSetting.find(grid_setting_id).status
+          end
         end
 
         unless setting_status == "active"
@@ -328,5 +330,14 @@ puts "setting total sell_grids = #{sell_grids}"
       end
     end
     return updated
+  end
+
+  def decimals(a)
+    num = 0
+    while(a != a.to_i)
+        num += 1
+        a *= 10
+    end
+    num   
   end
 end
