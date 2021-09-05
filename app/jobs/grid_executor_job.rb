@@ -3,7 +3,7 @@ class GridExecutorJob < ApplicationJob
   require "ftx_client"
 
   def perform(grid_setting_id)
-    @grid_setting = GridSetting.find(grid_setting_id)
+    @grid_setting = GridSetting.includes(:grid_orders).find(grid_setting_id)
     coin_name = @grid_setting["coin_name"]
     setting_status = @grid_setting["status"]
 
@@ -25,10 +25,16 @@ class GridExecutorJob < ApplicationJob
     gap_value = @grid_setting["grid_gap"]
     size_value = @grid_setting["order_size"]
 
+    spot_in_amount = @grid_setting["input_spot_amount"]
+
     error_msg += "grids_value(#{grids_value}) invalid. " if grids_value > ((upper_value - lower_value)/price_step + 1)
     error_msg += "gap_value(#{gap_value}) invalid. " unless gap_value == (((upper_value - lower_value)/price_step)/(grids_value - 1)).round(0) * price_step
     error_msg += "upper_value(#{upper_value}) invalid. " unless upper_value == lower_value + ((grids_value - 1) * gap_value)
-    return error_msg unless error_msg.empty?
+    
+    unless error_msg.empty?
+      puts error_msg
+      return
+    end
 
     market_on_grid_value = ((market_value - lower_value) / gap_value).round(0) * gap_value + lower_value
 
@@ -36,8 +42,10 @@ class GridExecutorJob < ApplicationJob
     sell_grids = grids_calc("sell", market_on_grid_value, upper_value, lower_value, gap_value)
 
     # for restart handling
+    his_orders_count = @grid_setting.grid_orders.size
     init_open_orders = @grid_setting.grid_orders.where(status: ["new", "open"])
     updated_ids = update_order_status!(coin_name, orders: init_open_orders)
+    # init_open_orders was changed by .detect & .save in update_order_status!
 
 puts "setting upper_limit      = #{upper_value}"
 puts "setting lower_value      = #{lower_value}"
@@ -46,8 +54,10 @@ puts "setting gap_value        = #{gap_value}"
 puts "setting size_value       = #{size_value}"
 puts "setting total buy_grids  = #{buy_grids}"
 puts "setting total sell_grids = #{sell_grids}"
-    # init_open_orders was changed by .detect & .save in update_order_status!
+
     spot_bought = 0
+    spot_inuse = 0
+
     init_open_orders.each do |order|
       if updated_ids.include?(order.id) && order.status == "closed"
         spot_bought += order.filledSize if order.side == "buy" 
@@ -57,21 +67,41 @@ puts "setting total sell_grids = #{sell_grids}"
       buy_grids -= 1 if order.side == "buy" && buy_grids > 0
     end
 
-    error_msg += "input_USD_amount(#{@grid_setting["input_USD_amount"]}) invalid. " unless input_USD_check(@grid_setting, market_on_grid_value, buy_grids, sell_grids)
+    # check how many target to buy (sell_grids)
+    # 要考慮closed buy已買的數量
+    to_buy_total_amount = sell_grids * size_value - spot_bought
+
+    # 在新setting中考慮spot_in_value
+    if his_orders_count == 0
+      if spot_in_amount < to_buy_total_amount
+        to_buy_total_amount = to_buy_total_amount - spot_in_amount
+        spot_inuse = spot_in_amount
+      else
+        to_buy_total_amount = 0
+        spot_inuse = to_buy_total_amount
+      end
+      @grid_setting.update(input_spot_amount: spot_inuse)
+    end
+
+    error_msg += "input_USD_amount(#{@grid_setting["input_USD_amount"]}) invalid. " unless input_USD_check(@grid_setting, market_value, buy_grids, to_buy_total_amount)
 
     init_balances = ftx_wallet_balance
     error_msg += "wallet_balances(GridOnRails) result unsuccess. " if init_balances.empty?
-    return error_msg unless error_msg.empty?
-    # @grid_setting params check ok
-    # check how many target to buy (sell_grids)
-    # 要考慮closed buy已買的數量
-    to_buy_total_amount = sell_grids * size_step - spot_bought
-    to_buy_amount = to_buy_amount_calc(coin_name, to_buy_total_amount, init_balances, init_balances, size_step)
 
-puts "missing buy_grids        = #{buy_grids}"
-puts "missing sell_grids       = #{sell_grids}"
-puts "spot_bought              = #{spot_bought}"
-puts "to_buy_total_amount      = #{to_buy_total_amount}"
+    unless error_msg.empty?
+      puts error_msg
+      return
+    end
+    # @grid_setting params check ok
+
+    puts "missing buy_grids        = #{buy_grids}"
+    puts "missing sell_grids       = #{sell_grids}"
+    puts "spot_in_amount           = #{spot_in_amount}"
+    puts "spot_bought              = #{spot_bought}"
+    puts "spot_inuse               = #{spot_inuse}"
+    puts "to_buy_total_amount      = #{to_buy_total_amount}"
+
+    to_buy_amount = to_buy_amount_calc(coin_name, to_buy_total_amount, init_balances, init_balances, size_step)
 
     payload_market = {market: "#{coin_name}/USD", side: nil, price: nil, type: "market", size: nil}
     payload_limit = {market: "#{coin_name}/USD", side: nil, price: nil, type: "limit", size: size_value}
@@ -79,7 +109,9 @@ puts "to_buy_total_amount      = #{to_buy_total_amount}"
     # loop for batch buy
     bought_order_ids = []
 
+    # check input_spot_amount
     while to_buy_amount > 0
+      puts "to_buy_amount            = #{to_buy_amount}/#{to_buy_total_amount}"
       payload_market_buy = payload_market.merge({side: "buy", size: to_buy_amount})
 
       order_result = FtxClient.place_order("GridOnRails", payload_market_buy)
@@ -90,11 +122,15 @@ puts "to_buy_total_amount      = #{to_buy_total_amount}"
       puts 'spot_order_result:'
       puts order_result.to_json
 
-      sleep(1)
-      # @grid_setting["input_spot_amount"]
+      sleep(3)
+      
       curr_balances = ftx_wallet_balance
       error_msg += "wallet_balances(GridOnRails) result unsuccess. " if curr_balances.empty?
-      return error_msg unless error_msg.empty?
+      
+      unless error_msg.empty?
+        puts error_msg
+        return
+      end
 
       to_buy_amount = to_buy_amount_calc(coin_name, to_buy_total_amount, curr_balances, init_balances, size_step)
     end
@@ -112,8 +148,9 @@ puts "to_buy_total_amount      = #{to_buy_total_amount}"
 
       (1..sell_grids).each do |i|
         order_price = ref_price + gap_value * i
+        sleep(0.25)
         
-        break if open_orders.detect {|order| order["price"] == order_price}
+        next if open_orders.detect {|order| order["price"] == order_price}
 
         payload_limit_sell = payload_limit.merge({side: "sell", price: order_price})
 
@@ -128,8 +165,9 @@ puts "to_buy_total_amount      = #{to_buy_total_amount}"
 
       (1..buy_grids).each do |i|
         order_price = ref_price - gap_value * i
+        sleep(0.25)
 
-        break if open_orders.detect {|order| order["price"] == order_price}
+        next if open_orders.detect {|order| order["price"] == order_price}
 
         payload_limit_buy = payload_limit.merge({side: "buy", price: order_price})
 
@@ -149,8 +187,8 @@ puts "to_buy_total_amount      = #{to_buy_total_amount}"
       updated_ids = []
       # main grid check update loop
       while updated_ids.empty?
-        # grids check ever 3 second
-        sleep(3)
+        # grids check ever 2 second
+        sleep(2)
         puts "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting_id} status: active." if Time.now.to_i % 60 == 0
         updated_ids = update_order_status!(coin_name, orders: open_orders)
 
@@ -209,15 +247,15 @@ puts "to_buy_total_amount      = #{to_buy_total_amount}"
     end
   end
 
-  def input_USD_check(grid_setting, market_on_grid_value, buy_grids, sell_grids)
+  def input_USD_check(grid_setting, market_value, buy_grids, to_buy_total_amount)
     lower_value = grid_setting["lower_limit"]
     gap_value = grid_setting["grid_gap"]
     size_value = grid_setting["order_size"]
 
-    buy_grids_USD_required = (buy_grids * (buy_grids - 1) / 2) * grid_setting["grid_gap"] + buy_grids * grid_setting["lower_limit"]
-    sell_grids_USD_required = sell_grids * market_on_grid_value
+    buy_grids_USD_required = ((buy_grids * (buy_grids - 1) / 2) * gap_value + buy_grids * lower_value) * size_value
+    sell_grids_USD_required = to_buy_total_amount * market_value
 
-    return grid_setting["input_USD_amount"] >= ((sell_grids_USD_required + buy_grids_USD_required) * grid_setting["order_size"]).round(2)
+    return grid_setting["input_USD_amount"] >= (sell_grids_USD_required + buy_grids_USD_required).round(2)
   end
 
   def ref_calc(market_on_grid_value, upper_value, lower_value)
@@ -227,7 +265,8 @@ puts "to_buy_total_amount      = #{to_buy_total_amount}"
   end
 
   def to_buy_amount_calc(coin_name, to_buy_total_amount, curr_balances, init_balances, size_step)
-  
+    return 0 if to_buy_total_amount == 0
+
     orderbook = FtxClient.orderbook("#{coin_name}/USD" ,:depth => 2)["result"]
     batch_buy_size_limit = ((orderbook["asks"][0][1] / 1.618) / size_step).round(0) * size_step
 

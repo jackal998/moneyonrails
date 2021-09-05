@@ -134,7 +134,7 @@ function gridreadyFn( jQuery ) {
                 spot_inuse = setting_spot_required
               }
 // console.log(`spot_required : ${spot_required.toFixed(2)}`);
-              usd_required = setting_usd_required.add(spot_required.mul(market_on_grid_value));
+              usd_required = setting_usd_required.add(spot_required.mul(market_value));
               console.log(`usdcalc: usd_required : ${usd_required.toFixed(2)}`);              
               return usd_required
             }

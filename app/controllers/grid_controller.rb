@@ -16,7 +16,7 @@ class GridController < ApplicationController
   end
 
   def creategrid
-    # @grid_setting = GridSetting.find(13)
+    # @grid_setting = GridSetting.find(18)
     @grid_setting = GridSetting.new(creategrid_params)
 
     @grid_setting["status"] = "active"
