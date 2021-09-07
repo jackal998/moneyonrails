@@ -45,7 +45,6 @@
               <%= form_with model: @grid_setting, url: grid_create_path do |form| %>
                 <div class="card-header">                  
                   <h4 class="card-title"><%= "#{@coin.name}" %> 網格機器人設定</h4>
-                  記得不要按enter
                 </div>
                 <div class="card-body">
                   <% sizestep = @coin.spotsizeIncrement %>
@@ -91,7 +90,15 @@
                           </td>
                         </tr>
                         <tr>
-                          <td>開單價格</td>
+                          <td>
+                            開單價格
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" value="" id="check_limit">
+                              <label class="form-check-label" for="check_limit">
+                                限價
+                              </label>
+                            </div>
+                          </td>
                           <td>開單價差</td>
                         </tr>
                         <tr>
@@ -109,7 +116,53 @@
                       </tbody>
                   </table>
                   &nbsp;
-                  <%= form.submit "送 出", :class => "text-center btn btn-outline-primary btn-rounded" %>
+                  <!-- Button grid_setting_check_form_trigger -->
+                  <button type="button" id="grid_setting_check_form_trigger" class="btn btn-outline-secondary btn-rounded" 
+                  data-bs-toggle="modal" data-bs-target="#grid_setting_check_form">
+                    確定
+                  </button>
+                  <div class="modal fade" id="grid_setting_check_form" tabindex="-1" aria-labelledby="grid_setting_check_modal" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="grid_setting_check_modal">子帳號： GridOnRails</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body table-sm">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="text-center col-sm-3">區間上限</div>
+                                    <div class="text-center col-sm-3" id="check_form_upper_limit"></div>
+                                    <div class="text-center col-sm-3">區間下限</div>
+                                    <div class="text-center col-sm-3" id="check_form_lower_limit"></div>
+                                </div>
+                                <div class="row">
+                                    <div class="text-center col-sm-3">網格數量</div>
+                                    <div class="text-center col-sm-3" id="check_form_grids"></div>
+                                    <div class="text-center col-sm-3">單格大小</div>
+                                    <div class="text-center col-sm-3" id="check_form_order_size"></div>
+                                </div>
+                                <div class="row">
+                                    <div class="text-center col-sm-3">投資數量(USD)</div>
+                                    <div class="text-center col-sm-3" id="check_form_input_USD_amount"></div>
+                                    <div class="text-center col-sm-3">投資數量(<%= @coin.name %>)</div>
+                                    <div class="text-center col-sm-3" id="check_form_input_spot_amount"></div>
+                                </div>
+                                <div class="row">
+                                    <div class="text-center col-sm-3" id="check_form_market_price_title">開單價格(市價)</div>
+                                    <div class="text-center col-sm-3" id="check_form_market_price"></div>
+                                    <div class="text-center col-sm-3">開單價差</div>
+                                    <div class="text-center col-sm-3" id="check_form_threshold"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary btn-rounded" data-bs-dismiss="modal">關 閉</button>
+                          <%= form.submit "送 出", :class => "text-center btn btn-outline-primary btn-rounded" %>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               <% end %>
             </div>
@@ -160,10 +213,46 @@
                   <div class="card-header">
                     <h6>投入金額(USD)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_USD_amount %></h6>
                     <h6>投入金額(<%= grid_setting.coin_name %>)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_spot_amount %></h6>
+                            <%= "#{grid_setting.grid_orders.count}" %>
                   </div>
-                  <div class="card-body">
-                    <%= "#{grid_setting.grid_orders.count}" %>
-                  </div>
+                  <% unless grid_setting.status == "closing" %>
+                    <div class="card-body">
+                    <!-- Button grid_setting_close_form_trigger -->
+                    <button type="button" id="grid_setting_<%= grid_setting.id %>_close_form_trigger" class="btn btn-outline-danger btn-rounded" 
+                    data-bs-toggle="modal" data-bs-target="#grid_setting_<%= grid_setting.id %>_close_form">
+                      確定
+                    </button>
+                    </div>
+                    <div class="modal fade" id="grid_setting_<%= grid_setting.id %>_close_form" tabindex="-1" aria-labelledby="grid_setting_<%= grid_setting.id %>_modal" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="grid_setting_<%= grid_setting.id %>_modal">子帳號： GridOnRails</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body table-sm">
+                              <div class="container-fluid">
+                                <div class="text-center">
+                                  <h3><%= "確定終止 #{grid_setting.coin_name} 的網格？" %></h3>
+                                  <h4><%= "(#{grid_setting.created_at.strftime('%F %T')} 建立)" %></h4>
+                                </div>
+                              </div>
+                          </div>
+                          <div class="modal-footer">
+                            <%= form_with model: grid_setting, url: grid_close_path, method: "PUT" do |form| %>
+                              <%= form.hidden_field :id %>
+                              <%= hidden_field_tag(:current_coin_name, grid_setting.coin_name) %>
+                              <%= form.submit "確 定", :class => "text-center btn btn-outline-danger btn-rounded" %>
+                            <% end %>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% else %>
+                    <div class="card-body">
+                      Closing, Please wait.
+                    </div>
+                  <% end %>
               </div>
             </div>
           <% end %>

@@ -6,8 +6,16 @@ function gridreadyFn( jQuery ) {
 
     grid_setup(grid_setting)
 
+
     function grid_setup(grid_setting) {
         if (!grid_setting) {return};
+
+        $('form').on('keypress', e => {
+          if (e.keyCode == 13) {
+            return false;
+          }
+        });
+
         var lower_limit = document.getElementById("lower_limit");
         var upper_limit = document.getElementById("upper_limit");
         var grids = document.getElementById("grids");
@@ -17,9 +25,20 @@ function gridreadyFn( jQuery ) {
         var input_USD_detail = document.getElementById("input_USD_detail");
         var input_spot_detail = document.getElementById("input_spot_detail");
         var market_price = document.getElementById("market_price");
+        var check_limit = document.getElementById("check_limit");
         var pricestep = document.getElementById("pricestep");
         var threshold = document.getElementById("threshold");
         var order_size = document.getElementById("order_size");
+
+        var check_form_upper_limit = document.getElementById("check_form_upper_limit");
+        var check_form_lower_limit = document.getElementById("check_form_lower_limit");
+        var check_form_grids = document.getElementById("check_form_grids");
+        var check_form_order_size = document.getElementById("check_form_order_size");
+        var check_form_input_USD_amount = document.getElementById("check_form_input_USD_amount");
+        var check_form_input_spot_amount = document.getElementById("check_form_input_spot_amount");
+        var check_form_market_price = document.getElementById("check_form_market_price");
+        var check_form_threshold = document.getElementById("check_form_threshold");
+        var check_form_market_price_title = document.getElementById("check_form_market_price_title");
         
         lower_limit.onchange = function() {checkValue("lower_limit")};
         upper_limit.onchange = function() {checkValue("upper_limit")};
@@ -28,6 +47,15 @@ function gridreadyFn( jQuery ) {
         input_USD_amount.onchange = function() {checkValue("input_USD_amount")};
         input_spot_amount.onchange = function() {checkValue("input_spot_amount")};
         market_price.onchange = function() {checkValue("market_price")};
+        check_limit.onchange = function() {toggle_check_form_market_price_title()};
+
+        function toggle_check_form_market_price_title() {
+          if (check_limit.checked) {
+            check_form_market_price_title.innerHTML = '開單價格(現價)'
+          } else {
+            check_form_market_price_title.innerHTML = '開單價格(市價)'
+          }
+        }
 
         function checkValue(name) {
           var lower_value = new Decimal(lower_limit.value);
@@ -172,6 +200,16 @@ function gridreadyFn( jQuery ) {
               input_spot_amount.setAttribute('title', '');
             }
             input_spot_detail.innerHTML = '使用 ' + spot_inuse.toNearest(spot_step) + ' ' + grid_setting.value;
+            
+            check_form_upper_limit.innerHTML = upper_limit.value
+            check_form_lower_limit.innerHTML = lower_limit.value
+            check_form_grids.innerHTML = grids.value
+            check_form_order_size.innerHTML = order_size.value
+            check_form_input_USD_amount.innerHTML = input_USD_amount.value
+            check_form_input_spot_amount.innerHTML = input_spot_amount.value
+            check_form_market_price.innerHTML = market_price.value
+            check_form_threshold.innerHTML = threshold.value
+
           };
           validate(name);
           configcalc(name);
@@ -179,8 +217,10 @@ function gridreadyFn( jQuery ) {
         var connection = new WebSocket('wss://ftx.com/ws/');
         connection.onerror = function (error) {console.log('WebSocket Error ' + error);};
         connection.onmessage = function (e) {
-          market_price.value = JSON.parse(e.data).data[0].price;
-          checkValue("market_price");};
+          if (!check_limit.checked) {
+            market_price.value = JSON.parse(e.data).data[0].price;
+            checkValue("market_price");};
+          }
         connection.onopen = function () {connection.send('{"op": "subscribe", "channel": "trades", "market": "' + grid_setting.value + '/USD"}');};
         console.log("Yo!");
     };

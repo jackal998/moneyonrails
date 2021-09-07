@@ -8,8 +8,9 @@ class GridController < ApplicationController
     @market = FtxClient.market_info("#{coin_name}/USD")["result"]
     
     @grid_setting = GridSetting.new(:coin_id => @coin.id, :coin_name => coin_name)
-    @grid_settings = GridSetting.includes(:grid_orders).where(status: "active")
+    @grid_settings = GridSetting.includes(:grid_orders).where(status: ["active", "closing"])
     balances = ftx_wallet_balance
+    balances['USD'] = {"amount"=>0.0, "usdValue"=>0.0} unless balances['USD']
     balances[coin_name] = {"amount"=>0.0, "usdValue"=>0.0} unless balances[coin_name]
 
     render locals: {balances: balances}
@@ -24,6 +25,13 @@ class GridController < ApplicationController
     puts @grid_setting.attributes
     @grid_setting.save
     GridExecutorJob.perform_later(@grid_setting[:id])
+
+    redirect_to grid_path(:coin_name => @grid_setting[:coin_name])
+  end
+
+  def closegrid
+    @grid_setting = GridSetting.find(params["grid_setting"]["id"])
+    @grid_setting.update(:status => "closing") if @grid_setting.status == "active"
 
     redirect_to grid_path(:coin_name => @grid_setting[:coin_name])
   end

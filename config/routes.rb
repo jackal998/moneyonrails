@@ -9,6 +9,7 @@ Rails.application.routes.draw do
 
   get '/grid', :to => 'grid#index'
   post '/grid/create', :to => 'grid#creategrid'
+  put '/grid/close', :to => 'grid#closegrid'
   
   # should be authed
   mount Sidekiq::Web => '/sidekiq'
