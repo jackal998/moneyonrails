@@ -10,7 +10,6 @@ class GridExecutorJob < ApplicationJob
     return unless setting_status == "active"
     
     puts "sidekiq GridExecutorJob for grid_setting_id: #{grid_setting_id} starting..."
-    error_msg = ""
 
     @market = FtxClient.market_info("#{coin_name}/USD")["result"]
 
@@ -29,14 +28,9 @@ class GridExecutorJob < ApplicationJob
 
     spot_in_amount = @grid_setting["input_spot_amount"]
 
-    error_msg += "grids_value(#{grids_value}) invalid. " if grids_value > ((upper_value - lower_value)/price_step + 1)
-    error_msg += "gap_value(#{gap_value}) invalid. " unless gap_value == (((upper_value - lower_value)/price_step)/(grids_value - 1)).round(0) * price_step
-    error_msg += "upper_value(#{upper_value}) invalid. " unless upper_value == lower_value + ((grids_value - 1) * gap_value)
-    
-    unless error_msg.empty?
-      puts error_msg
-      return
-    end
+    return err_handler("grids_value", @grid_setting) if grids_value > ((upper_value - lower_value)/price_step + 1)
+    return err_handler("gap_value", @grid_setting) unless gap_value == (((upper_value - lower_value)/price_step)/(grids_value - 1)).round(0) * price_step
+    return err_handler("upper_value", @grid_setting) unless upper_value == lower_value + ((grids_value - 1) * gap_value)
 
     market_on_grid_value = ((market_value - lower_value) / gap_value).round(0) * gap_value + lower_value
 
@@ -85,16 +79,10 @@ class GridExecutorJob < ApplicationJob
       end
       @grid_setting.update(input_spot_amount: spot_inuse)
     end
-
-    error_msg += "input_USD_amount(#{@grid_setting["input_USD_amount"]}) invalid. " unless input_USD_check(@grid_setting, market_value, buy_grids, to_buy_total_amount)
+    return err_handler("input_USD_amount", @grid_setting) unless input_USD_check(@grid_setting, market_value, buy_grids, to_buy_total_amount)
 
     init_balances = ftx_wallet_balance
-    error_msg += "wallet_balances(GridOnRails) result unsuccess. " if init_balances.empty?
-
-    unless error_msg.empty?
-      puts error_msg
-      return
-    end
+    return err_handler("wallet_balances", @grid_setting) if init_balances.empty?
     # @grid_setting params check ok
 
     puts "missing buy_grids        = #{buy_grids}"
@@ -128,12 +116,7 @@ class GridExecutorJob < ApplicationJob
       sleep(3)
       
       curr_balances = ftx_wallet_balance
-      error_msg += "wallet_balances(GridOnRails) result unsuccess. " if curr_balances.empty?
-      
-      unless error_msg.empty?
-        puts error_msg
-        return
-      end
+      return err_handler("wallet_balances", @grid_setting) if curr_balances.empty?
 
       to_buy_amount = to_buy_amount_calc(coin_name, to_buy_total_amount, curr_balances, init_balances, size_step)
     end
@@ -147,8 +130,8 @@ class GridExecutorJob < ApplicationJob
     # buy spots and grids init ok
 
     while setting_status == "active"
-      puts "#{Time.now.strftime('%H:%M:%S')}: market_value: #{market_value} / market_on_grid_value: #{market_on_grid_value}"
-      puts "#{Time.now.strftime('%H:%M:%S')}: ref_price: #{ref_price} / sell_grids: #{sell_grids} / buy_grids: #{buy_grids}"
+      puts "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting_id} / coin_name: #{coin_name} / sell_grids: #{sell_grids} / buy_grids: #{buy_grids}"
+      puts "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting_id} / market_value: #{market_value} / market_on_grid_value: #{market_on_grid_value} / ref_price: #{ref_price}"
 
       (1..sell_grids).each do |i|
         order_price = (ref_price + gap_value * i).round(price_precision)
@@ -189,7 +172,7 @@ class GridExecutorJob < ApplicationJob
       while updated_ids.empty?
         # grids check ever 2 second
         sleep(2)
-        puts "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting_id} status: active." if Time.now.to_i % 60 == 0
+        puts "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting_id} / coin_name: #{coin_name} status: active." if Time.now.to_i % 60 == 0
         updated_ids = update_order_status!(coin_name, orders: open_orders)
 
         # set to every 10s
@@ -206,8 +189,10 @@ class GridExecutorJob < ApplicationJob
             cancel_result = FtxClient.cancel_order("GridOnRails", order_id.to_i)
             # puts cancel_result.to_json
           end
-
           updated_ids = update_order_status!(coin_name, order_ids: to_cancel_order_ids)
+          puts "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting_id} / coin_name: #{coin_name} cancel #{to_cancel_order_ids.count} orders."
+          @grid_setting.update(status: "close")
+          puts "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting_id} / coin_name: #{coin_name} status: close, See You!"
         end
       end
       break unless setting_status == "active"
@@ -220,8 +205,20 @@ class GridExecutorJob < ApplicationJob
       buy_grids = grids_calc("buy", ref_price, upper_value, lower_value, gap_value)
       sell_grids = grids_calc("sell", ref_price, upper_value, lower_value, gap_value)
     end
+  end
 
-    puts "Grids were cleaned, See You!"
+  def err_handler(item, grid_setting)
+    error_msg = "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting.id} "
+
+    if ["wallet_balances"].include?(item)
+      error_msg += "#{item} result unsuccess."
+    else
+      error_msg += "#{item}(#{grid_setting[item]}) invalid."
+    end
+
+    grid_setting.update(status: "#{item}_error")
+    puts error_msg
+    return error_msg
   end
 
   def ftx_wallet_balance
