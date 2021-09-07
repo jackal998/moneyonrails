@@ -38,26 +38,19 @@
                             <th></th>
                             <th></th>
                             <th></th>
-                            <th colspan="2">1日</th>
-                            <th colspan="2">3日</th>
-                            <th colspan="2">7日</th>
-                            <th colspan="2">30日</th>
-                            <th colspan="2">歷史</th>
+                            <% days_to_show.each do |d| %>
+                              <% col_name = d == :historical ? "歷史" : "#{d}日" %>
+                              <th colspan="2"><%= col_name %></th>
+                            <% end %>
                           </tr>
                           <tr>
                             <th></th>
                             <th>持倉</th>
                             <th>永續：現貨</th>
-                            <th>收益</th>
-                            <th>年化</th>
-                            <th>收益</th>
-                            <th>年化</th>
-                            <th>收益</th>
-                            <th>年化</th>
-                            <th>收益</th>
-                            <th>年化</th>
-                            <th>收益</th>
-                            <th>年化</th>
+                            <% days_to_show.each do |d| %>
+                              <th>收益</th>
+                              <th>年化</th>
+                            <% end %>
                           </tr>
                         </thead>
                         <tbody>
@@ -75,16 +68,12 @@
                                   ：
                                   <%= number_with_precision(balances[coin_name]["amount"], precision: position["precision"], delimiter: ',') %>
                                 </td>
-                                <td class="text-right"><%= number_to_currency(fundingstat[:last_1_day_payments]) %></td>
-                                <td class="text-right"><%= fundingstat[:last_1_day_irr] %>%</td>
-                                <td class="text-right"><%= number_to_currency(fundingstat[:last_3_day_payments]) %></td>
-                                <td class="text-right"><%= fundingstat[:last_3_day_irr] %>%</td>
-                                <td class="text-right"><%= number_to_currency(fundingstat[:last_7_day_payments]) %></td>
-                                <td class="text-right"><%= fundingstat[:last_7_day_irr] %>%</td>
-                                <td class="text-right"><%= number_to_currency(fundingstat[:last_30_day_payments]) %></td>
-                                <td class="text-right"><%= fundingstat[:last_30_day_irr] %>%</td>
-                                <td class="text-right"><%= number_to_currency(fundingstat[:historical_payments]) %></td>
-                                <td class="text-right"><%= fundingstat[:historical_irr] %>%</td>
+                                <% days_to_show.each do |d| %>
+                                  <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
+                                  <% sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym %>
+                                  <td class="text-right border-left"><%= number_to_currency(fundingstat[sym_payment]) %></td>
+                                  <td class="text-right"><%= fundingstat[sym_irr] %>%</td>
+                                <% end %>
                               </tr>
                             <% end %>
                             <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == "total_of_coins"} %>
@@ -92,18 +81,14 @@
                                 <td class="text-center">
                                   小計
                                 </td>
-                                <td class="text-right"><%= number_to_currency(@positions.map {|k,v| v["cost"]}.sum, precision: 2) %></td>
+                                <td class="text-right card-title--medium"><%= number_to_currency(@positions.map {|k,v| v["cost"]}.sum, precision: 2) %></td>
                                 <td class="text-center"></td>
-                                <td class="text-right"><%= number_to_currency(fundingstat[:last_1_day_payments]) %></td>
-                                <td class="text-right"><%= fundingstat[:last_1_day_irr] %>%</td>
-                                <td class="text-right"><%= number_to_currency(fundingstat[:last_3_day_payments]) %></td>
-                                <td class="text-right"><%= fundingstat[:last_3_day_irr] %>%</td>
-                                <td class="text-right"><%= number_to_currency(fundingstat[:last_7_day_payments]) %></td>
-                                <td class="text-right"><%= fundingstat[:last_7_day_irr] %>%</td>
-                                <td class="text-right"><%= number_to_currency(fundingstat[:last_30_day_payments]) %></td>
-                                <td class="text-right"><%= fundingstat[:last_30_day_irr] %>%</td>
-                                <td class="text-right"><%= number_to_currency(fundingstat[:historical_payments]) %></td>
-                                <td class="text-right"><%= fundingstat[:historical_irr] %>%</td>
+                                <% days_to_show.each do |d| %>
+                                  <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
+                                  <% sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym %>
+                                  <td class="text-right border-left"><%= number_to_currency(fundingstat[sym_payment]) %></td>
+                                  <td class="text-right"><%= fundingstat[sym_irr] %>%</td>
+                                <% end %>
                               </tr>
                         </tbody>
                       </table>
@@ -152,7 +137,9 @@
                       </div>
                     </div>
                     <div class="progress">
-                      <% lev_color = "bg-warning" if leverage >= 1 %>
+                      <% lev_color = "bg-success" %>
+                      <% lev_color = "bg-warning" if leverage >= 2 %>
+                      <% lev_color = "bg-danger" if leverage >= 6.5 %>
                       <div class="progress-bar bg-success" style="width: <%= percentage %>%" role="progressbar" aria-valuenow="<%= percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
                       <div class="progress-bar progress-bar-striped progress-bar-animated <%= lev_color %>" style="width: <%= percentage_over %>%" role="progressbar" aria-valuenow="<%= percentage_over %>" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>

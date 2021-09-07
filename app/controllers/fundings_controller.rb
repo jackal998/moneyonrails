@@ -80,6 +80,7 @@ class FundingsController < ApplicationController
           "cost" => position["cost"],
           "precision" => precision}
     end
+    days_to_show = [1,3,7,14,30] #,60,90,:historical]
 
     @fund_stat = @coin.current_fund_stat
     @fundingstats = FundingStat.all
@@ -104,7 +105,7 @@ class FundingsController < ApplicationController
       :original_perp_amount => @positions[coin_name]["netSize"]
       )
 
-    render locals: {balances: balances}
+    render locals: {balances: balances, days_to_show: days_to_show}
   end
 
   def createorder
