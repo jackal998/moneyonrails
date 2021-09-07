@@ -40,28 +40,6 @@
                 </div>
             </div>
           </div>
-          <% @grid_settings.each do |grid_setting| %>
-            <div class="col-xl-3 col-md-6 col-sm-12">
-              <div class="card">
-                  <div class="card-header">                  
-                    <h4 class="card-title"><%= "#{grid_setting.coin_name}/USD" %></h4>
-                    <% duration = Time.now - grid_setting.created_at %>
-                    <% day_ = duration.divmod(86400) %>
-                    <% hour_ = day_[1].divmod(3600) %>
-                    <% min_ = hour_[1].divmod(60) %>
-                    <%= grid_setting.created_at.strftime('%F %T') %> 建立<br/>
-                    <%= "(已運行 #{day_[0]} 日 #{hour_[0]} 時 #{min_[0]} 分)" %>
-                  </div>
-                  <div class="card-header">
-                    <h6>投入金額(USD)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_USD_amount %></h6>
-                    <h6>投入金額(<%= grid_setting.coin_name %>)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_spot_amount %></h6>
-                  </div>
-                  <div class="card-body">
-                    <%= "#{grid_setting.grid_orders.count}" %>
-                  </div>
-              </div>
-            </div>
-          <% end %>
           <div class="col-xl-3 col-md-6 col-sm-12">
             <div class="card">
               <%= form_with model: @grid_setting, url: grid_create_path do |form| %>
@@ -70,7 +48,6 @@
                   記得不要按enter
                 </div>
                 <div class="card-body">
-
                   <% sizestep = @coin.spotsizeIncrement %>
                   <% pricestep = @coin.spotpriceIncrement %>
                   <%= form.hidden_field :coin_id %>
@@ -132,10 +109,64 @@
                       </tbody>
                   </table>
                   &nbsp;
-                <%= form.submit "送 出", :class => "text-center btn btn-outline-primary btn-rounded" %>
+                  <%= form.submit "送 出", :class => "text-center btn btn-outline-primary btn-rounded" %>
+                </div>
               <% end %>
             </div>
           </div>
+          <div class="col-xl-6 col-md-12 col-sm-12">
+            <div class="card">
+              <!-- TradingView Widget BEGIN -->
+              <div class="tradingview-widget-container">
+                <div id="tradingview_1f621" style="height: 499px;"></div>
+                <div class="tradingview-widget-copyright">
+                  <% tv_href = "https://tw.tradingview.com/symbols/#{@coin.name}USD/?exchange=FTX" %> 
+                  <a href=<%= tv_href %> rel="noopener" target="_blank">
+                    <span class="blue-text"><%= @coin.name %>USD 圖表</span>
+                  </a>由TradingView提供</div>
+                <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+                <script type="text/javascript">
+                  new TradingView.widget({
+                    "autosize": true,
+                    "symbol": "FTX:<%= @coin.name %>USD",
+                    "timezone": "Asia/Taipei",
+                    "theme": "light",
+                    "style": "1",
+                    "locale": "zh_TW",
+                    "toolbar_bg": "#f1f3f6",
+                    "enable_publishing": false,
+                    "withdateranges": true,
+                    "range": "1M",
+                    "container_id": "tradingview_1f621"});
+                </script>
+              </div>
+              <!-- TradingView Widget END -->
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <% @grid_settings.each do |grid_setting| %>
+            <div class="col-xl-3 col-md-6 col-sm-12">
+              <div class="card">
+                  <div class="card-header">                  
+                    <h4 class="card-title"><%= "#{grid_setting.coin_name}/USD" %></h4>
+                    <% duration = Time.now - grid_setting.created_at %>
+                    <% day_ = duration.divmod(86400) %>
+                    <% hour_ = day_[1].divmod(3600) %>
+                    <% min_ = hour_[1].divmod(60) %>
+                    <%= grid_setting.created_at.strftime('%F %T') %> 建立<br/>
+                    <%= "(已運行 #{day_[0]} 日 #{hour_[0]} 時 #{min_[0]} 分)" %>
+                  </div>
+                  <div class="card-header">
+                    <h6>投入金額(USD)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_USD_amount %></h6>
+                    <h6>投入金額(<%= grid_setting.coin_name %>)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_spot_amount %></h6>
+                  </div>
+                  <div class="card-body">
+                    <%= "#{grid_setting.grid_orders.count}" %>
+                  </div>
+              </div>
+            </div>
+          <% end %>
         </div>
     </div>
 </div>

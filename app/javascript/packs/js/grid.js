@@ -71,7 +71,7 @@ function gridreadyFn( jQuery ) {
                 }
                 break;
               default:
-                console.log(`It's ${name}.`);
+                console.log(`${name} changed.`);
             }
             grids.value = grids_value.toFixed();
             upper_limit.value = upper_value.toFixed();
@@ -121,11 +121,11 @@ function gridreadyFn( jQuery ) {
             function usdcalc(size_value) {
               setting_spot_required = sell_grids.mul(size_value);
               setting_usd_required = buy_grids.mul(buy_grids.sub('1')).div('2').mul(gap_value).add(buy_grids.mul(lower_value)).mul(size_value);
-// console.log(`sell_grids : ${sell_grids.toFixed(2)}`);
-// console.log(`buy_grids : ${buy_grids.toFixed(2)}`);
-// console.log(`setting_spot_required : ${setting_spot_required.toFixed(2)}`);
-// console.log(`setting_usd_required : ${setting_usd_required.toFixed(2)}`);
-// console.log(`size_value : ${size_value.toFixed(2)}`);
+              // console.log(`sell_grids : ${sell_grids.toFixed(2)}`);
+              // console.log(`buy_grids : ${buy_grids.toFixed(2)}`);
+              // console.log(`setting_spot_required : ${setting_spot_required.toFixed(2)}`);
+              // console.log(`setting_usd_required : ${setting_usd_required.toFixed(2)}`);
+              // console.log(`size_value : ${size_value.toFixed(2)}`);
               if (spot_in_value.lt(setting_spot_required)) {
                 spot_required = setting_spot_required.sub(spot_in_value)
                 spot_inuse = spot_in_value
@@ -133,16 +133,16 @@ function gridreadyFn( jQuery ) {
                 spot_required = new Decimal('0');
                 spot_inuse = setting_spot_required
               }
-// console.log(`spot_required : ${spot_required.toFixed(2)}`);
+              // console.log(`spot_required : ${spot_required.toFixed(2)}`);
               usd_required = setting_usd_required.add(spot_required.mul(market_value));
-              console.log(`usdcalc: usd_required : ${usd_required.toFixed(2)}`);              
+              // console.log(`usdcalc: usd_required : ${usd_required.toFixed(2)}`);              
               return usd_required
             }
             
             usd_required = usdcalc(size_value)
 
             if (name == 'input_USD_amount') {
-// console.log(usd_in_value.toFixed(2));
+              // console.log(usd_in_value.toFixed(2));
               if (usd_in_value.gt(usd_required)) {
                 size_value = size_value.add(size_step);
               } else if (usd_in_value.lt(usd_required) && size_value.gt(size_step)) {
@@ -153,7 +153,7 @@ function gridreadyFn( jQuery ) {
             }
             
             input_USD_amount.value = usd_required.toFixed(2);
-// console.log('===========================');
+              // console.log('===========================');
             if (usd_required.gt(input_USD_amount.max) || usd_required.lt(input_USD_amount.min)) {
               input_USD_amount.classList.add("is-invalid");
               input_USD_amount.setAttribute('title', '最大金額 ' + input_USD_amount.max + ' USD');
@@ -176,7 +176,12 @@ function gridreadyFn( jQuery ) {
           validate(name);
           configcalc(name);
         }
-
+        var connection = new WebSocket('wss://ftx.com/ws/');
+        connection.onerror = function (error) {console.log('WebSocket Error ' + error);};
+        connection.onmessage = function (e) {
+          market_price.value = JSON.parse(e.data).data[0].price;
+          checkValue("market_price");};
+        connection.onopen = function () {connection.send('{"op": "subscribe", "channel": "trades", "market": "' + grid_setting.value + '/USD"}');};
         console.log("Yo!");
     };
 };
