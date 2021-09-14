@@ -3,6 +3,57 @@ require 'ftx_client'
 
 namespace :dev do
 
+  task :wss_test => :environment do
+    ts = DateTime.now.strftime('%Q')
+
+    signature = OpenSSL::HMAC.hexdigest(
+      "SHA256",
+      "[sec]", 
+      ts + "websocket_login")
+
+    login_op = {
+      op: "login",
+      args: {
+        key: "[pub]",
+        sign: signature,
+        time: ts.to_i,
+        subaccount: "Sentiment"
+      }
+    }
+
+    order_subs = {
+      op: "subscribe",
+      channel: "orders"
+    }
+
+    login_op_json = login_op.to_json
+    order_subs_json = order_subs.to_json
+
+    EM.run {
+      ws = Faye::WebSocket::Client.new('wss://ftx.com/ws/')
+      
+      ws.on :open do |event|
+        p [:open]
+        ws.send(login_op_json)
+        ws.send(order_subs_json)
+      end
+
+      ws.on :message do |event|
+        p JSON.parse(event.data)
+      end
+
+      ws.on :close do |event|
+        p [:close, event.code, event.reason]
+        ws = nil
+      end
+    }
+
+    rs = {"type"=>"subscribed", "channel"=>"orders"}
+    ws_r_o = {"channel"=>"orders", "type"=>"update", "data"=>{"id"=>79392399932, "clientId"=>nil, "market"=>"FTT-PERP", "type"=>"limit", "side"=>"buy", "price"=>67.556, "size"=>0.1, "status"=>"new", "filledSize"=>0.0, "remainingSize"=>0.1, "reduceOnly"=>false, "liquidation"=>false, "avgFillPrice"=>nil, "postOnly"=>false, "ioc"=>false, "createdAt"=>"2021-09-14T18:32:52.325084+00:00"}}
+    ws_r_filled = {"channel"=>"orders", "type"=>"update", "data"=>{"id"=>79392399932, "clientId"=>nil, "market"=>"FTT-PERP", "type"=>"limit", "side"=>"buy", "price"=>67.556, "size"=>0.1, "status"=>"closed", "filledSize"=>0.1, "remainingSize"=>0.0, "reduceOnly"=>false, "liquidation"=>false, "avgFillPrice"=>67.556, "postOnly"=>false, "ioc"=>false, "createdAt"=>"2021-09-14T18:32:52.325084+00:00"}}
+    ws_r_c = {"channel"=>"orders", "type"=>"update", "data"=>{"id"=>79392447727, "clientId"=>nil, "market"=>"FTT-PERP", "type"=>"market", "side"=>"sell", "price"=>nil, "size"=>0.1, "status"=>"closed", "filledSize"=>0.1, "remainingSize"=>0.0, "reduceOnly"=>true, "liquidation"=>false, "avgFillPrice"=>67.512, "postOnly"=>false, "ioc"=>true, "createdAt"=>"2021-09-14T18:33:03.112043+00:00"}}
+  end
+
   # Seed
   task :update_coins_seed_from_csv_file => :environment do
 

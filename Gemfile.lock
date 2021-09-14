@@ -83,6 +83,10 @@ GEM
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
     erubi (1.10.0)
+    eventmachine (1.2.7)
+    faye-websocket (0.11.1)
+      eventmachine (>= 0.12.0)
+      websocket-driver (>= 0.5.1)
     ffi (1.15.3)
     globalid (0.4.2)
       activesupport (>= 4.2.0)
@@ -230,6 +234,7 @@ DEPENDENCIES
   byebug
   capybara (>= 3.26)
   chartkick
+  faye-websocket
   groupdate
   jbuilder (~> 2.7)
   listen (~> 3.3)
@@ -253,4 +258,4 @@ RUBY VERSION
    ruby 3.0.1p64
 
 BUNDLED WITH
-   2.2.24
+   2.2.26
