@@ -4,49 +4,71 @@ require 'ftx_client'
 namespace :dev do
 
   task :wss_test => :environment do
-    ts = DateTime.now.strftime('%Q')
+    def ws_restart(ws_url)
+      ws_start(ws_url, 'restart')
+    end
 
-    signature = OpenSSL::HMAC.hexdigest(
-      "SHA256",
-      "[sec]", 
-      ts + "websocket_login")
+    def ws_start(ws_url, status)
+      ts = DateTime.now.strftime('%Q')
 
-    login_op = {
-      op: "login",
-      args: {
-        key: "[pub]",
-        sign: signature,
-        time: ts.to_i,
-        subaccount: "Sentiment"
+      signature = OpenSSL::HMAC.hexdigest(
+        "SHA256",
+        "", 
+        ts + "websocket_login")
+
+      login_op = {
+        op: "login",
+        args: {
+          key: "",
+          sign: signature,
+          time: ts.to_i,
+          subaccount: "Sentiment"
+        }
       }
-    }
 
-    order_subs = {
-      op: "subscribe",
-      channel: "orders"
-    }
+      order_subs = {
+        op: "subscribe",
+        channel: "orders"
+      }
 
-    login_op_json = login_op.to_json
-    order_subs_json = order_subs.to_json
+      ping = {
+        op: "ping"
+      }
 
-    EM.run {
-      ws = Faye::WebSocket::Client.new('wss://ftx.com/ws/')
-      
-      ws.on :open do |event|
-        p [:open]
-        ws.send(login_op_json)
-        ws.send(order_subs_json)
-      end
+      login_op_json = login_op.to_json
+      order_subs_json = order_subs.to_json
+      ping_json = ping.to_json
 
-      ws.on :message do |event|
-        p JSON.parse(event.data)
-      end
+      EM.run {
+        ws = Faye::WebSocket::Client.new(ws_url)
+        
+        ws.on :open do |event|
+          print "#{Time.now.strftime('%H:%M:%S')}:" 
+          p "ws open with #{status}"
+          ws.send(login_op_json)
+          ws.send(order_subs_json)
+        end
 
-      ws.on :close do |event|
-        p [:close, event.code, event.reason]
-        ws = nil
-      end
-    }
+        ws.on :message do |event|
+          print "#{Time.now.strftime('%H:%M:%S')}:" 
+          p JSON.parse(event.data)
+        end
+
+        ws.on :close do |event|
+          print "#{Time.now.strftime('%H:%M:%S')}:" 
+          p "ws close with #{event.code}"
+          ws = nil
+          ws_restart(ws_url)
+        end
+
+        EM.add_periodic_timer(30) { 
+          ws.send(ping_json)
+        }
+      }
+    end
+
+    ws_start('wss://ftx.com/ws/', 'new')
+    puts "line after"
 
     rs = {"type"=>"subscribed", "channel"=>"orders"}
     ws_r_o = {"channel"=>"orders", "type"=>"update", "data"=>{"id"=>79392399932, "clientId"=>nil, "market"=>"FTT-PERP", "type"=>"limit", "side"=>"buy", "price"=>67.556, "size"=>0.1, "status"=>"new", "filledSize"=>0.0, "remainingSize"=>0.1, "reduceOnly"=>false, "liquidation"=>false, "avgFillPrice"=>nil, "postOnly"=>false, "ioc"=>false, "createdAt"=>"2021-09-14T18:32:52.325084+00:00"}}
