@@ -17,22 +17,23 @@ class GridController < ApplicationController
   end
 
   def creategrid
-    # @grid_setting = GridSetting.find(18)
-    @grid_setting = GridSetting.new(creategrid_params)
+    @grid_setting = GridSetting.find(1)
+    # @grid_setting = GridSetting.new(creategrid_params)
 
     @grid_setting["status"] = "active"
 
     puts @grid_setting.attributes
     @grid_setting.save
-    GridExecutorJob.perform_later(@grid_setting[:id])
-
+    # GridExecutorJob.perform_later(@grid_setting[:id])
+aaaa
     redirect_to grid_path(:market_name => @grid_setting[:market_name])
   end
 
   def closegrid
     @grid_setting = GridSetting.find(params["grid_setting"]["id"])
     @grid_setting.update(:status => "closing") if @grid_setting.status == "active"
-
+    # valid_message = "close" if order_data["price"] == close_price && order_data["size"] == grid_setting["order_size"]
+aaaa
     redirect_to grid_path(:market_name => @grid_setting[:market_name])
   end
 
