@@ -33,6 +33,21 @@ class FtxClient
     return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/funding_payments" + params_str)
   end
 
+  def self.orders(subaccount, order_id)
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/orders/#{order_id}")
+  end
+
+  def self.open_orders(subaccount, params = {})
+    
+    params_str = ""
+    unless params.empty?
+      params.each {|k,v| params_str += "&#{k}=#{v}"}
+      params_str[0]="?"
+    end
+
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/orders" + params_str)
+  end
+
   def self.order_history(subaccount, params = {})
     
     params_str = ""

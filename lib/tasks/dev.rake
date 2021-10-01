@@ -13,63 +13,69 @@ namespace :dev do
 
       signature = OpenSSL::HMAC.hexdigest(
         "SHA256",
-        "", 
+        Rails.application.credentials.ftx[:GridOnRails][:sec], 
         ts + "websocket_login")
 
       login_op = {
         op: "login",
         args: {
-          key: "",
+          key: Rails.application.credentials.ftx[:GridOnRails][:pub],
           sign: signature,
           time: ts.to_i,
-          subaccount: "Sentiment"
+          subaccount: "GridOnRails"
         }
-      }
-
-      order_subs = {
-        op: "subscribe",
-        channel: "orders"
-      }
-
-      ping = {
-        op: "ping"
-      }
-
-      login_op_json = login_op.to_json
-      order_subs_json = order_subs.to_json
-      ping_json = ping.to_json
+      }.to_json
+      order_subs = { op: "subscribe", channel: "orders"}.to_json
+      ping = { op: "ping"}.to_json
 
       EM.run {
         ws = Faye::WebSocket::Client.new(ws_url)
-        
+
         ws.on :open do |event|
           print "#{Time.now.strftime('%H:%M:%S')}:" 
-          p "ws open with #{status}"
-          ws.send(login_op_json)
-          ws.send(order_subs_json)
+          p "ws open status: #{status}"
+          ws.send(login_op)
+
+          ws.send(order_subs)
         end
 
         ws.on :message do |event|
+          valid_message = true
+          ws_message = JSON.parse(event.data)
+
+          if ws_message["type"] == "update" && ws_message["channel"] == "orders"
+            order_data = ws_message["data"]
+            valid_message = false if order_data["market"] == "BTC-PERP"
+          end
+
           print "#{Time.now.strftime('%H:%M:%S')}:" 
-          p JSON.parse(event.data)
+          puts ws_message
+
+          unless valid_message
+            ws.close
+            next
+          end
         end
 
         ws.on :close do |event|
           print "#{Time.now.strftime('%H:%M:%S')}:" 
-          p "ws close with #{event.code}"
-          ws = nil
-          ws_restart(ws_url)
+          p "ws closed with #{event.code}"
+
+          sleep(1)
+          ws_restart(ws_url) if event.code == 1006
+          EM::stop_event_loop
         end
 
-        EM.add_periodic_timer(30) { 
-          ws.send(ping_json)
+        EM.add_periodic_timer(58) { 
+          ws.send(ping)
         }
       }
     end
 
     ws_start('wss://ftx.com/ws/', 'new')
-    puts "line after"
 
+
+    puts "YOYO"
     rs = {"type"=>"subscribed", "channel"=>"orders"}
     ws_r_o = {"channel"=>"orders", "type"=>"update", "data"=>{"id"=>79392399932, "clientId"=>nil, "market"=>"FTT-PERP", "type"=>"limit", "side"=>"buy", "price"=>67.556, "size"=>0.1, "status"=>"new", "filledSize"=>0.0, "remainingSize"=>0.1, "reduceOnly"=>false, "liquidation"=>false, "avgFillPrice"=>nil, "postOnly"=>false, "ioc"=>false, "createdAt"=>"2021-09-14T18:32:52.325084+00:00"}}
     ws_r_filled = {"channel"=>"orders", "type"=>"update", "data"=>{"id"=>79392399932, "clientId"=>nil, "market"=>"FTT-PERP", "type"=>"limit", "side"=>"buy", "price"=>67.556, "size"=>0.1, "status"=>"closed", "filledSize"=>0.1, "remainingSize"=>0.0, "reduceOnly"=>false, "liquidation"=>false, "avgFillPrice"=>67.556, "postOnly"=>false, "ioc"=>false, "createdAt"=>"2021-09-14T18:32:52.325084+00:00"}}

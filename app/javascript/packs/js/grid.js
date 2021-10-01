@@ -2,7 +2,7 @@ import Decimal from 'decimal.js';
 
 function gridreadyFn( jQuery ) {
 
-    var grid_setting = document.getElementById("grid_setting_coin_name");
+    var grid_setting = document.getElementById("grid_setting_market_name");
 
     grid_setup(grid_setting)
 
@@ -26,7 +26,7 @@ function gridreadyFn( jQuery ) {
         var input_spot_detail = document.getElementById("input_spot_detail");
         var market_price = document.getElementById("market_price");
         var check_limit = document.getElementById("check_limit");
-        var pricestep = document.getElementById("pricestep");
+        var grid_setting_price_step = document.getElementById("grid_setting_price_step");
         var threshold = document.getElementById("threshold");
         var order_size = document.getElementById("order_size");
 
@@ -61,7 +61,7 @@ function gridreadyFn( jQuery ) {
           var lower_value = new Decimal(lower_limit.value);
           var upper_value = new Decimal(upper_limit.value);
 
-          var price_step = new Decimal(pricestep.value);
+          var price_step = new Decimal(grid_setting_price_step.value);
           var size_step = new Decimal(order_size.step);
           var size_value = new Decimal(order_size.value);
 
@@ -75,32 +75,18 @@ function gridreadyFn( jQuery ) {
           var threshold_value = new Decimal(threshold.value);
 
           function validate(name) {
+            console.log(`${name} changed.`);
+
             if (grids_value.lt('2')) {grids_value = new Decimal('2')};
             if (lower_value.lt(lower_limit.min)) {lower_value = new Decimal(lower_limit.min)};
             if (size_value.lt(size_step)) {size_value = size_step};
 
-            switch (name) {
-              case 'lower_limit':
-                if (lower_value.gte(upper_value)) {
-                  upper_value = lower_value.add(price_step);
-                } else {
-                  if (lower_value.lte(new Decimal('0'))) {
-                    lower_value = new Decimal('0');
-                  }
-                }
-                break;
-              case 'upper_limit':
-                if (upper_value.lte(lower_value)) {
-                  if (upper_value.sub(price_step).isNeg()) {
-                    upper_value = lower_value.add(price_step);
-                  } else {
-                    lower_value = upper_value.sub(price_step);
-                  }
-                }
-                break;
-              default:
-                console.log(`${name} changed.`);
+            if (name == 'upper_limit' && upper_value.lte(lower_value)) {
+              if (!upper_value.sub(price_step).isNeg()) {lower_value = upper_value.sub(price_step);}
             }
+
+            if (lower_value.gte(upper_value)) {upper_value = lower_value.add(price_step);}
+
             grids.value = grids_value.toFixed();
             upper_limit.value = upper_value.toFixed();
             lower_limit.value = lower_value.toFixed();
@@ -214,14 +200,14 @@ function gridreadyFn( jQuery ) {
           validate(name);
           configcalc(name);
         }
-        var connection = new WebSocket('wss://ftx.com/ws/');
-        connection.onerror = function (error) {console.log('WebSocket Error ' + error);};
-        connection.onmessage = function (e) {
+        var ws = new WebSocket('wss://ftx.com/ws/');
+        ws.onerror = function (error) {console.log('WebSocket Error ' + error);};
+        ws.onmessage = function (e) {
           if (!check_limit.checked) {
             market_price.value = JSON.parse(e.data).data[0].price;
             checkValue("market_price");};
           }
-        connection.onopen = function () {connection.send('{"op": "subscribe", "channel": "trades", "market": "' + grid_setting.value + '/USD"}');};
+        ws.onopen = function () {ws.send('{"op": "subscribe", "channel": "trades", "market": "' + grid_setting.value + '"}');};
         console.log("Yo!");
     };
 };

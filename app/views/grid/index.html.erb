@@ -1,3 +1,7 @@
+
+<!-- # 2021/09/29 全面改用market_name
+# 2021/09/29 全面廢棄coin_name coin 之類的所有關聯
+ -->
 <!-- **********************************
   Content body start
 *********************************** -->
@@ -22,37 +26,39 @@
                     </div>
                 </div>
             </div>
-            <div class="card">
-                <div class="stat-widget-two card-body">
-                    <div class="stat-content">
-                        <div class="stat-text"><%= "#{@coin.name}" %>可用餘額</div>
-                        <div class="stat-digit">
-                          <% spot_precision = decimals(@coin.spotsizeIncrement) %>
-                          <%= balances["#{@coin.name}"]["amount"].round(spot_precision) %> / <i class="far fa-dollar-sign"></i><%= balances["#{@coin.name}"]["usdValue"].round(2) %>
-                        </div>
-                    </div>
-                    <div class="progress">
-                      <% percent = (balances["#{@coin.name}"]["usdValue"] / balances["totalusdValue"]) * 100.round(0) %>
-                      <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
-                        in USD
+            <% if coin_name %>
+              <div class="card">
+                  <div class="stat-widget-two card-body">
+                      <div class="stat-content">
+                          <div class="stat-text"><%= "#{coin_name}" %>可用餘額</div>
+                          <div class="stat-digit">
+                            <% spot_precision = decimals(@grid_setting.size_step) %>
+                            <%= balances["#{coin_name}"]["amount"].round(spot_precision) %> / <i class="far fa-dollar-sign"></i><%= balances["#{coin_name}"]["usdValue"].round(2) %>
+                          </div>
                       </div>
-                    </div>
-                </div>
-            </div>
+                      <div class="progress">
+                        <% percent = (balances["#{coin_name}"]["usdValue"] / balances["totalusdValue"]) * 100.round(0) %>
+                        <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
+                          in USD
+                        </div>
+                      </div>
+                  </div>
+              </div>
+            <% end %>
           </div>
           <div class="col-xl-3 col-md-6 col-sm-12">
             <div class="card">
               <%= form_with model: @grid_setting, url: grid_create_path do |form| %>
                 <div class="card-header">                  
-                  <h4 class="card-title"><%= "#{@coin.name}" %> 網格機器人設定</h4>
+                  <h4 class="card-title"><%= @grid_setting["market_name"] %> 網格機器人設定</h4>
                 </div>
                 <div class="card-body">
-                  <% sizestep = @coin.spotsizeIncrement %>
-                  <% pricestep = @coin.spotpriceIncrement %>
-                  <%= form.hidden_field :coin_id %>
-                  <%= form.hidden_field :coin_name %>
-                  <%= form.hidden_field :grid_gap, value: pricestep %>
-                  <input class="d-none" id="pricestep" value="<%= pricestep %>"></input>
+                  <% size_step = @grid_setting.size_step %>
+                  <% price_step = @grid_setting.price_step %>
+                  <%= form.hidden_field :size_step %>
+                  <%= form.hidden_field :price_step %>
+                  <%= form.hidden_field :market_name %>
+                  <%= form.hidden_field :grid_gap, value: price_step %>
                   <table class="table table-sm mb-0 table-borderless">
                       <thead>
                         <tr>
@@ -66,8 +72,8 @@
                           <td>區間下限</td>
                         </tr>
                         <tr>
-                          <td><%= form.number_field :upper_limit, step: pricestep, value: (0.01 / sizestep) + pricestep, min: (0.01 / sizestep) + pricestep,:id => "upper_limit", :class => "form-control" %></td>
-                          <td><%= form.number_field :lower_limit, step: pricestep, value: (0.01 / sizestep), min: (0.01 / sizestep),:id => "lower_limit", :class => "form-control" %></td>
+                          <td><%= form.number_field :upper_limit, step: price_step, value: (0.01 / size_step) + price_step, min: (0.01 / size_step) + price_step,:id => "upper_limit", :class => "form-control" %></td>
+                          <td><%= form.number_field :lower_limit, step: price_step, value: (0.01 / size_step), min: (0.01 / size_step),:id => "lower_limit", :class => "form-control" %></td>
                         </tr>
                         <tr>
                           <td>網格數量</td>
@@ -75,17 +81,17 @@
                         </tr>
                         <tr>
                           <td><%= form.number_field :grids, value: 2, min: 2,:id => "grids", :class => "form-control" %></td>
-                          <td><%= form.number_field :order_size, step: sizestep, value: sizestep, min: sizestep,:id => "order_size", :class => "form-control" %></td>
+                          <td><%= form.number_field :order_size, step: size_step, value: size_step, min: size_step,:id => "order_size", :class => "form-control" %></td>
                         </tr>
                         <tr>
                           <td>投資數量(USD)</td>
-                          <td><%= "投資數量(#{form.object.coin_name})" %></td>
+                          <td><%= "投資數量(#{coin_name})" if coin_name %></td>
                         </tr>
                         <tr>
                           <td><%= form.number_field :input_USD_amount, step: 0.01, value: 0.01, min: 0, max: balances["USD"]["amount"],:id => "input_USD_amount",:class => "form-control" %>
                             <div id="input_USD_detail" class="form-control-detail">&nbsp;</div>
                           </td>
-                          <td><%= form.number_field :input_spot_amount, step: sizestep, value: 0, min: 0, max: balances[@coin.name]["amount"],:id => "input_spot_amount", :class => "form-control" %>
+                          <td><%= form.number_field :input_spot_amount, step: size_step, value: 0, min: 0, max: balances[coin_name]["amount"],:id => "input_spot_amount", :class => "form-control" if coin_name %>
                             <div id="input_spot_detail" class="form-control-detail">&nbsp;</div>
                           </td>
                         </tr>
@@ -102,7 +108,7 @@
                           <td>開單價差</td>
                         </tr>
                         <tr>
-                          <td><%= form.number_field :trigger_price, step: pricestep, value: @market["price"], min: 0,:id => "market_price", :class => "form-control" %></td>
+                          <td><%= form.number_field :trigger_price, step: price_step, value: @market["price"], min: 0,:id => "market_price", :class => "form-control" %></td>
                           <td><%= form.number_field :threshold, step: 0.001, value: 0, min: 0,:id => "threshold", :class => "form-control" %></td>
                         </tr>
                         <tr>
@@ -110,8 +116,8 @@
                           <td>止盈價格</td>
                         </tr>
                         <tr>
-                          <td><%= form.number_field :stop_loss_price, step: pricestep, min: 0, :class => "form-control" %></td>
-                          <td><%= form.number_field :take_profit_price, step: pricestep, min: 0, :class => "form-control" %></td>
+                          <td><%= form.number_field :stop_loss_price, step: price_step, min: 0, :class => "form-control" %></td>
+                          <td><%= form.number_field :take_profit_price, step: price_step, min: 0, :class => "form-control" %></td>
                         </tr>
                       </tbody>
                   </table>
@@ -145,7 +151,7 @@
                                 <div class="row">
                                     <div class="text-center col-sm-3">投資數量(USD)</div>
                                     <div class="text-center col-sm-3" id="check_form_input_USD_amount"></div>
-                                    <div class="text-center col-sm-3">投資數量(<%= @coin.name %>)</div>
+                                    <div class="text-center col-sm-3"><%= "投資數量(#{coin_name})" if coin_name %></div>
                                     <div class="text-center col-sm-3" id="check_form_input_spot_amount"></div>
                                 </div>
                                 <div class="row">
@@ -173,15 +179,15 @@
               <div class="tradingview-widget-container">
                 <div id="tradingview_1f621" style="height: 499px;"></div>
                 <div class="tradingview-widget-copyright">
-                  <% tv_href = "https://tw.tradingview.com/symbols/#{@coin.name}USD/?exchange=FTX" %> 
+                  <% tv_href = "https://tw.tradingview.com/symbols/#{tv_market_name}/?exchange=FTX" %> 
                   <a href=<%= tv_href %> rel="noopener" target="_blank">
-                    <span class="blue-text"><%= @coin.name %>USD 圖表</span>
+                    <span class="blue-text"><%= tv_market_name %> 圖表</span>
                   </a>由TradingView提供</div>
                 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
                 <script type="text/javascript">
                   new TradingView.widget({
                     "autosize": true,
-                    "symbol": "FTX:<%= @coin.name %>USD",
+                    "symbol": "FTX:<%= tv_market_name %>",
                     "timezone": "Asia/Taipei",
                     "theme": "light",
                     "style": "1",
@@ -202,7 +208,7 @@
             <div class="col-xl-3 col-md-6 col-sm-12">
               <div class="card">
                   <div class="card-header">                  
-                    <h4 class="card-title"><%= "#{grid_setting.coin_name}/USD" %></h4>
+                    <h4 class="card-title"><%= grid_setting.market_name %></h4>
                     <% duration = Time.now - grid_setting.created_at %>
                     <% day_ = duration.divmod(86400) %>
                     <% hour_ = day_[1].divmod(3600) %>
@@ -212,8 +218,7 @@
                   </div>
                   <div class="card-header">
                     <h6>投入金額(USD)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_USD_amount %></h6>
-                    <h6>投入金額(<%= grid_setting.coin_name %>)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_spot_amount %></h6>
-                            <%= "#{grid_setting.grid_orders.count}" %>
+                    <h6>投入現貨：<%= grid_setting.input_spot_amount %></h6>
                   </div>
                   <% unless grid_setting.status == "closing" %>
                     <div class="card-body">
@@ -233,7 +238,7 @@
                           <div class="modal-body table-sm">
                               <div class="container-fluid">
                                 <div class="text-center">
-                                  <h3><%= "確定終止 #{grid_setting.coin_name} 的網格？" %></h3>
+                                  <h3><%= "確定終止 #{grid_setting.market_name} 的網格？" %></h3>
                                   <h4><%= "(#{grid_setting.created_at.strftime('%F %T')} 建立)" %></h4>
                                 </div>
                               </div>
@@ -241,7 +246,7 @@
                           <div class="modal-footer">
                             <%= form_with model: grid_setting, url: grid_close_path, method: "PUT" do |form| %>
                               <%= form.hidden_field :id %>
-                              <%= hidden_field_tag(:current_coin_name, grid_setting.coin_name) %>
+                              <%= hidden_field_tag(:current_market_name, grid_setting.market_name) %>
                               <%= form.submit "確 定", :class => "text-center btn btn-outline-danger btn-rounded" %>
                             <% end %>
                           </div>

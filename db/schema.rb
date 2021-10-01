@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_08_22_183532) do
+ActiveRecord::Schema.define(version: 2021_09_30_080227) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -114,8 +114,6 @@ ActiveRecord::Schema.define(version: 2021_08_22_183532) do
   end
 
   create_table "grid_orders", force: :cascade do |t|
-    t.integer "coin_id"
-    t.string "coin_name"
     t.integer "grid_setting_id"
     t.decimal "ftx_order_id"
     t.string "market", default: ""
@@ -130,16 +128,14 @@ ActiveRecord::Schema.define(version: 2021_08_22_183532) do
     t.datetime "createdAt"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["coin_id"], name: "index_grid_orders_on_coin_id"
-    t.index ["coin_name"], name: "index_grid_orders_on_coin_name"
+    t.string "market_name"
     t.index ["ftx_order_id"], name: "index_grid_orders_on_ftx_order_id"
     t.index ["grid_setting_id"], name: "index_grid_orders_on_grid_setting_id"
+    t.index ["market_name"], name: "index_grid_orders_on_market_name"
     t.index ["status"], name: "index_grid_orders_on_status"
   end
 
   create_table "grid_settings", force: :cascade do |t|
-    t.integer "coin_id"
-    t.string "coin_name"
     t.decimal "lower_limit"
     t.boolean "dyn_lower_limit", default: false
     t.decimal "upper_limit"
@@ -159,8 +155,10 @@ ActiveRecord::Schema.define(version: 2021_08_22_183532) do
     t.datetime "updated_at", precision: 6, null: false
     t.decimal "order_size"
     t.string "description"
-    t.index ["coin_id"], name: "index_grid_settings_on_coin_id"
-    t.index ["coin_name"], name: "index_grid_settings_on_coin_name"
+    t.string "market_name"
+    t.decimal "price_step"
+    t.decimal "size_step"
+    t.index ["market_name"], name: "index_grid_settings_on_market_name"
     t.index ["status"], name: "index_grid_settings_on_status"
   end
 

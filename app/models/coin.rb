@@ -4,8 +4,6 @@ class Coin < ApplicationRecord
   has_many :rates
   has_many :funding_orders
   has_many :funding_payments
-  has_many :grid_settings
-  has_many :grid_orders
   has_one :current_fund_stat
   
   attribute :weight, default: 0.00
