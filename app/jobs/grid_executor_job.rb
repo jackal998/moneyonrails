@@ -142,9 +142,11 @@ class GridExecutorJob < ApplicationJob
         if ws_message["type"] == "update" && ws_message["channel"] == "orders"
           order_data = ws_message["data"]
 
-          # 要驗證在格子上才算數
-          valid_message = "normal" if order_data["market"] == market_name && order_data["status"] == "closed" && order_data["type"] == "limit" && order_data["size"] == grid_setting["order_size"]
-          valid_message = "close" if order_data["price"] == close_price && order_data["size"] == grid_setting["order_size"]
+          if order_data["market"] == market_name && order_data["type"] == "limit" && order_data["size"] == grid_setting["order_size"]
+            # 要驗證在格子上才算數
+            valid_message = "normal" if order_data["status"] == "closed"
+            valid_message = "close" if order_data["status"] == "new" && order_data["price"] == close_price && order_data["side"] == "sell"
+          end
         end
 
         unless ["normal", "close"].include?(valid_message)
@@ -174,9 +176,9 @@ class GridExecutorJob < ApplicationJob
           sleep(0.5)
           @limit_orders = FtxClient.order_history("GridOnRails", {market: market_name, side: order_side, orderType: "limit", start_time: time_stamp})["result"]
           create_or_update_orders_status!(grid_setting, @limit_orders)
-          
+
         when "close"
-          @open_orders = FtxClient.open_orders("GridOnRails", market: market_name)["result"]
+          @open_orders = FtxClient.open_orders("GridOnRails", market: market_name)["result"].select {|order| order["createdAt"] > grid_setting.created_at}
 
           to_cancel_order_ids = @open_orders.pluck("id")
           to_cancel_order_ids.each {|order_id| FtxClient.cancel_order("GridOnRails", order_id)}
