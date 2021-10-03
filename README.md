@@ -66,3 +66,5 @@ https://www.ruby-forum.com/t/i-am-trying-to-install-ruby-on-rails-on-windows-10-
 { "default_line_ending": "windows" } since i'm using windows.
 `git config --global core.safecrlf true`
 `git config --global core.autocrlf true`
+9. for further deployment, here is way to regenerate the master key for Rails
+https://gist.github.com/db0sch/19c321cbc727917bc0e12849a7565af9
