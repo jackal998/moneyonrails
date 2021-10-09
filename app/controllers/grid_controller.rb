@@ -17,23 +17,25 @@ class GridController < ApplicationController
   end
 
   def creategrid
-    @grid_setting = GridSetting.find(1)
-    # @grid_setting = GridSetting.new(creategrid_params)
-
+    @grid_setting = GridSetting.new(creategrid_params)
     @grid_setting["status"] = "active"
-
     puts @grid_setting.attributes
     @grid_setting.save
-    # GridExecutorJob.perform_later(@grid_setting[:id])
-aaaa
+
+    GridExecutorJob.perform_later(@grid_setting[:id])
     redirect_to grid_path(:market_name => @grid_setting[:market_name])
   end
 
   def closegrid
     @grid_setting = GridSetting.find(params["grid_setting"]["id"])
     @grid_setting.update(:status => "closing") if @grid_setting.status == "active"
-    # valid_message = "close" if order_data["price"] == close_price && order_data["size"] == grid_setting["order_size"]
-aaaa
+
+    close_price = @grid_setting["upper_limit"] + @grid_setting["lower_limit"] - @grid_setting["grid_gap"]
+    payload = {market: @grid_setting[:market_name], side: "sell", price: close_price, type: "limit", size: @grid_setting["order_size"]}
+
+    order_result = FtxClient.place_order("GridOnRails", payload)["result"]
+    puts "FtxClient order result:" + order_result["result"].select {|k,v| {k => v} if ["market","side","price","size","status","createdAt"].include?(k)}.to_s
+
     redirect_to grid_path(:market_name => @grid_setting[:market_name])
   end
 

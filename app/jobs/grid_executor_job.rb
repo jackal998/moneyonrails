@@ -142,22 +142,22 @@ class GridExecutorJob < ApplicationJob
         if ws_message["type"] == "update" && ws_message["channel"] == "orders"
           order_data = ws_message["data"]
 
-          if order_data["market"] == market_name && order_data["type"] == "limit" && order_data["size"] == grid_setting["order_size"]
-            # 要驗證在格子上才算數
+          if order_data["market"] == market_name && order_data["type"] == "limit" && order_data["size"] == grid_setting["order_size"] && is_on_grid(grid_setting, order_data["price"])
+            if order_data["status"] == "new"
+              valid_message = (order_data["price"] == close_price && order_data["side"] == "sell") ? "close" : "new_grid"
+            end
+
             valid_message = "normal" if order_data["status"] == "closed"
-            valid_message = "close" if order_data["status"] == "new" && order_data["price"] == close_price && order_data["side"] == "sell"
           end
         end
 
-        unless ["normal", "close"].include?(valid_message)
+        unless ["normal", "close", "new_grid"].include?(valid_message)
           puts console_prefix(grid_setting) + ws_message.to_s
           next
         end
 
         case valid_message
         when "normal"
-          time_stamp = Time.now.to_i - 2
-
           case order_data["side"]
           when "sell"
             order_price = order_data["price"] - grid_setting["grid_gap"]
@@ -168,22 +168,21 @@ class GridExecutorJob < ApplicationJob
           end
           
           payload = {market: market_name, side: order_side, price: order_price, type: "limit", size: grid_setting["order_size"]}
-
           order_result = FtxClient.place_order("GridOnRails", payload)
-          puts console_prefix(grid_setting) + "payload: " + payload.to_s
-          puts console_prefix(grid_setting) + "result: " + order_result.to_json
-
-          sleep(0.5)
-          @limit_orders = FtxClient.order_history("GridOnRails", {market: market_name, side: order_side, orderType: "limit", start_time: time_stamp})["result"]
-          create_or_update_orders_status!(grid_setting, @limit_orders)
-
+          
+          grid_setting.grid_orders.find_by_ftx_order_id(order_data["id"]).update( "status"=> order_data["status"],
+                                                                                  "filledSize"=> order_data["filledSize"],
+                                                                                  "remainingSize"=> order_data["remainingSize"],
+                                                                                  "avgFillPrice"=> order_data["avgFillPrice"])
+          # puts console_prefix(grid_setting) + "payload: " + payload.to_s
+          puts console_prefix(grid_setting) + "New Order: " + order_data.select {|k,v| {k => v} if ["market","type","side","price","size","createdAt"].include?(k)}.to_s
         when "close"
           @open_orders = FtxClient.open_orders("GridOnRails", market: market_name)["result"].select {|order| order["createdAt"] > grid_setting.created_at}
 
           to_cancel_order_ids = @open_orders.pluck("id")
           to_cancel_order_ids.each {|order_id| FtxClient.cancel_order("GridOnRails", order_id)}
 
-          grid_setting.grid_orders.where(ftx_order_id: to_cancel_order_ids).update_all(status: 'closed')
+          grid_setting.grid_orders.where(ftx_order_id: to_cancel_order_ids).update_all(status: 'canceled')
 
           puts console_prefix(grid_setting) + "market_name: #{market_name} cancel #{to_cancel_order_ids.count} orders."
           grid_setting.update(status: "close")
@@ -400,6 +399,13 @@ class GridExecutorJob < ApplicationJob
       db_order.save
     end
     return result
+  end
+
+  def is_on_grid(grid_setting, price)
+    upper_value, lower_value = grid_setting["upper_limit"], grid_setting["lower_limit"]
+    gap_value =  grid_setting["grid_gap"]
+    
+    return (price.between?(lower_value, upper_value) && (price - lower_value ) % gap_value == 0) ? true : false
   end
 
   def decimals(a)
