@@ -30,12 +30,11 @@ namespace :dev do
 
       EM.run {
         ws = Faye::WebSocket::Client.new(ws_url)
-
+        datas = {}
         ws.on :open do |event|
           print "#{Time.now.strftime('%H:%M:%S')}:" 
           p "ws open status: #{status}"
           ws.send(login_op)
-
           ws.send(order_subs)
         end
 
@@ -45,16 +44,15 @@ namespace :dev do
 
           if ws_message["type"] == "update" && ws_message["channel"] == "orders"
             order_data = ws_message["data"]
+            datas[DateTime.now.strftime('%Q')] = order_data
+
             valid_message = false if order_data["market"] == "BTC-PERP"
           end
 
           print "#{Time.now.strftime('%H:%M:%S')}:" 
           puts ws_message
 
-          unless valid_message
-            ws.close
-            next
-          end
+          ws.close unless valid_message
         end
 
         ws.on :close do |event|
@@ -66,7 +64,15 @@ namespace :dev do
           EM::stop_event_loop
         end
 
-        EM.add_periodic_timer(58) { 
+        EM.add_periodic_timer(58) {
+          # 避免寫入同時有新資料進來？
+          time_slice = DateTime.now.strftime('%Q')
+          orders_data = datas.select {|key| key < time_slice }
+
+          # 整理成FtxClient.order_history的形式然後丟給
+          # create_or_update_orders_status!(grid_setting, ftx_orders)
+          datas.delete_if { |key| key < time_slice }
+
           ws.send(ping)
         }
       }
