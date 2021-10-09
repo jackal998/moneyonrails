@@ -90,7 +90,7 @@ class FundingsController < ApplicationController
 
     @ftx_account = FtxClient.account("MoneyOnRails")
     balances = ftx_wallet_balance
-    balances[coin_name] = {"amount"=>0.0, "usdValue"=>0.0} unless balances[coin_name]
+    balances[coin_name] = {"spot_amount" => 0.0, "available_amount" => 0.0, "usdValue"=>0.0} unless balances[coin_name]
 
     @pie_chart_balances_data = []
     
@@ -101,7 +101,7 @@ class FundingsController < ApplicationController
     @funding_order = FundingOrder.new(
       :coin_id => @coin.id, 
       :coin_name => coin_name,
-      :original_spot_amount => balances[coin_name]["amount"],
+      :original_spot_amount => balances[coin_name]["spot_amount"],
       :original_perp_amount => @positions[coin_name]["netSize"]
       )
 
@@ -136,7 +136,7 @@ private
     ftx_wallet_balances_response = FtxClient.wallet_balances("MoneyOnRails")
     if ftx_wallet_balances_response["success"] 
       ftx_wallet_balances_response["result"].each do |result|
-        balances[result["coin"]] = {"amount" => result["availableWithoutBorrow"], "usdValue" => result["usdValue"]}
+        balances[result["coin"]] = {"spot_amount" => result["total"], "available_amount" => result["availableWithoutBorrow"], "usdValue" => result["usdValue"]}
         balances["totalusdValue"] += result["usdValue"]
       end
     end    

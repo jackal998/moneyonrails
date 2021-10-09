@@ -87,11 +87,11 @@
                       <div class="stat-content">
                           <div class="stat-text">USD可用餘額</div>
                           <div class="stat-digit">
-                            <i class="far fa-dollar-sign"></i><%= balances["USD"]["amount"].round(2) %>
+                            <i class="far fa-dollar-sign"></i><%= balances["USD"]["available_amount"].round(2) %>
                           </div>
                       </div>
                       <div class="progress">
-                        <% percent = (balances["USD"]["amount"] / balances["totalusdValue"]) * 100.round(0) %>
+                        <% percent = (balances["USD"]["available_amount"] / balances["totalusdValue"]) * 100.round(0) %>
                         <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
                           USD
                         </div>

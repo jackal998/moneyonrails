@@ -66,7 +66,7 @@
                                 <td class="text-center">
                                   <%= number_with_precision(position["netSize"], precision: position["precision"], delimiter: ',') %>
                                   ：
-                                  <%= number_with_precision(balances[coin_name]["amount"], precision: position["precision"], delimiter: ',') %>
+                                  <%= number_with_precision(balances[coin_name]["spot_amount"], precision: position["precision"], delimiter: ',') %>
                                 </td>
                                 <% days_to_show.each do |d| %>
                                   <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
@@ -161,11 +161,11 @@
                     <div class="stat-content">
                         <div class="stat-text">USD可用餘額</div>
                         <div class="stat-digit">
-                          <i class="far fa-dollar-sign"></i><%= balances["USD"]["amount"].round(2) %>
+                          <i class="far fa-dollar-sign"></i><%= balances["USD"]["available_amount"].round(2) %>
                         </div>
                     </div>
                     <div class="progress">
-                      <% percent = (balances["USD"]["amount"] / balances["totalusdValue"]) * 100.round(0) %>
+                      <% percent = (balances["USD"]["available_amount"] / balances["totalusdValue"]) * 100.round(0) %>
                       <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
                         USD
                       </div>
@@ -181,7 +181,7 @@
                     <% size = @coin[:spotsizeIncrement] > @coin[:perpsizeIncrement] ? @coin[:spotsizeIncrement] : @coin[:perpsizeIncrement] %>
                     <% precision = decimals(size) %>
                     <% max_additional_amount = 
-                      ((balances["USD"]["amount"] / @fund_stat.spot_ask_usd) / size).floor * size %>
+                      ((balances["USD"]["available_amount"] / @fund_stat.spot_ask_usd) / size).floor * size %>
                     <thead>
                       <tr>
                         <th><%= "#{@coin.name}" %></th>
@@ -193,7 +193,7 @@
                       <tr>
                         <td class="text-right">持有數量</td>
                         <td class="text-right">
-                          <%= number_with_precision(balances[@coin.name]["amount"], precision: precision, delimiter: ',') %>
+                          <%= number_with_precision(balances[@coin.name]["spot_amount"], precision: precision, delimiter: ',') %>
                         </td>
                         <td class="text-right">
                           <%= number_with_precision(@positions[@coin.name]["netSize"], precision: precision, delimiter: ',') %>
