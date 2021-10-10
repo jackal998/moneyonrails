@@ -6,13 +6,12 @@ class FundingsController < ApplicationController
     
     coin_name = params["coin_name"] ? params["coin_name"] : "BTC"
     @coin = @coins.detect { |coin| coin[:name] == coin_name }
-    @coin = Coin.find_by("name = ?", coin_name) unless @coin
 
     @ftx_account = FtxClient.account("MoneyOnRails")
 
     list_index = {}
     li = 0
-    balances = ftx_wallet_balance
+    balances = ftx_wallet_balance("MoneyOnRails", coin_name)
 
     @col_chart_payment_data = []
     @pie_chart_payment_data = []
@@ -26,11 +25,10 @@ class FundingsController < ApplicationController
       end
     end
 
-    coin_name = ""
-
     fundingpayments = FundingPayment.where("time > ?", 30.day.ago).group(:coin_name).group_by_day(:time, format: '%F').sum(:payment)
     @fundingstats = FundingStat.all
 
+    coin_name = ""
     fundingpayments.each do |coin_day, payment|
       # coin_day = ["BAO", "2021-08-18"]
       if coin_name != coin_day[0]
@@ -89,8 +87,7 @@ class FundingsController < ApplicationController
     @zeros = @line_chart_data.map { |t,r| [t,0] }
 
     @ftx_account = FtxClient.account("MoneyOnRails")
-    balances = ftx_wallet_balance
-    balances[coin_name] = {"spot_amount" => 0.0, "available_amount" => 0.0, "usdValue"=>0.0} unless balances[coin_name]
+    balances = ftx_wallet_balance("MoneyOnRails", coin_name)
 
     @pie_chart_balances_data = []
     
@@ -130,21 +127,6 @@ class FundingsController < ApplicationController
   end
 
 private
-  def ftx_wallet_balance
-    balances = {"totalusdValue" => 0.00}
-
-    ftx_wallet_balances_response = FtxClient.wallet_balances("MoneyOnRails")
-    if ftx_wallet_balances_response["success"] 
-      ftx_wallet_balances_response["result"].each do |result|
-        balances[result["coin"]] = {"spot_amount" => result["total"], "available_amount" => result["availableWithoutBorrow"], "usdValue" => result["usdValue"]}
-        balances["totalusdValue"] += result["usdValue"]
-      end
-    end    
-
-    balances["USD"] = balances.delete("USD") if balances["USD"]
-    return balances
-  end
-
   def createorder_params
     params.require(:funding_order).permit(:coin_id,:coin_name,
                                           :original_spot_amount,:original_perp_amount,

@@ -15,11 +15,11 @@
                     <div class="stat-content">
                         <div class="stat-text">USD可用餘額</div>
                         <div class="stat-digit">
-                          <i class="far fa-dollar-sign"></i><%= balances["USD"]["amount"].round(2) %>
+                          <i class="far fa-dollar-sign"></i><%= balances["USD"]["available_amount"].round(2) %>
                         </div>
                     </div>
                     <div class="progress">
-                      <% percent = (balances["USD"]["amount"] / balances["totalusdValue"]) * 100.round(0) %>
+                      <% percent = (balances["USD"]["available_amount"] / balances["totalusdValue"]) * 100.round(0) %>
                       <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
                         USD
                       </div>
@@ -33,7 +33,7 @@
                           <div class="stat-text"><%= "#{coin_name}" %>可用餘額</div>
                           <div class="stat-digit">
                             <% spot_precision = decimals(@grid_setting.size_step) %>
-                            <%= balances["#{coin_name}"]["amount"].round(spot_precision) %> / <i class="far fa-dollar-sign"></i><%= balances["#{coin_name}"]["usdValue"].round(2) %>
+                            <%= balances["#{coin_name}"]["spot_amount"].round(spot_precision) %> / <i class="far fa-dollar-sign"></i><%= balances["#{coin_name}"]["usdValue"].round(2) %>
                           </div>
                       </div>
                       <div class="progress">
@@ -88,10 +88,10 @@
                           <td><%= "投資數量(#{coin_name})" if coin_name %></td>
                         </tr>
                         <tr>
-                          <td><%= form.number_field :input_USD_amount, step: 0.01, value: 0.01, min: 0, max: balances["USD"]["amount"],:id => "input_USD_amount",:class => "form-control" %>
+                          <td><%= form.number_field :input_USD_amount, step: 0.01, value: 0.01, min: 0, max: balances["USD"]["available_amount"],:id => "input_USD_amount",:class => "form-control" %>
                             <div id="input_USD_detail" class="form-control-detail">&nbsp;</div>
                           </td>
-                          <td><%= form.number_field :input_spot_amount, step: size_step, value: 0, min: 0, max: balances[coin_name]["amount"],:id => "input_spot_amount", :class => "form-control" if coin_name %>
+                          <td><%= form.number_field :input_spot_amount, step: size_step, value: 0, min: 0, max: balances[coin_name]["spot_amount"],:id => "input_spot_amount", :class => "form-control" if coin_name %>
                             <div id="input_spot_detail" class="form-control-detail">&nbsp;</div>
                           </td>
                         </tr>

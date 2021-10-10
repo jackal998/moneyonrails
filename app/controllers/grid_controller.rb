@@ -10,8 +10,7 @@ class GridController < ApplicationController
     @grid_setting = GridSetting.new(market_name: market_name, price_step: @market["priceIncrement"], size_step: @market["sizeIncrement"])
     @grid_settings = GridSetting.includes(:grid_orders).where(status: ["active", "closing"])
 
-    balances = ftx_wallet_balance
-    ["USD", coin_name].each { |c| balances[c] = {"amount"=>0.0, "usdValue"=>0.0} unless balances[c] }
+    balances = ftx_wallet_balance("GridOnRails", coin_name)
 
     render locals: {balances: balances, coin_name: coin_name, tv_market_name: tv_market_name(market_name)}
   end
@@ -42,21 +41,6 @@ class GridController < ApplicationController
 private
   def tv_market_name(ftx_market_name)
     ftx_market_name.dup.sub!('-', '') || ftx_market_name.dup.sub!('/', '')
-  end
-
-  def ftx_wallet_balance
-    balances = {"totalusdValue" => 0.00}
-
-    ftx_wallet_balances_response = FtxClient.wallet_balances("GridOnRails")
-    if ftx_wallet_balances_response["success"] 
-      ftx_wallet_balances_response["result"].each do |result|
-        balances[result["coin"]] = {"amount" => result["availableWithoutBorrow"], "usdValue" => result["usdValue"]}
-        balances["totalusdValue"] += result["usdValue"]
-      end
-    end    
-
-    balances["USD"] = balances.delete("USD") if balances["USD"]
-    return balances
   end
 
   def creategrid_params
