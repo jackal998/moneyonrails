@@ -33,11 +33,14 @@
                           <div class="stat-text"><%= "#{coin_name}" %>可用餘額</div>
                           <div class="stat-digit">
                             <% spot_precision = decimals(@grid_setting.size_step) %>
-                            <%= balances["#{coin_name}"]["spot_amount"].round(spot_precision) %> / <i class="far fa-dollar-sign"></i><%= balances["#{coin_name}"]["usdValue"].round(2) %>
+                            <% spot_data = balances[coin_name] %>
+                            
+                            <% spot_available_usdValue = spot_data["spot_amount"] == 0 ? 0 : (spot_data["usdValue"] / spot_data["spot_amount"]) * spot_data["available_amount"] %>
+                            <%= spot_data["available_amount"].round(spot_precision) %> / <i class="far fa-dollar-sign"></i><%= spot_available_usdValue.round(2) %>
                           </div>
                       </div>
                       <div class="progress">
-                        <% percent = (balances["#{coin_name}"]["usdValue"] / balances["totalusdValue"]) * 100.round(0) %>
+                        <% percent = (spot_available_usdValue / balances["totalusdValue"]) * 100.round(0) %>
                         <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
                           in USD
                         </div>
@@ -91,7 +94,7 @@
                           <td><%= form.number_field :input_USD_amount, step: 0.01, value: 0.01, min: 0, max: balances["USD"]["available_amount"],:id => "input_USD_amount",:class => "form-control" %>
                             <div id="input_USD_detail" class="form-control-detail">&nbsp;</div>
                           </td>
-                          <td><%= form.number_field :input_spot_amount, step: size_step, value: 0, min: 0, max: balances[coin_name]["spot_amount"],:id => "input_spot_amount", :class => "form-control" if coin_name %>
+                          <td><%= form.number_field :input_spot_amount, step: size_step, value: 0, min: 0, max: spot_data["spot_amount"],:id => "input_spot_amount", :class => "form-control" if coin_name %>
                             <div id="input_spot_detail" class="form-control-detail">&nbsp;</div>
                           </td>
                         </tr>

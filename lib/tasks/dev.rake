@@ -30,7 +30,7 @@ namespace :dev do
 
       EM.run {
         ws = Faye::WebSocket::Client.new(ws_url)
-        datas = {}
+        datas = []
         ws.on :open do |event|
           print "#{Time.now.strftime('%H:%M:%S')}:" 
           p "ws open status: #{status}"
@@ -44,7 +44,7 @@ namespace :dev do
 
           if ws_message["type"] == "update" && ws_message["channel"] == "orders"
             order_data = ws_message["data"]
-            datas[DateTime.now.strftime('%Q')] = order_data
+            datas << order_data
 
             valid_message = false if order_data["market"] == "BTC-PERP"
           end
@@ -65,13 +65,13 @@ namespace :dev do
         end
 
         EM.add_periodic_timer(58) {
-          # 避免寫入同時有新資料進來？
-          time_slice = DateTime.now.strftime('%Q')
-          orders_data = datas.select {|key| key < time_slice }
+          ws_orders = datas.dup
+          datas -= ws_orders
 
-          # 整理成FtxClient.order_history的形式然後丟給
-          # create_or_update_orders_status!(grid_setting, ftx_orders)
-          datas.delete_if { |key| key < time_slice }
+          listed = {}
+          ws_orders.each {|o| listed[o["id"]] = o}
+          valid_orders = listed.map { |key, value| value }
+
 
           ws.send(ping)
         }
@@ -185,10 +185,16 @@ namespace :dev do
     fund_stat_datas_tbu = []
 
     coins.each do |c|
-    # finding ways to websocket ftx...
-      data = FtxClient.future_stats("#{c.name}-PERP")
-
-      append_fund_stat_data(c.current_fund_stat, data["result"], fund_stat_datas_tbu)
+      # finding ways to websocket ftx...
+      data = FtxClient.future_stats("#{c.name}-PERP")["result"]
+      fund_stat = c.current_fund_stat
+      fund_stat.assign_attributes(
+        :nextFundingRate => data["nextFundingRate"],
+        :nextFundingTime => data["nextFundingTime"],
+        :openInterest => data["openInterest"],
+        :updated_at => Time.now)
+      
+      fund_stat_datas_tbu << fund_stat.attributes
     end
     
     CurrentFundStat.upsert_all(fund_stat_datas_tbu)
@@ -612,15 +618,5 @@ private
       :updated_at => Time.now)
 
     return crs.attributes
-  end
-
-  def append_fund_stat_data(fund_stat, data, data_arr)
-    fund_stat.assign_attributes(
-      :nextFundingRate => data["nextFundingRate"],
-      :nextFundingTime => data["nextFundingTime"],
-      :openInterest => data["openInterest"],
-      :updated_at => Time.now)
-    
-    data_arr << fund_stat.attributes
   end
 end
