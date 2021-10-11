@@ -16,6 +16,7 @@ class GridController < ApplicationController
   end
 
   def creategrid
+    # @grid_setting = GridSetting.find(5)
     @grid_setting = GridSetting.new(creategrid_params)
     @grid_setting["status"] = "active"
     puts @grid_setting.attributes
@@ -29,8 +30,8 @@ class GridController < ApplicationController
     @grid_setting = GridSetting.find(params["grid_setting"]["id"])
     @grid_setting.update(:status => "closing") if @grid_setting.status == "active"
 
-    close_price = @grid_setting["upper_limit"] + @grid_setting["lower_limit"] - @grid_setting["grid_gap"]
-    payload = {market: @grid_setting[:market_name], side: "sell", price: close_price, type: "limit", size: @grid_setting["order_size"]}
+    close_price = @grid_setting["id"] * @grid_setting["price_step"]
+    payload = {market: @grid_setting[:market_name], side: "buy", price: close_price, type: "limit", size: @grid_setting["order_size"]}
 
     order_result = FtxClient.place_order("GridOnRails", payload)["result"]
     puts "FtxClient order result:" + order_result["result"].select {|k,v| {k => v} if ["market","side","price","size","status","createdAt"].include?(k)}.to_s

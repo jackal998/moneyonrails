@@ -26,17 +26,16 @@ class GridExecutorJob < ApplicationJob
     grids, grid_gap = grid_setting["grids"], grid_setting["grid_gap"]
     price_step = grid_setting["price_step"]
 
-    puts "setting market_name      = #{grid_setting["market_name"]}"
-    puts "setting upper_limit      = #{upper_limit}"
-    puts "setting lower_limit      = #{lower_limit}"
-    puts "setting grids            = #{grids}"
-    puts "setting grid_gap         = #{grid_gap}"
-    puts "setting price_step       = #{price_step}"
+    puts console_prefix(grid_setting) + "setting market_name      = #{grid_setting["market_name"]}"
+    puts console_prefix(grid_setting) + "setting upper_limit      = #{upper_limit}"
+    puts console_prefix(grid_setting) + "setting lower_limit      = #{lower_limit}"
+    puts console_prefix(grid_setting) + "setting grids            = #{grids}"
+    puts console_prefix(grid_setting) + "setting grid_gap         = #{grid_gap}"
+    puts console_prefix(grid_setting) + "setting price_step       = #{price_step}"
 
     check_value["grids"] = ((upper_limit - lower_limit)/price_step + 1)
     check_value["grid_gap"] = (((upper_limit - lower_limit)/price_step)/(grids - 1)).round(0) * price_step
     check_value["upper_limit"] = lower_limit + ((grids - 1) * grid_gap)
-
 
     ["grids","grid_gap","upper_limit"].each do |item|
       compare_sym = ""
@@ -119,7 +118,8 @@ class GridExecutorJob < ApplicationJob
 
   def ws_start(status, grid_setting)
     market_name = grid_setting["market_name"]
-    close_price = grid_setting["upper_limit"] + grid_setting["lower_limit"] - grid_setting["grid_gap"]
+    close_price = grid_setting["id"] * grid_setting["price_step"]
+    ws_datas = []
 
     EM.run {
       ws = Faye::WebSocket::Client.new('wss://ftx.com/ws/')
@@ -142,17 +142,20 @@ class GridExecutorJob < ApplicationJob
         if ws_message["type"] == "update" && ws_message["channel"] == "orders"
           order_data = ws_message["data"]
 
-          if order_data["market"] == market_name && order_data["type"] == "limit" && order_data["size"] == grid_setting["order_size"] && is_on_grid(grid_setting, order_data["price"])
-            if order_data["status"] == "new"
-              valid_message = (order_data["price"] == close_price && order_data["side"] == "sell") ? "close" : "new_grid"
+          if order_data["market"] == market_name && order_data["type"] == "limit" && order_data["size"] == grid_setting["order_size"]
+            valid_message = "close_grid" if order_data["price"] == close_price && order_data["status"] == "new"
+            
+            if is_on_grid(grid_setting, order_data["price"])
+              ws_datas << order_data
+              valid_message = "new_grid" if order_data["status"] == "new"
+              valid_message = "normal" if order_data["status"] == "closed"
             end
-
-            valid_message = "normal" if order_data["status"] == "closed"
           end
         end
 
-        unless ["normal", "close", "new_grid"].include?(valid_message)
-          puts console_prefix(grid_setting) + ws_message.to_s
+        unless ["normal", "close_grid", "new_grid"].include?(valid_message)
+          # warning line: unless ws_message["type"] == "pong" will hide ws message from ws.send(ws_op("ping"))
+          puts console_prefix(grid_setting) + ws_message.to_s unless ws_message["type"] == "pong"
           next
         end
 
@@ -170,13 +173,9 @@ class GridExecutorJob < ApplicationJob
           payload = {market: market_name, side: order_side, price: order_price, type: "limit", size: grid_setting["order_size"]}
           order_result = FtxClient.place_order("GridOnRails", payload)
           
-          grid_setting.grid_orders.find_by_ftx_order_id(order_data["id"]).update( "status"=> order_data["status"],
-                                                                                  "filledSize"=> order_data["filledSize"],
-                                                                                  "remainingSize"=> order_data["remainingSize"],
-                                                                                  "avgFillPrice"=> order_data["avgFillPrice"])
-          # puts console_prefix(grid_setting) + "payload: " + payload.to_s
           puts console_prefix(grid_setting) + "New Order: " + order_data.select {|k,v| {k => v} if ["market","type","side","price","size","createdAt"].include?(k)}.to_s
-        when "close"
+        when "close_grid"
+          # 不支援相同market多筆開單
           @open_orders = FtxClient.open_orders("GridOnRails", market: market_name)["result"].select {|order| order["createdAt"] > grid_setting.created_at}
 
           to_cancel_order_ids = @open_orders.pluck("id")
@@ -185,7 +184,7 @@ class GridExecutorJob < ApplicationJob
           grid_setting.grid_orders.where(ftx_order_id: to_cancel_order_ids).update_all(status: 'canceled')
 
           puts console_prefix(grid_setting) + "market_name: #{market_name} cancel #{to_cancel_order_ids.count} orders."
-          grid_setting.update(status: "close")
+          grid_setting.update(status: "closed")
 
           ws.close
         end
@@ -195,11 +194,23 @@ class GridExecutorJob < ApplicationJob
         puts console_prefix(grid_setting) + "ws closed with #{event.code}"
 
         sleep(1)
-        ws_restart(grid_setting) if event.code == 1006
-        EM::stop_event_loop
+        if event.code == 1006
+          ws_restart(grid_setting)
+        else
+          EM::stop_event_loop
+        end
       end
 
       EM.add_periodic_timer(58) { 
+        ws_orders = ws_datas.dup
+        ws_datas -= ws_orders
+
+        filtered_orders = {}
+        ws_orders.each {|order| filtered_orders[order["id"]] = order}
+        valid_orders = filtered_orders.map { |key, value| value }
+
+        puts console_prefix(grid_setting) + "orders_status every 58s: " + create_or_update_orders_status!(grid_setting, valid_orders).to_s
+
         ws.send(ws_op("ping"))
       }
     }
@@ -245,8 +256,8 @@ class GridExecutorJob < ApplicationJob
       init_required_amount = missing_sell_grids * size_value
       spot_in_bias = init_required_amount - spot_in_amount
 
-      # 需要買的數量
-      if spot_in_bias > 0
+        # 需要買的數量
+      if spot_in_bias >= 0
         bias_required_amount = spot_in_bias
       else
         # 在新setting中更新實際使用量
@@ -257,11 +268,11 @@ class GridExecutorJob < ApplicationJob
       bias_required_amount = missing_grids_bias * size_value
     end
 
-    puts "missing buy_grids        = #{missing_buy_grids}"
-    puts "missing sell_grids       = #{missing_sell_grids}"
-    puts "missing_grids_bias       = #{missing_grids_bias}"
+    puts console_prefix(grid_setting) + "missing buy_grids        = #{missing_buy_grids}"
+    puts console_prefix(grid_setting) + "missing sell_grids       = #{missing_sell_grids}"
+    puts console_prefix(grid_setting) + "missing_grids_bias       = #{missing_grids_bias}"
 
-    puts "spot_in_amount           = #{spot_in_amount}"
+    puts console_prefix(grid_setting) + "spot_in_amount           = #{spot_in_amount}"
     puts console_prefix(grid_setting) + "bias_required_amount     = #{bias_required_amount}"
 
     return bias_required_amount
@@ -286,7 +297,7 @@ class GridExecutorJob < ApplicationJob
       batch_amount = batch_amount_calc(grid_setting, bias_remained_amount)
 
       unless batch_amount == 0
-        puts "#{order_side}ing amount            = #{batch_amount}/#{bias_remained_amount}"
+        puts console_prefix(grid_setting) + "#{order_side}ing amount            = #{batch_amount}/#{bias_remained_amount}"
         payload = payload_market.merge({size: batch_amount.abs})
 
         order_result = FtxClient.place_order("GridOnRails", payload)
@@ -323,14 +334,20 @@ class GridExecutorJob < ApplicationJob
       payload = payload_limit.merge({price: order_price})
 
       order_result = FtxClient.place_order("GridOnRails", payload)
-      sleep(0.15)
 
       puts "payload(#{side}) :" + payload.to_s
       puts "order result:" + order_result.to_json
     end
 
-    sleep(0.5)
-    @limit_orders = FtxClient.order_history("GridOnRails", {market: market_name, side: side, orderType: "limit", start_time: time_stamp})["result"]
+    sleep(0.2)
+    response = FtxClient.order_history("GridOnRails", {market: market_name, side: side, orderType: "limit", start_time: time_stamp})
+    @limit_orders = response["result"]
+
+    while response["hasMoreData"]
+      end_time_stamp = response["result"].last["createdAt"].to_time.to_i
+      response = FtxClient.order_history("GridOnRails", {market: market_name, side: side, orderType: "limit", start_time: time_stamp, end_time: end_time_stamp})
+      @limit_orders += response["result"]
+    end
 
     return @limit_orders
   end
@@ -371,34 +388,47 @@ class GridExecutorJob < ApplicationJob
     ftx_order_ids = ftx_orders.pluck("id")
     db_orders = grid_setting.grid_orders.where(ftx_order_id: ftx_order_ids)
     db_order_ids = db_orders.pluck(:ftx_order_id).map(&:to_i)
-
+    
+    new_orders_tbu = []
+    existed_orders_tbu = []
+    
     ftx_orders.each do |order|
       if db_order_ids.include?(order["id"])
         db_order = db_orders.detect {|db_order| db_order["ftx_order_id"] == order["id"]}
+        db_order.attributes = to_update_attributes(order)
+
+        existed_orders_tbu << db_order.attributes
         result[:updated] += 1
       else
         db_order = GridOrder.new(
           "market_name"=> order["market"],
           "grid_setting_id" => grid_setting["id"],
-          "ftx_order_id" => order["id"]
-        )
+          "ftx_order_id" => order["id"],
+          "created_at" => DateTime.now,
+          "updated_at" => DateTime.now)
+        db_order.attributes = to_update_attributes(order)
+
+        new_orders_tbu << db_order.attributes.except!("id")
         result[:created] += 1
       end
-
-      db_order.attributes = {
-        "order_type"=> order["type"],
-        "side"=> order["side"],
-        "price"=> order["price"],
-        "size"=> order["size"],
-        "status"=> order["status"],
-        "filledSize"=> order["filledSize"],
-        "remainingSize"=> order["remainingSize"],
-        "avgFillPrice"=> order["avgFillPrice"],
-        "createdAt"=> order["createdAt"]}
-
-      db_order.save
     end
+
+    GridOrder.upsert_all(new_orders_tbu) unless new_orders_tbu.empty?
+    GridOrder.upsert_all(existed_orders_tbu) unless existed_orders_tbu.empty?
+
     return result
+  end
+
+  def to_update_attributes(order)
+    return {"order_type"=> order["type"],
+            "side"=> order["side"],
+            "price"=> order["price"],
+            "size"=> order["size"],
+            "status"=> order["status"],
+            "filledSize"=> order["filledSize"],
+            "remainingSize"=> order["remainingSize"],
+            "avgFillPrice"=> order["avgFillPrice"],
+            "createdAt"=> order["createdAt"]}
   end
 
   def is_on_grid(grid_setting, price)
