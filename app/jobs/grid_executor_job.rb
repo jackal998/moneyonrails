@@ -3,15 +3,15 @@ class GridExecutorJob < ApplicationJob
   require "ftx_client"
 
   def perform(grid_setting_id)
-    @grid_setting = GridSetting.includes(:grid_orders).find(grid_setting_id)
 
+    @grid_setting = GridSetting.includes(:grid_orders).find(grid_setting_id)
+    puts console_prefix(@grid_setting) + "sidekiq GridExecutorJob starting..."
     return unless params_check(@grid_setting)
 
-    puts console_prefix(@grid_setting) + "sidekiq GridExecutorJob starting..."
-
     grid_orders_init!(@grid_setting)
+    @grid_setting.update({"status" => "active"})
     puts console_prefix(@grid_setting) + "init orders ok."
-
+    
     # main loop
     ws_start('new', @grid_setting)
 
@@ -19,7 +19,7 @@ class GridExecutorJob < ApplicationJob
   end
 
   def params_check(grid_setting)
-    return false unless grid_setting["status"] == "active"
+    return false unless ["active", "new"].include?(grid_setting["status"])
     
     check_value = {}
     upper_limit, lower_limit = grid_setting["upper_limit"], grid_setting["lower_limit"]
@@ -33,8 +33,8 @@ class GridExecutorJob < ApplicationJob
     puts console_prefix(grid_setting) + "setting grid_gap         = #{grid_gap}"
     puts console_prefix(grid_setting) + "setting price_step       = #{price_step}"
 
-    check_value["grids"] = ((upper_limit - lower_limit)/price_step + 1)
-    check_value["grid_gap"] = (((upper_limit - lower_limit)/price_step)/(grids - 1)).round(0) * price_step
+    check_value["grids"] = ((upper_limit - lower_limit) / price_step + 1)
+    check_value["grid_gap"] = (((upper_limit - lower_limit) / price_step) / (grids - 1)).round(0) * price_step
     check_value["upper_limit"] = lower_limit + ((grids - 1) * grid_gap)
 
     ["grids","grid_gap","upper_limit"].each do |item|
@@ -43,7 +43,7 @@ class GridExecutorJob < ApplicationJob
       when "grids"
         compare_sym = ">" if grid_setting[item] > check_value[item]
       else
-        compare_sym = "!=" unless grid_setting[item] == check_value[item]
+        compare_sym = "!=" if grid_setting[item] != check_value[item]
       end
 
       unless compare_sym == ""
@@ -60,28 +60,77 @@ class GridExecutorJob < ApplicationJob
   def grid_orders_init!(grid_setting)
     market_name = grid_setting["market_name"]
 
-    # 1. Get Current Market price for buy/sell grids caculation
-    @market = FtxClient.market_info(market_name)["result"]
-    buy_grids = grids_calc("buy", @market["price"], grid_setting)
-    sell_grids = grids_calc("sell", @market["price"], grid_setting)
-    puts console_prefix(grid_setting) + "market_name: #{market_name} / sell_grids: #{sell_grids} / buy_grids: #{buy_grids}"
+    db_orders = grid_setting.grid_orders.where(status: ["new","open"]).order(price: :asc, ftx_order_id: :asc)
+    db_i_max = db_orders.size - 1
 
-    # 2. Get Current Open Orders for missing(init) buy/sell amounts caculation
-    @open_orders = FtxClient.open_orders("GridOnRails", market: market_name)["result"].select {|order| order["createdAt"] > grid_setting.created_at}
-    bias_required_amount = bias_required_calc(grid_setting, buy_grids, sell_grids, @open_orders)
+    ftx_orders = FtxClient.open_orders("GridOnRails", market: market_name)["result"].select {|o| o["createdAt"] > grid_setting.created_at}.sort_by!{ |o| o["price"] }
+    ftx_i_max = ftx_orders.size - 1
+
+    @market = FtxClient.market_info(market_name)["result"]
+
+    upper_value, lower_value = grid_setting["upper_limit"], grid_setting["lower_limit"]
+    gap_value, size_value = grid_setting["grid_gap"], grid_setting["order_size"]
+
+    market_price_on_grid = ((@market["price"] - lower_value) / gap_value).round(0) * gap_value + lower_value
+
+    # 保留可以使用spot，先不考慮合約
+    db_i, ftx_i = 0, 0
+    missing_grids = {"sell" => [] , "buy" => []}
+    order_id = {db: ""}
+    to_save_orders = []
+
+    (lower_value..upper_value).step(gap_value).each do |grid_price|
+      db_price, ftx_price = db_orders[db_i].price, ftx_orders[ftx_i]["price"]
+      order_id[:db] = db_orders[db_i].ftx_order_id.to_i
+
+      if grid_price == market_price_on_grid
+        if db_price == market_price_on_grid
+          to_save_orders << FtxClient.orders("GridOnRails", order_id[:db])["result"]
+          db_i += 1
+        end
+        next 
+      end
+
+      while db_i + 1 <= db_i_max ? (db_orders[db_i].price == db_orders[db_i + 1].price) : false
+        to_save_orders << FtxClient.orders("GridOnRails", order_id[:db])["result"]
+        db_i += 1
+        order_id[:db] = db_orders[db_i].ftx_order_id.to_i
+      end
+
+      grid_side = market_price_on_grid > grid_price ? "buy" : "sell"
+
+      if ftx_price != grid_price
+        missing_grids[grid_side] << grid_price
+        to_save_orders << FtxClient.orders("GridOnRails", order_id[:db])["result"] if db_price == grid_price
+
+        db_i -= 1 if db_price != grid_price
+        ftx_i -= 1
+      elsif ftx_price == grid_price
+        unless order_id[:db] == ftx_orders[ftx_i]["id"]
+          to_save_orders << ftx_orders[ftx_i]
+          to_save_orders << FtxClient.orders("GridOnRails", order_id[:db])["result"] if db_price == grid_price
+
+          db_i -= 1 if db_price != grid_price
+        end
+      end
+      # puts "db_i #{db_i} #{db_price}   ftx_i #{ftx_i} #{ftx_price}  grid_price #{grid_price}"
+      db_i += 1
+      ftx_i += 1
+    end
+    puts console_prefix(grid_setting) + "orders_status after to_save_orders: " + create_or_update_orders_status!(grid_setting, to_save_orders).to_s
+
+    # 2. missing(init) buy/sell amounts caculation
+    bias_required_amount = bias_required_calc(grid_setting, missing_grids)
 
     # 3. Update orders informations from ftx after bias_required_amount_exec orders
     @market_orders = bias_required_amount_exec(grid_setting, bias_required_amount)
     puts console_prefix(grid_setting) + "orders_status after bias_required_amount_exec: " + create_or_update_orders_status!(grid_setting, @market_orders).to_s
 
     # 4. Place buy/sell grid orders and Update orders informations from ftx after place orders
-    @sell_grids_orders = gird_orders_exec("sell", sell_grids, @market["price"], grid_setting, @open_orders)
-    @buy_grids_orders = gird_orders_exec("buy", buy_grids, @market["price"], grid_setting, @open_orders)
-
-    puts console_prefix(grid_setting) + "orders_status after sell gird_orders_exec: " + create_or_update_orders_status!(grid_setting, @sell_grids_orders).to_s
-    puts console_prefix(grid_setting) + "orders_status after buy gird_orders_exec: " + create_or_update_orders_status!(grid_setting, @buy_grids_orders).to_s
+    @grids_orders = gird_orders_exec(grid_setting, missing_grids)
+    puts console_prefix(grid_setting) + "orders_status after gird_orders_exec: " + create_or_update_orders_status!(grid_setting, @grids_orders).to_s
   end
-
+  
   def ws_op(op_name, channel = "")
     case op_name
     when "login"
@@ -216,44 +265,17 @@ class GridExecutorJob < ApplicationJob
     }
   end
 
-  def grids_calc(side, market_price, grid_setting)
+  def bias_required_calc(grid_setting, missing_grids)
+    market_name = grid_setting["market_name"]
 
-    upper_value, lower_value = grid_setting["upper_limit"], grid_setting["lower_limit"]
-    gap_value =  grid_setting["grid_gap"]
-
-    price_on_grid = ((market_price - lower_value) / gap_value).round(0) * gap_value + lower_value
-
-    case side
-    when "buy"
-      return ((upper_value - lower_value) / gap_value).round(0) if price_on_grid >= upper_value
-      return ((price_on_grid - lower_value) / gap_value).round(0) if price_on_grid > lower_value
-      return 0
-    when "sell"
-      return ((upper_value - lower_value) / gap_value).round(0) if price_on_grid <= lower_value
-      return ((upper_value - price_on_grid) / gap_value).round(0) if price_on_grid < upper_value
-      return 0
-    end
-  end
-
-  def bias_required_calc(grid_setting, buy_grids, sell_grids, open_orders)
-    # 保留可以使用spot，先不考慮合約
+    size_value, size_step =  grid_setting["order_size"], grid_setting["size_step"]
     spot_in_amount = grid_setting["input_spot_amount"]
-    size_value = grid_setting["order_size"]
 
-    open_sell_grids, open_buy_grids = 0, 0
-    open_orders.each do |order|
-      open_sell_grids += 1 if order["side"] == "sell"
-      open_buy_grids += 1 if order["side"] == "buy"
-    end
-
-    missing_sell_grids = sell_grids - open_sell_grids
-    missing_buy_grids = buy_grids - open_buy_grids
     # check bias to operate
-    missing_grids_bias = missing_sell_grids - missing_buy_grids
+    missing_grids_bias = missing_grids["sell"].size - missing_grids["buy"].size
 
-    db_open_orders = grid_setting.grid_orders.detect { |order| ["new","open"].include?(order.status) }
-    if db_open_orders.nil? || db_open_orders.size == 0
-      init_required_amount = missing_sell_grids * size_value
+    if grid_setting["status"] == "new"
+      init_required_amount = missing_grids["sell"].size * size_value
       spot_in_bias = init_required_amount - spot_in_amount
 
         # 需要買的數量
@@ -266,10 +288,36 @@ class GridExecutorJob < ApplicationJob
       end
     else
       bias_required_amount = missing_grids_bias * size_value
+      usd_required_amount = missing_grids["buy"].sum * size_value
+
+      unless bias_required_amount == 0
+        target_name = market_name.split("/")[0]
+        usd_available, spot_available, market_price = 0, 0, 0
+
+        FtxClient.wallet_balances("GridOnRails")["result"].each do |balance| 
+          usd_available = balance["free"] if balance["coin"] == "USD"
+          if balance["coin"] == target_name
+            spot_available = (balance["free"] / size_value).round(0) * size_value
+            market_price = balance["usdValue"] / balance["total"]
+          end
+        end
+
+        if bias_required_amount > 0
+          bias_required_amount -= bias_required_amount >= spot_available ? spot_available : bias_required_amount
+        else
+          if usd_required_amount > usd_available
+            (size_step..spot_available).step(size_step).each do |sell_amount|
+              bias_required_amount = (- sell_amount / size_step) if sell_amount * market_price + usd_available >= usd_required_amount
+            end
+          else
+            bias_required_amount = 0
+          end
+        end
+      end
     end
 
-    puts console_prefix(grid_setting) + "missing buy_grids        = #{missing_buy_grids}"
-    puts console_prefix(grid_setting) + "missing sell_grids       = #{missing_sell_grids}"
+    puts console_prefix(grid_setting) + "missing buy_grids        = #{missing_grids["buy"].size}"
+    puts console_prefix(grid_setting) + "missing sell_grids       = #{missing_grids["sell"].size}"
     puts console_prefix(grid_setting) + "missing_grids_bias       = #{missing_grids_bias}"
 
     puts console_prefix(grid_setting) + "spot_in_amount           = #{spot_in_amount}"
@@ -307,61 +355,37 @@ class GridExecutorJob < ApplicationJob
         sleep(2)     
       end
     end
-
+    # 需filter未執行的
     return @market_orders
   end
 
-  def gird_orders_exec(side, grid_number, market_price, grid_setting, open_orders)
-
+  def gird_orders_exec(grid_setting, missing_grids)
     time_stamp = Time.now.to_i - 2
     market_name = grid_setting["market_name"]
+    
+    missing_grids.each do |side, price_arr| 
+      payload_limit = {market: market_name, side: side, price: nil, type: "limit", size: grid_setting["order_size"]}
 
-    payload_limit = {market: market_name, side: side, price: nil, type: "limit", size: grid_setting["order_size"]}
+      price_arr.each do |price|
+        payload = payload_limit.merge({price: price})
+        order_result = FtxClient.place_order("GridOnRails", payload)
 
-    gap_value = grid_setting["grid_gap"]
-    price_precision = decimals(gap_value)
-
-    gap_value = side == "buy" ? 0 - gap_value : gap_value
-
-    ref_price = ref_price_calc(market_price, grid_setting)
-
-    (1..grid_number).each do |i|
-
-      order_price = (ref_price + gap_value * i).round(price_precision)
-
-      next if open_orders.detect {|order| order["price"].round(price_precision) == order_price}
-
-      payload = payload_limit.merge({price: order_price})
-
-      order_result = FtxClient.place_order("GridOnRails", payload)
-
-      puts "payload(#{side}) :" + payload.to_s
-      puts "order result:" + order_result.to_json
+        puts "payload(#{side}) :" + payload.to_s
+        puts "order result:" + order_result.to_json
+      end
     end
 
     sleep(0.2)
-    response = FtxClient.order_history("GridOnRails", {market: market_name, side: side, orderType: "limit", start_time: time_stamp})
+    response = FtxClient.order_history("GridOnRails", {market: market_name, orderType: "limit", start_time: time_stamp})
     @limit_orders = response["result"]
 
     while response["hasMoreData"]
       end_time_stamp = response["result"].last["createdAt"].to_time.to_i
-      response = FtxClient.order_history("GridOnRails", {market: market_name, side: side, orderType: "limit", start_time: time_stamp, end_time: end_time_stamp})
+      response = FtxClient.order_history("GridOnRails", {market: market_name, orderType: "limit", start_time: time_stamp, end_time: end_time_stamp})
       @limit_orders += response["result"]
     end
 
     return @limit_orders
-  end
-
-  def ref_price_calc(market_price, grid_setting)
-
-    upper_value, lower_value = grid_setting["upper_limit"], grid_setting["lower_limit"]
-    gap_value =  grid_setting["grid_gap"]
-
-    price_on_grid = ((market_price - lower_value) / gap_value).round(0) * gap_value + lower_value
-
-    return upper_value if price_on_grid >= upper_value
-    return lower_value if price_on_grid <= lower_value
-    return price_on_grid
   end
 
   def batch_amount_calc(grid_setting, target_amount)
@@ -436,15 +460,6 @@ class GridExecutorJob < ApplicationJob
     gap_value =  grid_setting["grid_gap"]
     
     return (price.between?(lower_value, upper_value) && (price - lower_value ) % gap_value == 0) ? true : false
-  end
-
-  def decimals(a)
-    num = 0
-    while(a != a.to_i)
-        num += 1
-        a *= 10
-    end
-    num   
   end
 
   def console_prefix(grid_setting)
