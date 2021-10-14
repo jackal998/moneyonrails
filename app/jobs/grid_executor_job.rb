@@ -10,8 +10,8 @@ class GridExecutorJob < ApplicationJob
 
     grid_orders_init!(@grid_setting)
     @grid_setting.update({"status" => "active"})
-    puts console_prefix(@grid_setting) + "init orders ok."
-    
+    puts console_prefix(@grid_setting) + "Grid Orders initialized, ready for main loop."
+
     # main loop
     ws_start('new', @grid_setting)
 
@@ -117,18 +117,21 @@ class GridExecutorJob < ApplicationJob
       db_i += 1
       ftx_i += 1
     end
-    puts console_prefix(grid_setting) + "orders_status after to_save_orders: " + create_or_update_orders_status!(grid_setting, to_save_orders).to_s
+    puts console_prefix(grid_setting) 
+    puts "         orders_status after: to_save_orders           = " + create_or_update_orders_status!(grid_setting, to_save_orders).to_s
 
     # 2. missing(init) buy/sell amounts caculation
     bias_required_amount = bias_required_calc(grid_setting, missing_grids)
 
     # 3. Update orders informations from ftx after bias_required_amount_exec orders
     @market_orders = bias_required_amount_exec(grid_setting, bias_required_amount)
-    puts console_prefix(grid_setting) + "orders_status after bias_required_amount_exec: " + create_or_update_orders_status!(grid_setting, @market_orders).to_s
+    puts console_prefix(grid_setting)
+    puts "         orders_status after: bias_required_amount_exec= " + create_or_update_orders_status!(grid_setting, @market_orders).to_s
 
     # 4. Place buy/sell grid orders and Update orders informations from ftx after place orders
     @grids_orders = gird_orders_exec(grid_setting, missing_grids)
-    puts console_prefix(grid_setting) + "orders_status after gird_orders_exec: " + create_or_update_orders_status!(grid_setting, @grids_orders).to_s
+    puts console_prefix(grid_setting)
+    puts "         orders_status after: gird_orders_exec         = " + create_or_update_orders_status!(grid_setting, @grids_orders).to_s
   end
   
   def ws_op(op_name, channel = "")
@@ -175,13 +178,11 @@ class GridExecutorJob < ApplicationJob
 
       ws.on :open do |event|
         # Indicator for ws.on :open, but not Websocket connected yet
-        puts console_prefix(grid_setting) + "#{status} ws open." 
-
         ws.send(ws_op("login"))
         ws.send(ws_op("subscribe", "orders"))
 
         # Real Websocket connection start with login and subscribe
-        puts console_prefix(grid_setting) + "ws init ok."
+        puts console_prefix(grid_setting) + "WebSocket to: wss://ftx.com/ws/"
       end
 
       ws.on :message do |event|
@@ -203,8 +204,11 @@ class GridExecutorJob < ApplicationJob
         end
 
         unless ["normal", "close_grid", "new_grid"].include?(valid_message)
-          # warning line: unless ws_message["type"] == "pong" will hide ws message from ws.send(ws_op("ping"))
-          puts console_prefix(grid_setting) + ws_message.to_s unless ws_message["type"] == "pong"
+          if ws_message["type"] == "pong"
+            # warning line: hide ws message from ws.send(ws_op("ping")), but give some chance to show 
+            # (when amounts of valid_messages were displayed, there's no need to display result of ws.send(ws_op("ping")))
+            puts console_prefix(grid_setting) + ws_message.to_s if Time.now.to_i % 10 == 0
+          end
           next
         end
 
@@ -243,7 +247,7 @@ class GridExecutorJob < ApplicationJob
         puts console_prefix(grid_setting) + "ws closed with #{event.code}"
 
         sleep(1)
-        if event.code == 1006
+        unless grid_setting["status"] == "closed"
           ws_restart(grid_setting)
         else
           EM::stop_event_loop
@@ -258,7 +262,8 @@ class GridExecutorJob < ApplicationJob
         ws_orders.each {|order| filtered_orders[order["id"]] = order}
         valid_orders = filtered_orders.map { |key, value| value }
 
-        puts console_prefix(grid_setting) + "orders_status every 58s: " + create_or_update_orders_status!(grid_setting, valid_orders).to_s
+        orders_status = create_or_update_orders_status!(grid_setting, valid_orders).to_s
+        puts console_prefix(grid_setting) + "orders_status in past 58s= " + orders_status unless orders_status == "{:created=>0, :updated=>0}"
 
         ws.send(ws_op("ping"))
       }
@@ -339,7 +344,8 @@ class GridExecutorJob < ApplicationJob
 
       executed_amount = @market_orders.sum {|order| order["filledSize"] if order["status"] == "closed" && order["side"] == order_side}
       executed_amount = 0 - executed_amount if order_side == "sell"
-      puts console_prefix(grid_setting) + "executed_amount:" + executed_amount.to_s
+
+      puts console_prefix(grid_setting) + "executed_amount          = " + executed_amount.to_s
 
       bias_remained_amount = bias_required_amount - executed_amount
       batch_amount = batch_amount_calc(grid_setting, bias_remained_amount)
