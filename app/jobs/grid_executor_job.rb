@@ -13,9 +13,9 @@ class GridExecutorJob < ApplicationJob
     puts console_prefix(@grid_setting) + "Grid Orders initialized, ready for main loop."
 
     # main loop
-    ws_start('new', @grid_setting)
+    ws_start(@grid_setting)
 
-    puts console_prefix(@grid_setting) + "market_name: #{@grid_setting["market_name"]} close ok, See You!"
+    puts console_prefix(@grid_setting) + "sidekiq GridExecutorJob on market_name: #{@grid_setting["market_name"]} closed, See You!"
   end
 
   def params_check(grid_setting)
@@ -80,8 +80,9 @@ class GridExecutorJob < ApplicationJob
     to_save_orders = []
 
     (lower_value..upper_value).step(gap_value).each do |grid_price|
-      db_price, ftx_price = db_orders[db_i].price, ftx_orders[ftx_i]["price"]
-      order_id[:db] = db_orders[db_i].ftx_order_id.to_i
+      order_id[:db] = db_orders[db_i] ? db_orders[db_i].ftx_order_id.to_i : 0
+      db_price = db_orders[db_i] ? db_orders[db_i].price : 0
+      ftx_price = ftx_orders[ftx_i] ? ftx_orders[ftx_i]["price"] : 0
 
       if grid_price == market_price_on_grid
         if db_price == market_price_on_grid
@@ -161,14 +162,13 @@ class GridExecutorJob < ApplicationJob
   end
 
   def ws_restart(grid_setting)
-
+    puts console_prefix(grid_setting) + "WebSocket restarting..."
     grid_orders_init!(grid_setting)
-    puts console_prefix(grid_setting) + "init orders for ws restart ok."
-
-    ws_start('restart', grid_setting)
+    puts console_prefix(grid_setting) + "Grid Orders initialized for restart, ready for main loop."
+    ws_start(grid_setting)
   end
 
-  def ws_start(status, grid_setting)
+  def ws_start(grid_setting)
     market_name = grid_setting["market_name"]
     close_price = grid_setting["id"] * grid_setting["price_step"]
     ws_datas = []
@@ -228,15 +228,18 @@ class GridExecutorJob < ApplicationJob
           
           puts console_prefix(grid_setting) + "New Order: " + order_data.select {|k,v| {k => v} if ["market","type","side","price","size","createdAt"].include?(k)}.to_s
         when "close_grid"
+          puts console_prefix(grid_setting) + "Now Closing..."
           # 不支援相同market多筆開單
           @open_orders = FtxClient.open_orders("GridOnRails", market: market_name)["result"].select {|order| order["createdAt"] > grid_setting.created_at}
 
+          puts console_prefix(grid_setting) + "Canceling FTX grid orders..."
           to_cancel_order_ids = @open_orders.pluck("id")
           to_cancel_order_ids.each {|order_id| FtxClient.cancel_order("GridOnRails", order_id)}
 
           grid_setting.grid_orders.where(ftx_order_id: to_cancel_order_ids).update_all(status: 'canceled')
+          puts console_prefix(grid_setting) + "Total #{to_cancel_order_ids.count} orders canceled OK. Updated status to canceled."
+          puts console_prefix(grid_setting) + "Updated db orders status to canceled."
 
-          puts console_prefix(grid_setting) + "market_name: #{market_name} cancel #{to_cancel_order_ids.count} orders."
           grid_setting.update(status: "closed")
 
           ws.close
@@ -244,7 +247,7 @@ class GridExecutorJob < ApplicationJob
       end
 
       ws.on :close do |event|
-        puts console_prefix(grid_setting) + "ws closed with #{event.code}"
+        puts console_prefix(grid_setting) + "WebSocket on close with event code: #{event.code}"
 
         sleep(1)
         unless grid_setting["status"] == "closed"
@@ -380,8 +383,8 @@ class GridExecutorJob < ApplicationJob
         puts "order result:" + order_result.to_json
       end
     end
-
-    sleep(0.2)
+    # 感覺好像回傳會少，多等一下下好了
+    sleep(1)
     response = FtxClient.order_history("GridOnRails", {market: market_name, orderType: "limit", start_time: time_stamp})
     @limit_orders = response["result"]
 
@@ -390,6 +393,8 @@ class GridExecutorJob < ApplicationJob
       response = FtxClient.order_history("GridOnRails", {market: market_name, orderType: "limit", start_time: time_stamp, end_time: end_time_stamp})
       @limit_orders += response["result"]
     end
+
+    @limit_orders.each {|o| o["status"] = "open"} if grid_setting["status"] == "new"
 
     return @limit_orders
   end

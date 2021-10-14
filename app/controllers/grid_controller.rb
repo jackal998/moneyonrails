@@ -2,7 +2,7 @@ class GridController < ApplicationController
   require 'ftx_client'
 
   def index
-    market_name = index_params["market_name"] ? index_params["market_name"] : "#{index_params["coin_name"]}/USD"
+    market_name = index_params["market_name"] || ("#{index_params["coin_name"]}/USD" if index_params["coin_name"]) || GridSetting.last["market_name"]
 
     @market = FtxClient.market_info(market_name)["result"]
     coin_name = @market["type"] == "spot" ? @market["baseCurrency"] : nil
@@ -32,7 +32,7 @@ class GridController < ApplicationController
     payload = {market: @grid_setting[:market_name], side: "buy", price: close_price, type: "limit", size: @grid_setting["order_size"]}
 
     order_result = FtxClient.place_order("GridOnRails", payload)["result"]
-    puts "closegrid order result:" + order_result["result"].select {|k,v| {k => v} if ["market","side","price","size","status","createdAt"].include?(k)}.to_s
+    puts "closegrid order result:" + order_result.select {|k,v| {k => v} if ["market","side","price","size","status","createdAt"].include?(k)}.to_s
 
     redirect_to grid_path(:market_name => @grid_setting[:market_name])
   end
