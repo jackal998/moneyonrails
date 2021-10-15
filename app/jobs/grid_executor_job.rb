@@ -204,11 +204,10 @@ class GridExecutorJob < ApplicationJob
         end
 
         unless ["normal", "close_grid", "new_grid"].include?(valid_message)
-          if ws_message["type"] == "pong"
-            # warning line: hide ws message from ws.send(ws_op("ping")), but give some chance to show 
-            # (when amounts of valid_messages were displayed, there's no need to display result of ws.send(ws_op("ping")))
-            puts console_prefix(grid_setting) + ws_message.to_s if Time.now.to_i % 10 == 0
-          end
+          # warning line: hide ws message from ws.send(ws_op("ping")), but give some chance to show 
+          # (when amounts of valid_messages were displayed, there's no need to display result of ws.send(ws_op("ping")))
+          next unless Time.now.to_i % 60 == 0 if ws_message["type"] == "pong"
+          puts console_prefix(grid_setting) + ws_message.to_s
           next
         end
 
@@ -224,9 +223,9 @@ class GridExecutorJob < ApplicationJob
           end
           
           payload = {market: market_name, side: order_side, price: order_price, type: "limit", size: grid_setting["order_size"]}
-          order_result = FtxClient.place_order("GridOnRails", payload)
+          order_result = FtxClient.place_order("GridOnRails", payload)["result"]
           
-          puts console_prefix(grid_setting) + "New Order: " + order_data.select {|k,v| {k => v} if ["market","type","side","price","size","createdAt"].include?(k)}.to_s
+          puts console_prefix(grid_setting) + "New Order: " + order_result.select {|k,v| {k => v} if ["market","type","side","price","size","createdAt"].include?(k)}.to_s
         when "close_grid"
           puts console_prefix(grid_setting) + "Now Closing..."
           # 不支援相同market多筆開單

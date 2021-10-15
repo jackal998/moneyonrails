@@ -79,14 +79,9 @@ namespace :dev do
     end
 
     ws_start('wss://ftx.com/ws/', 'new')
-
-
     puts "YOYO"
-    rs = {"type"=>"subscribed", "channel"=>"orders"}
-    ws_r_o = {"channel"=>"orders", "type"=>"update", "data"=>{"id"=>79392399932, "clientId"=>nil, "market"=>"FTT-PERP", "type"=>"limit", "side"=>"buy", "price"=>67.556, "size"=>0.1, "status"=>"new", "filledSize"=>0.0, "remainingSize"=>0.1, "reduceOnly"=>false, "liquidation"=>false, "avgFillPrice"=>nil, "postOnly"=>false, "ioc"=>false, "createdAt"=>"2021-09-14T18:32:52.325084+00:00"}}
-    ws_r_filled = {"channel"=>"orders", "type"=>"update", "data"=>{"id"=>79392399932, "clientId"=>nil, "market"=>"FTT-PERP", "type"=>"limit", "side"=>"buy", "price"=>67.556, "size"=>0.1, "status"=>"closed", "filledSize"=>0.1, "remainingSize"=>0.0, "reduceOnly"=>false, "liquidation"=>false, "avgFillPrice"=>67.556, "postOnly"=>false, "ioc"=>false, "createdAt"=>"2021-09-14T18:32:52.325084+00:00"}}
-    ws_r_c = {"channel"=>"orders", "type"=>"update", "data"=>{"id"=>79392447727, "clientId"=>nil, "market"=>"FTT-PERP", "type"=>"market", "side"=>"sell", "price"=>nil, "size"=>0.1, "status"=>"closed", "filledSize"=>0.1, "remainingSize"=>0.0, "reduceOnly"=>true, "liquidation"=>false, "avgFillPrice"=>67.512, "postOnly"=>false, "ioc"=>true, "createdAt"=>"2021-09-14T18:33:03.112043+00:00"}}
   end
+  
   # Seed
   task :update_coins_seed_from_csv_file => :environment do
 
