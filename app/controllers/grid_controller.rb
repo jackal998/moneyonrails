@@ -8,16 +8,20 @@ class GridController < ApplicationController
     coin_name = @market["type"] == "spot" ? @market["baseCurrency"] : nil
 
     @grid_setting = GridSetting.new(market_name: market_name, price_step: @market["priceIncrement"], size_step: @market["sizeIncrement"])
-    @grid_settings = GridSetting.includes(:grid_orders).where(status: ["active", "closing"])
+    @grid_settings = GridSetting.includes(:grid_orders).order('grid_orders.price asc').where(status: ["active", "closing"])
+
+    grid_profit = {}
+    @grid_settings.each {|g| grid_profit[g.id] = profit(g)}
 
     balances = ftx_wallet_balance("GridOnRails", coin_name)
 
-    render locals: {balances: balances, coin_name: coin_name, tv_market_name: tv_market_name(market_name)}
+    render locals: {balances: balances, coin_name: coin_name, tv_market_name: tv_market_name(market_name), grid_profit: grid_profit}
   end
 
   def creategrid
     @grid_setting = GridSetting.new(creategrid_params)
-    @grid_setting["status"] = "new"
+    input_totalUSD_amount = (@grid_setting["input_spot_amount"] * @grid_setting["trigger_price"] + @grid_setting["input_USD_amount"]).round(2)
+    @grid_setting.attributes = {status: "new", input_totalUSD_amount: input_totalUSD_amount}
     @grid_setting.save
 
     GridExecutorJob.perform_later(@grid_setting[:id])
@@ -38,6 +42,45 @@ class GridController < ApplicationController
   end
 
 private
+  def profit(grid_setting)
+    market_name = grid_setting["market_name"]
+    @market = FtxClient.market_info(market_name)["result"]
+    market_price = @market["price"]
+
+    lower_value, gap_value, size_value =  grid_setting["lower_limit"], grid_setting["grid_gap"], grid_setting["order_size"]
+
+    trigger_price_on_grid = ((grid_setting["trigger_price"] - lower_value) / gap_value).round(0) * gap_value + lower_value
+    market_price_on_grid = ((market_price - lower_value) / gap_value).round(0) * gap_value + lower_value
+    
+    open_grids = []
+    buy_orders, sell_orders = 0, 0
+    grid_setting.grid_orders.each do |order|
+      case 
+      when ["new","open"].include?(order.status)
+        open_grids << order["price"]
+        market_price_on_grid += market_price > market_price_on_grid ? gap_value : - gap_value if order["price"] == market_price_on_grid
+      when ["closed"].include?(order.status)
+        order.side == "buy" ? buy_orders += 1 : sell_orders += 1
+      end 
+    end
+    
+    buy_grid_prices, sell_grids = 0, 0
+    open_grids.each do |price|
+      market_price_on_grid > price ? buy_grid_prices += price : sell_grids += 1
+    end
+    
+    current_grid = (market_price_on_grid - trigger_price_on_grid) / gap_value
+    current_grid > 0 ? sell_orders -= current_grid : buy_orders += current_grid unless current_grid == 0
+    
+    # 網格利潤不需要考慮市場價格，只需考慮有成對的limit closed orders, 但整天在漏，所以用max來代替...
+    grid_profit = [sell_orders, buy_orders].max * gap_value * grid_setting["order_size"]
+    # 浮動價值(網格利潤以外的價值) = 所有的網格 = USD 價值 (buy_grids(sum prices) * size) + Spot 價值 (sell_grids * size * market_price)
+    # 減掉起始價值input_totalUSD_amount就是浮動利潤
+    spot_profit = (buy_grid_prices + sell_grids * market_price) * size_value - grid_setting["input_totalUSD_amount"]
+    
+    return {grid: grid_profit, spot: spot_profit}
+  end
+
   def tv_market_name(ftx_market_name)
     ftx_market_name.dup.sub!('-', '') || ftx_market_name.dup.sub!('/', '')
   end

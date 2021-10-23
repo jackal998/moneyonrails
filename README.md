@@ -20,6 +20,12 @@ Things you may want to cover:
 use `crontab -l` for scheduled job listing and config ruby file is ./config/schedule.rb, log file is ./log/cron.log
 2. start redis server `redis-server`
 3. start sidekiq server `bundle exec sidekiq`
+4. make sure crontab is running `sudo service cron start`, or set to start when computer starts:
+  `sudo visudo` and add line: `%sudo ALL=NOPASSWD: /usr/sbin/service cron start`
+  press Ctrl+o then Ctrl+x to save and exit.
+
+  set windows task scheduler to start a task when computer starts => program:
+  `C:\Windows\System32\wsl.exe` and argument `sudo /usr/sbin/service cron start`
 =======
 # moneyonrails
 
@@ -44,6 +50,7 @@ notice that postgresql system was installed with the same location as my OS syst
 
 to run on localhost with https://
 `rails s -b 'ssl://localhost:3000?key=./localhost.key&cert=./localhost.crt'`
+`rails s -b 'ssl://0.0.0.0:3000?key=./localhost.key&cert=./localhost.crt'`
 
 issues:
 1. ubuntu user name is some thing like this NAME_REGEX="^[a-z][-a-z0-9_]*$" and things like RAILS(uppercase) is not allowed

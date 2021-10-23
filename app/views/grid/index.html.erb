@@ -222,6 +222,7 @@
                   <div class="card-header">
                     <h6>投入金額(USD)： <i class="far fa-dollar-sign"></i> <%= grid_setting.input_USD_amount %></h6>
                     <h6>投入現貨：<%= grid_setting.input_spot_amount %></h6>
+                    <h6><%= grid_profit %></h6>
                   </div>
                   <% unless grid_setting.status == "closing" %>
                     <div class="card-body">

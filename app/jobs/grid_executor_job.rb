@@ -59,11 +59,16 @@ class GridExecutorJob < ApplicationJob
 
   def grid_orders_init!(grid_setting)
     market_name = grid_setting["market_name"]
+    # 保留可以使用spot，先不考慮合約
+    db_i, ftx_i = 0, 0
+    missing_grids = {"sell" => [] , "buy" => []}
+    order_id = {db: ""}
+    to_save_orders = []
 
     db_orders = grid_setting.grid_orders.where(status: ["new","open"]).order(price: :asc, ftx_order_id: :asc)
     db_i_max = db_orders.size - 1
 
-    ftx_orders = FtxClient.open_orders("GridOnRails", market: market_name)["result"].select {|o| o["createdAt"] > grid_setting.created_at}.sort_by!{ |o| o["price"] }
+    ftx_orders = FtxClient.open_orders("GridOnRails", market: market_name)["result"].select {|o| o["createdAt"] > grid_setting.created_at}.sort_by!{ |o| [o["price"],o["createdAt"]] }
     ftx_i_max = ftx_orders.size - 1
 
     @market = FtxClient.market_info(market_name)["result"]
@@ -73,20 +78,29 @@ class GridExecutorJob < ApplicationJob
 
     market_price_on_grid = ((@market["price"] - lower_value) / gap_value).round(0) * gap_value + lower_value
 
-    # market_price_on_grid calibration for missleading price
-    # in case market_price is very close to next grid, but not trigger placed order yet, will be wrong price_on_grid.
-    ftx_orders.pluck("price").each do |order_price|
-      if order_price == market_price_on_grid
-        market_price_on_grid += @market["price"] - order_price > 0 ? gap_value : - gap_value
-        break
-      end 
+    # 檢查重複出現的單子
+    last_price = 0
+    to_cancel_order_ids = []
+    ftx_orders.each do |order|
+      cur_price = order["price"]
+      if last_price == cur_price
+        puts console_prefix(grid_setting) + "Canceling FTX duplicated grid order...#{order["id"]}"
+        to_cancel_order_ids << order["id"]
+        ftx_orders.delete(order)
+        ftx_i_max -= 1
+        next
+      end
+      # market_price_on_grid calibration for missleading price
+      # in case market_price is very close to next grid, but not trigger placed order yet, will be wrong price_on_grid.
+      market_price_on_grid += @market["price"] > market_price_on_grid ? gap_value : - gap_value if cur_price == market_price_on_grid
+      last_price = cur_price
     end
 
-    # 保留可以使用spot，先不考慮合約
-    db_i, ftx_i = 0, 0
-    missing_grids = {"sell" => [] , "buy" => []}
-    order_id = {db: ""}
-    to_save_orders = []
+    unless to_cancel_order_ids == []
+      to_cancel_order_ids.each {|order_id| FtxClient.cancel_order("GridOnRails", order_id)}
+      grid_setting.grid_orders.where(ftx_order_id: to_cancel_order_ids).update_all(status: 'canceled')
+      puts console_prefix(grid_setting) + "Total #{to_cancel_order_ids.count} orders canceled OK. Updated status to canceled."
+    end
 
     (lower_value..upper_value).step(gap_value).each do |grid_price|
       order_id[:db] = db_orders[db_i] ? db_orders[db_i].ftx_order_id.to_i : 0
@@ -129,9 +143,9 @@ class GridExecutorJob < ApplicationJob
       db_i += 1
       ftx_i += 1
     end
+
     unless to_save_orders == []
-      puts console_prefix(grid_setting) + 
-           "\n         orders_status after: to_save_orders           = " + create_or_update_orders_status!(grid_setting, to_save_orders).to_s
+      puts console_prefix(grid_setting) + "orders: to_save_orders   = " + create_or_update_orders_status!(grid_setting, to_save_orders).to_s
     end
 
     return if missing_grids["sell"].size == 0 && missing_grids["buy"].size == 0
@@ -141,13 +155,11 @@ class GridExecutorJob < ApplicationJob
 
     # 3. Update orders informations from ftx after bias_required_amount_exec orders
     @market_orders = bias_required_amount_exec(grid_setting, bias_required_amount)
-    puts console_prefix(grid_setting) + 
-         "\n       orders_status after: bias_required_amount_exec= " + create_or_update_orders_status!(grid_setting, @market_orders).to_s
+    puts console_prefix(grid_setting) + "orders: bias_amount      = " + create_or_update_orders_status!(grid_setting, @market_orders).to_s
 
     # 4. Place buy/sell grid orders and Update orders informations from ftx after place orders
     @grids_orders = gird_orders_exec(grid_setting, missing_grids)
-    puts console_prefix(grid_setting) + 
-         "\n       orders_status after: gird_orders_exec         = " + create_or_update_orders_status!(grid_setting, @grids_orders).to_s
+    puts console_prefix(grid_setting) + "orders: gird_orders_exec = " + create_or_update_orders_status!(grid_setting, @grids_orders).to_s
   end
   
   def ws_op(op_name, channel = "")
@@ -186,6 +198,7 @@ class GridExecutorJob < ApplicationJob
   def ws_start(grid_setting)
     market_name = grid_setting["market_name"]
     close_price = grid_setting["id"] * grid_setting["price_step"]
+    grid_orders_init_executing = false
     ws_datas = []
 
     EM.run {
@@ -219,9 +232,9 @@ class GridExecutorJob < ApplicationJob
         end
 
         unless ["normal", "close_grid", "new_grid"].include?(valid_message)
-          # warning line: hide ws message from ws.send(ws_op("ping")), but give some chance to show 
+          # warning line: hide ws message from ws.send(ws_op("ping"))
           # (when amounts of valid_messages were displayed, there's no need to display result of ws.send(ws_op("ping")))
-          next unless Time.now.to_i % 60 == 0 if ws_message["type"] == "pong"
+          next if ws_message["type"] == "pong"
           puts console_prefix(grid_setting) + ws_message.to_s
           next
         end
@@ -240,7 +253,21 @@ class GridExecutorJob < ApplicationJob
           payload = {market: market_name, side: order_side, price: order_price, type: "limit", size: grid_setting["order_size"]}
           order_result = FtxClient.place_order("GridOnRails", payload)["result"]
           
-          puts console_prefix(grid_setting) + "New Order: " + order_result.select {|k,v| {k => v} if ["market","type","side","price","size","createdAt"].include?(k)}.to_s
+          # FTX API葛闢的時候order_result會是nil
+          if order_result
+            puts console_prefix(grid_setting) + "New Order: " + order_result_to_output(order_result)
+          else
+            if grid_orders_init_executing
+              puts console_prefix(grid_setting) + "FTX API no return after place_order, grid_orders_init! executing."
+            else
+              grid_orders_init_executing = true
+              puts console_prefix(grid_setting) + "FTX API no return after place_order, starting grid_orders_init!"
+              sleep(5)
+              grid_orders_init!(grid_setting)
+              grid_orders_init_executing = false
+              puts console_prefix(grid_setting) + "grid_orders_init! executed ok."
+            end
+          end
         when "close_grid"
           puts console_prefix(grid_setting) + "Now Closing..."
           # 不支援相同market多筆開單
@@ -374,9 +401,9 @@ class GridExecutorJob < ApplicationJob
         puts console_prefix(grid_setting) + "#{order_side}ing amount            = #{batch_amount}/#{bias_remained_amount}"
         payload = payload_market.merge({size: batch_amount.abs})
 
-        order_result = FtxClient.place_order("GridOnRails", payload)
+        order_result = FtxClient.place_order("GridOnRails", payload)["result"]
         puts console_prefix(grid_setting) + "payload:" + payload.to_s
-        puts console_prefix(grid_setting) + "result: " + order_result.to_json
+        puts console_prefix(grid_setting) + "result: " + order_result_to_output(order_result)
 
         sleep(2)     
       end
@@ -394,10 +421,10 @@ class GridExecutorJob < ApplicationJob
 
       price_arr.each do |price|
         payload = payload_limit.merge({price: price})
-        order_result = FtxClient.place_order("GridOnRails", payload)
+        order_result = FtxClient.place_order("GridOnRails", payload)["result"]
 
-        puts "payload(#{side}) :" + payload.to_s
-        puts "order result:" + order_result.to_json
+        puts console_prefix(grid_setting) + "payload(#{side}) :" + payload.to_s
+        puts console_prefix(grid_setting) + "result:" + order_result_to_output(order_result)
       end
     end
     # 感覺好像回傳會少，多等一下下好了
@@ -492,5 +519,13 @@ class GridExecutorJob < ApplicationJob
 
   def console_prefix(grid_setting)
     return "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting.id}: "
+  end
+
+  def order_result_to_output(order_result)
+    if order_result
+      order_result.select {|k,v| {k => v} if ["market","type","side","price","size"].include?(k)}.to_s
+    else
+      return "order_result is nil"
+    end
   end
 end

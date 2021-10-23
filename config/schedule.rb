@@ -9,10 +9,10 @@ set :environment, :development
 
 every '1 * * * *' do
   rake "dev:update_funding_payment"
-  rake "dev:update_rate"
 end
 
 every '2 * * * *' do
+  rake "dev:update_rate"
   rake "dev:update_funding_status"
 end
 
