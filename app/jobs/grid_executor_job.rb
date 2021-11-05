@@ -59,6 +59,9 @@ class GridExecutorJob < ApplicationJob
 
   def grid_orders_init!(grid_setting)
     market_name = grid_setting["market_name"]
+    upper_value, lower_value = grid_setting["upper_limit"], grid_setting["lower_limit"]
+    gap_value, size_value = grid_setting["grid_gap"], grid_setting["order_size"]
+
     # 保留可以使用spot，先不考慮合約
     db_i, ftx_i = 0, 0
     missing_grids = {"sell" => [] , "buy" => []}
@@ -72,9 +75,6 @@ class GridExecutorJob < ApplicationJob
     ftx_i_max = ftx_orders.size - 1
 
     @market = FtxClient.market_info(market_name)["result"]
-
-    upper_value, lower_value = grid_setting["upper_limit"], grid_setting["lower_limit"]
-    gap_value, size_value = grid_setting["grid_gap"], grid_setting["order_size"]
 
     market_price_on_grid = ((@market["price"] - lower_value) / gap_value).round(0) * gap_value + lower_value
 
@@ -104,8 +104,8 @@ class GridExecutorJob < ApplicationJob
 
     (lower_value..upper_value).step(gap_value).each do |grid_price|
       order_id[:db] = db_orders[db_i] ? db_orders[db_i].ftx_order_id.to_i : 0
-      db_price = db_orders[db_i] ? db_orders[db_i].price : 0
-      ftx_price = ftx_orders[ftx_i] ? ftx_orders[ftx_i]["price"] : 0
+      db_price = db_orders[db_i] ? (db_orders[db_i].price / grid_setting["price_step"]).round(0) * grid_setting["price_step"] : 0
+      ftx_price = ftx_orders[ftx_i] ? (ftx_orders[ftx_i]["price"] / grid_setting["price_step"]).round(0) * grid_setting["price_step"] : 0
 
       if grid_price == market_price_on_grid
         if db_price == market_price_on_grid
