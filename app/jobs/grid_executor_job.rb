@@ -102,6 +102,7 @@ class GridExecutorJob < ApplicationJob
       puts console_prefix(grid_setting) + "Total #{to_cancel_order_ids.count} orders canceled OK. Updated status to canceled."
     end
 
+
     (lower_value..upper_value).step(gap_value).each do |grid_price|
       order_id[:db] = db_orders[db_i] ? db_orders[db_i].ftx_order_id.to_i : 0
       db_price = db_orders[db_i] ? (db_orders[db_i].price / grid_setting["price_step"]).round(0) * grid_setting["price_step"] : 0
@@ -110,15 +111,20 @@ class GridExecutorJob < ApplicationJob
       if grid_price == market_price_on_grid
         if db_price == market_price_on_grid
           to_save_orders << FtxClient.orders("GridOnRails", order_id[:db])["result"]
-          # puts "#{grid_price}:  db_i: #{db_i}, #{db_price}"
+          puts console_prefix(grid_setting) + "#{grid_price}:  db_i: #{db_i}, #{db_price}  ftx_i: #{ftx_i}, #{ftx_price}"
           db_i += 1
+        end
+
+        if ftx_price == market_price_on_grid
+          puts console_prefix(grid_setting) + "#{grid_price}:  db_i: #{db_i}, #{db_price}  ftx_i: #{ftx_i}, #{ftx_price}"
+          ftx_i += 1 
         end
         next 
       end
 
       while db_i + 1 <= db_i_max ? (db_orders[db_i].price == db_orders[db_i + 1].price) : false
         to_save_orders << FtxClient.orders("GridOnRails", order_id[:db])["result"]
-        # puts "#{grid_price}:  db_i: #{db_i}, #{db_price}"
+        puts console_prefix(grid_setting) + "#{grid_price}:  db_i: #{db_i}, #{db_price}"
         db_i += 1
         order_id[:db] = db_orders[db_i].ftx_order_id.to_i
       end
@@ -128,14 +134,14 @@ class GridExecutorJob < ApplicationJob
       if ftx_price != grid_price
         missing_grids[grid_side] << grid_price
         to_save_orders << FtxClient.orders("GridOnRails", order_id[:db])["result"] if db_price == grid_price
-        # puts "#{grid_price}:  db_i: #{db_i}, #{db_price}  ftx_i: #{ftx_i}, #{ftx_price}"
+        puts console_prefix(grid_setting) + "#{grid_price}:  db_i: #{db_i}, #{db_price}  ftx_i: #{ftx_i}, #{ftx_price}"
         db_i -= 1 if db_price != grid_price
         ftx_i -= 1
       elsif ftx_price == grid_price
         unless order_id[:db] == ftx_orders[ftx_i]["id"]
           to_save_orders << ftx_orders[ftx_i]
           to_save_orders << FtxClient.orders("GridOnRails", order_id[:db])["result"] if db_price == grid_price
-          # puts "#{grid_price}:  db_i: #{db_i}, #{db_price}  ftx_i: #{ftx_i}, #{ftx_price}"
+          puts console_prefix(grid_setting) + "#{grid_price}:  db_i: #{db_i}, #{db_price}  ftx_i: #{ftx_i}, #{ftx_price}"
           db_i -= 1 if db_price != grid_price
         end
       end
@@ -145,6 +151,7 @@ class GridExecutorJob < ApplicationJob
     end
 
     unless to_save_orders == []
+      puts console_prefix(grid_setting) + "market_price_on_grid     = #{grid_price}"
       puts console_prefix(grid_setting) + "orders: to_save_orders   = " + create_or_update_orders_status!(grid_setting, to_save_orders).to_s
     end
 
@@ -386,6 +393,10 @@ class GridExecutorJob < ApplicationJob
     bias_remained_amount = bias_required_amount
     payload_market = {market: market_name, side: order_side, price: nil, type: "market", size: nil}
 
+    last = {executed_amount: 0, batch_amount: 0, bias_remained_amount: 0}
+
+    dead_loop = 0
+
     until bias_remained_amount == 0
       @market_orders = FtxClient.order_history("GridOnRails", {market: market_name, orderType: "market", start_time: time_stamp})["result"]
 
@@ -405,7 +416,19 @@ class GridExecutorJob < ApplicationJob
         puts console_prefix(grid_setting) + "payload:" + payload.to_s
         puts console_prefix(grid_setting) + "result: " + order_result_to_output(order_result)
 
+        dead_loop += last[:executed_amount] == executed_amount && last[:batch_amount] == batch_amount && last[:bias_remained_amount] == bias_remained_amount ? 1 : -dead_loop
+
+        last[:executed_amount] = executed_amount
+        last[:batch_amount] = batch_amount
+        last[:bias_remained_amount] = bias_remained_amount
+
         sleep(2)     
+      end
+
+      if dead_loop >=3
+        puts console_prefix(grid_setting) + "quit bias_required_amount_exec: dead_loop"
+        # 回傳已執行
+        return @market_orders
       end
     end
     # 需filter未執行的
@@ -512,9 +535,17 @@ class GridExecutorJob < ApplicationJob
 
   def is_on_grid(grid_setting, price)
     upper_value, lower_value = grid_setting["upper_limit"], grid_setting["lower_limit"]
-    gap_value =  grid_setting["grid_gap"]
-    
-    return (price.between?(lower_value, upper_value) && (price - lower_value ) % gap_value == 0) ? true : false
+    gap_value = grid_setting["grid_gap"]
+
+    price_above_lower_value = ((price - lower_value) / grid_setting["price_step"]).round(0) * grid_setting["price_step"]
+
+    on_grid = price.between?(lower_value, upper_value) && price_above_lower_value % gap_value == 0
+
+    unless on_grid
+      puts console_prefix(grid_setting) + "Not on grid price: #{price}, lower_value: #{lower_value}, gap_value: #{gap_value}"
+      puts console_prefix(grid_setting) + "price_above_lower_value: #{price_above_lower_value}, price_above_lower_value % gap_value: #{price_above_lower_value % gap_value}"
+    end
+    return on_grid
   end
 
   def console_prefix(grid_setting)
