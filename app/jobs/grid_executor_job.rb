@@ -151,7 +151,7 @@ class GridExecutorJob < ApplicationJob
     end
 
     unless to_save_orders == []
-      puts console_prefix(grid_setting) + "market_price_on_grid     = #{grid_price}"
+      puts console_prefix(grid_setting) + "market_price_on_grid     = #{market_price_on_grid}"
       puts console_prefix(grid_setting) + "orders: to_save_orders   = " + create_or_update_orders_status!(grid_setting, to_save_orders).to_s
     end
 
