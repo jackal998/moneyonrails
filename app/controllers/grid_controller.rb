@@ -10,12 +10,12 @@ class GridController < ApplicationController
     @grid_setting = GridSetting.new(market_name: market_name, price_step: @market["priceIncrement"], size_step: @market["sizeIncrement"])
     @grid_settings = GridSetting.includes(:grid_orders).order('grid_orders.price asc').where(status: ["active", "closing"])
 
-    grid_profit = {}
-    @grid_settings.each {|g| grid_profit[g.id] = profit(g)}
+    grid_profits = {}
+    @grid_settings.each {|g| grid_profits[g.id] = profit(g)}
 
     balances = ftx_wallet_balance("GridOnRails", coin_name)
 
-    render locals: {balances: balances, coin_name: coin_name, tv_market_name: tv_market_name(market_name), grid_profit: grid_profit}
+    render locals: {balances: balances, coin_name: coin_name, tv_market_name: tv_market_name(market_name), grid_profits: grid_profits}
   end
 
   def creategrid
