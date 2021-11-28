@@ -1,0 +1,125 @@
+<div class="card">
+  <%= form_with model: @grid_setting, url: grid_create_path do |form| %>
+    <div class="card-header">                  
+      <h4 class="card-title"><%= @grid_setting["market_name"] %> 網格機器人設定</h4>
+    </div>
+    <div class="card-body">
+      <% size_step = @grid_setting.size_step %>
+      <% price_step = @grid_setting.price_step %>
+      <%= form.hidden_field :size_step %>
+      <%= form.hidden_field :price_step %>
+      <%= form.hidden_field :market_name %>
+      <%= form.hidden_field :grid_gap, value: price_step %>
+      <table class="table table-sm mb-0 table-borderless">
+        <thead>
+          <tr>
+            <th></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>區間上限</td>
+            <td>區間下限</td>
+          </tr>
+          <tr>
+            <td><%= form.number_field :upper_limit, step: price_step, value: (0.01 / size_step) + price_step, min: (0.01 / size_step) + price_step,:id => "upper_limit", :class => "form-control" %></td>
+            <td><%= form.number_field :lower_limit, step: price_step, value: (0.01 / size_step), min: (0.01 / size_step),:id => "lower_limit", :class => "form-control" %></td>
+          </tr>
+          <tr>
+            <td>網格數量</td>
+            <td>單格大小</td>
+          </tr>
+          <tr>
+            <td><%= form.number_field :grids, value: 2, min: 2,:id => "grids", :class => "form-control" %></td>
+            <td><%= form.number_field :order_size, step: size_step, value: size_step, min: size_step,:id => "order_size", :class => "form-control" %></td>
+          </tr>
+          <tr>
+            <td>投資數量(USD)</td>
+            <td><%= "投資數量(#{coin_name})" if coin_name %></td>
+          </tr>
+          <tr>
+            <td><%= form.number_field :input_USD_amount, step: 0.01, value: 0.01, min: 0, max: balances["USD"]["available_amount"],:id => "input_USD_amount",:class => "form-control" %>
+              <div id="input_USD_detail" class="form-control-detail">&nbsp;</div>
+            </td>
+            <td><%= form.number_field :input_spot_amount, step: size_step, value: 0, min: 0, max: spot_data["spot_amount"],:id => "input_spot_amount", :class => "form-control" if coin_name %>
+              <div id="input_spot_detail" class="form-control-detail">&nbsp;</div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              開單價格
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" id="check_limit">
+                <label class="form-check-label" for="check_limit">
+                  限價
+                </label>
+              </div>
+            </td>
+            <td>開單價差</td>
+          </tr>
+          <tr>
+            <td><%= form.number_field :trigger_price, step: price_step, value: @market["price"], min: 0,:id => "market_price", :class => "form-control" %></td>
+            <td><%= form.number_field :threshold, step: 0.001, value: 0, min: 0,:id => "threshold", :class => "form-control" %></td>
+          </tr>
+          <tr>
+            <td>止損價格</td>
+            <td>止盈價格</td>
+          </tr>
+          <tr>
+            <td><%= form.number_field :stop_loss_price, step: price_step, min: 0, :class => "form-control" %></td>
+            <td><%= form.number_field :take_profit_price, step: price_step, min: 0, :class => "form-control" %></td>
+          </tr>
+        </tbody>
+      </table>
+      &nbsp;
+      <!-- Button grid_setting_check_form_trigger -->
+      <button type="button" id="grid_setting_check_form_trigger" class="btn btn-outline-secondary btn-rounded" 
+      data-bs-toggle="modal" data-bs-target="#grid_setting_check_form">
+        確定
+      </button>
+      <div class="modal fade" id="grid_setting_check_form" tabindex="-1" aria-labelledby="grid_setting_check_modal" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="grid_setting_check_modal">子帳號： GridOnRails</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body table-sm">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="text-center col-sm-3">區間上限</div>
+                        <div class="text-center col-sm-3" id="check_form_upper_limit"></div>
+                        <div class="text-center col-sm-3">區間下限</div>
+                        <div class="text-center col-sm-3" id="check_form_lower_limit"></div>
+                    </div>
+                    <div class="row">
+                        <div class="text-center col-sm-3">網格數量</div>
+                        <div class="text-center col-sm-3" id="check_form_grids"></div>
+                        <div class="text-center col-sm-3">單格大小</div>
+                        <div class="text-center col-sm-3" id="check_form_order_size"></div>
+                    </div>
+                    <div class="row">
+                        <div class="text-center col-sm-3">投資數量(USD)</div>
+                        <div class="text-center col-sm-3" id="check_form_input_USD_amount"></div>
+                        <div class="text-center col-sm-3"><%= "投資數量(#{coin_name})" if coin_name %></div>
+                        <div class="text-center col-sm-3" id="check_form_input_spot_amount"></div>
+                    </div>
+                    <div class="row">
+                        <div class="text-center col-sm-3" id="check_form_market_price_title">開單價格(市價)</div>
+                        <div class="text-center col-sm-3" id="check_form_market_price"></div>
+                        <div class="text-center col-sm-3">開單價差</div>
+                        <div class="text-center col-sm-3" id="check_form_threshold"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary btn-rounded" data-bs-dismiss="modal">關 閉</button>
+              <%= form.submit "送 出", :class => "text-center btn btn-outline-primary btn-rounded" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
