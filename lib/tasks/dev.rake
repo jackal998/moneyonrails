@@ -82,31 +82,32 @@ namespace :dev do
     puts "YOYO"
   end
   
-  # Seed
-  task :update_coins_seed_from_csv_file => :environment do
+  task :update_coins_weight_from_csv_file => :environment do
 
-    success = 0
-    failed_records = []
+    coins = Coin.all
+    weights = {}
+    coins_tbu = []
+    counter = 0
 
-  	CSV.foreach("#{Rails.root}/tmp/coin_seed.csv", headers: true) do |row|
+  	CSV.foreach("#{Rails.root}/tmp/coin_weight.csv", headers: true) do |row|
       rh = row.to_hash
-      coin = Coin.find(rh["id"]) || Coin.new
-      rh.keys.each do |k|
-        next if k == "id" || k == "name"
-        coin[k] = rh[k]
-      end
-
-      if coin.save
-        success += 1
-      else
-        failed_records << [row, coin]
-      end
+      weights[rh["Coin"]] = rh["Weight (total)"]
     end
 
-    puts "Updated: #{success}，Failed: #{failed_records.size}"
-    failed_records.each do |record|
-      puts "#{record[0]} ---> #{record[1].errors.full_messages}"
+    coins.each do |coin|
+      weights[coin.name] = 0 unless weights[coin.name]
+      if coin["weight"].to_f != weights[coin.name].to_f
+        puts "#{coin.name} weight changed from #{coin["weight"]} to #{weights[coin.name]}"
+        coin["weight"] = weights[coin.name]
+        coin["updated_at"] = Time.now
+
+        counter += 1
+        coins_tbu << coin.attributes.except!("name")
+      end
     end
+    
+    Coin.upsert_all(coins_tbu) unless coins_tbu.empty?
+    puts "Updated: #{counter}"
   end
 
   task :import_funding_payment_from_csv_file => :environment do
