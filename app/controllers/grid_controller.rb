@@ -77,8 +77,9 @@ private
     # 浮動價值(網格利潤以外的價值) = 所有的網格 = USD 價值 (buy_grids(sum prices) * size) + Spot 價值 (sell_grids * size * market_price)
     # 減掉起始價值input_totalUSD_amount就是浮動利潤
     spot_profit = (buy_grid_prices + sell_grids * market_price) * size_value - grid_setting["input_totalUSD_amount"]
-    
-    return {grid: grid_profit, spot: spot_profit}
+    total_profit = grid_profit + spot_profit
+
+    return {grid: grid_profit, spot: spot_profit, total: total_profit}
   end
 
   def tv_market_name(ftx_market_name)

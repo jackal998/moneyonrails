@@ -11,32 +11,7 @@
     <%= "(已運行 #{day_[0]} 日 #{hour_[0]} 時 #{min_[0]} 分)" %>
   </div>
 
-  <% grid_profit = grid_profits[grid_setting.id][:grid].round(2) %>
-  <% grid_profit_percent = (grid_profit / grid_setting.input_totalUSD_amount * 100).round(2) %>
-  <% grid_color = "text-danger" %>
-  <% if grid_profit > 0 %>
-    <% grid_profit = "+" + grid_profit.to_s %>
-    <% grid_profit_percent = "+" + grid_profit_percent.to_s %>
-    <% grid_color = "text-success" %>
-  <% end %>
-
-  <% spot_profit = grid_profits[grid_setting.id][:spot].round(2) %>
-  <% spot_profit_percent = (spot_profit / grid_setting.input_totalUSD_amount * 100).round(2) %>
-  <% spot_color = "text-danger" %>
-  <% if spot_profit > 0 %>
-    <% spot_profit = "+" + spot_profit.to_s %>
-    <% spot_profit_percent = "+" + spot_profit_percent.to_s %>
-    <% spot_color = "text-success" %>
-  <% end %>
-
-  <% total_profit = (grid_profits[grid_setting.id][:grid] + grid_profits[grid_setting.id][:spot]).round(2) %>
-  <% total_profit_percent = (total_profit / grid_setting.input_totalUSD_amount * 100).round(2) %>
-  <% total_color = "text-danger" %>
-  <% if total_profit > 0 %>
-    <% total_profit = "+" + total_profit.to_s %>
-    <% total_profit_percent = "+" + total_profit_percent.to_s %>
-    <% total_color = "text-success" %>
-  <% end %>
+  <% profit = profit_helper(grid_setting, grid_profits) %>
 
   <div class="card-body">
     <div class="row">
@@ -44,7 +19,7 @@
         <h6>投入總額(USD)：</br><i class="far fa-dollar-sign"></i> <%= grid_setting.input_totalUSD_amount %></h6>
         <h6>
           網格利潤：</br><i class="far fa-dollar-sign"></i>
-          <div class="custom-control-inline <%= grid_color %>"> <%= "#{grid_profit} (#{grid_profit_percent}%)" %> </div>
+          <div class="custom-control-inline <%= profit[:grid][:color] %>"> <%= "#{profit[:grid][:value]} (#{profit[:grid][:percent]}%)" %> </div>
         </h6>
         <h6>網格區間：</br><%= "#{grid_setting.lower_limit} ~ #{grid_setting.upper_limit}" %> </h6>
         <!-- <h6>投入USD：</br><i class="far fa-dollar-sign"></i> <%= grid_setting.input_USD_amount %></h6> -->
@@ -53,11 +28,11 @@
       <div class="col-md-6">
         <h6>
           總利潤：</br><i class="far fa-dollar-sign"></i> 
-          <div class="custom-control-inline <%= total_color %>"><%= "#{total_profit} (#{total_profit_percent}%)" %></div>
+          <div class="custom-control-inline <%= profit[:total][:color] %>"><%= "#{profit[:total][:value]} (#{profit[:total][:percent]}%)" %></div>
         </h6>
         <h6>
           現貨盈虧：</br><i class="far fa-dollar-sign"></i> 
-          <div class="custom-control-inline <%= spot_color %>"><%= "#{spot_profit} (#{spot_profit_percent}%)" %></div>
+          <div class="custom-control-inline <%= profit[:spot][:color] %>"><%= "#{profit[:spot][:value]} (#{profit[:spot][:percent]}%)" %></div>
         </h6>
         <h6>網格數量：</br><%= "#{grid_setting.grids}" %> </h6>
         <!-- <h6>投入現貨：</br><%= " #{grid_setting.input_spot_amount} (@ #{grid_setting.trigger_price})" %></h6> -->
