@@ -38,7 +38,8 @@
         <!-- <h6>投入現貨：</br><%= " #{grid_setting.input_spot_amount} (@ #{grid_setting.trigger_price})" %></h6> -->
       </div>
     </div>
-    <h6>24小時套利次數：<%= grid_setting.grid_orders.select {|o| o if o.createdAt > Time.now - 1.day }.size %> 次 / 歷史套利次數: <%= grid_setting.grid_orders.select {|o| o if o.status == "closed" }.size %> 次 </h6>
+    <% closed_orders = grid_setting.grid_orders.select {|o| o if (o.status == "closed" and o.filledSize == o.size )} %>
+    <h6>24小時套利次數：<%= closed_orders.select {|o| o if o.createdAt > Time.now - 1.day }.size %> 次 / 歷史套利次數: <%= closed_orders.size %> 次 </h6>
   </div>
   <% unless grid_setting.status == "closing" %>
     <div class="card-body">

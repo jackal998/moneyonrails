@@ -60,6 +60,7 @@ private
         open_grids << order["price"]
         market_price_on_grid += market_price > market_price_on_grid ? gap_value : - gap_value if order["price"] == market_price_on_grid
       when ["closed"].include?(order.status)
+        next if order.filledSize != size_value
         order.side == "buy" ? buy_orders += 1 : sell_orders += 1
       end 
     end
