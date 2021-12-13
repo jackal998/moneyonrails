@@ -6,6 +6,8 @@ lock "~> 3.16.0"
 set :application, "moneyonrails"
 set :repo_url, "git@github.com:jackal998/moneyonrails.git"
 
+set :default_env, { path: "~/.rbenv/shims:~/.rbenv/bin:$PATH" }
+
 # Default branch is :master
 # ask :branch, `git rev-parse --abbrev-ref HEAD`.chomp
 
