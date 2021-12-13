@@ -252,8 +252,9 @@ PLATFORMS
 DEPENDENCIES
   bootsnap (>= 1.4.4)
   byebug
+  capistrano (~> 3.10)
   capistrano-passenger
-  capistrano-rails
+  capistrano-rails (~> 1.6)
   capybara (>= 3.26)
   chartkick
   faye-websocket
