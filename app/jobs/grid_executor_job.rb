@@ -102,7 +102,6 @@ class GridExecutorJob < ApplicationJob
       puts console_prefix(grid_setting) + "Total #{to_cancel_order_ids.count} orders canceled OK. Updated status to canceled."
     end
 
-
     (lower_value..upper_value).step(gap_value).each do |grid_price|
       order_id[:db] = db_orders[db_i] ? db_orders[db_i].ftx_order_id.to_i : 0
       db_price = db_orders[db_i] ? (db_orders[db_i].price / grid_setting["price_step"]).round(0) * grid_setting["price_step"] : 0
@@ -203,6 +202,8 @@ class GridExecutorJob < ApplicationJob
   end
 
   def ws_start(grid_setting)
+    active_grid_setting_market_names = GridSetting.where(status: "active").pluck(:market_name)
+
     market_name = grid_setting["market_name"]
     close_price = grid_setting["id"] * grid_setting["price_step"]
     grid_orders_init_executing = false
@@ -235,10 +236,12 @@ class GridExecutorJob < ApplicationJob
               valid_message = "new_grid" if order_data["status"] == "new"
               valid_message = "normal" if order_data["status"] == "closed"
             end
+          elsif active_grid_setting_market_names.include?(order_data["market"])
+            valid_message = "active_ignore"
           end
         end
 
-        unless ["normal", "close_grid", "new_grid"].include?(valid_message)
+        unless ["normal", "close_grid", "new_grid", "active_ignore"].include?(valid_message)
           # warning line: hide ws message from ws.send(ws_op("ping"))
           # (when amounts of valid_messages were displayed, there's no need to display result of ws.send(ws_op("ping")))
           next if ws_message["type"] == "pong"
@@ -535,6 +538,7 @@ class GridExecutorJob < ApplicationJob
 
   def is_on_grid(grid_setting, price)
     upper_value, lower_value = grid_setting["upper_limit"], grid_setting["lower_limit"]
+    return false if price == upper_value || price == lower_value 
     gap_value = grid_setting["grid_gap"]
 
     price_above_lower_value = ((price - lower_value) / grid_setting["price_step"]).round(0) * grid_setting["price_step"]
