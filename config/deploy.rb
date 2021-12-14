@@ -6,8 +6,6 @@ lock "~> 3.16.0"
 set :application, "moneyonrails"
 set :repo_url, "git@github.com:jackal998/moneyonrails.git"
 
-set :default_env, { path: "~/.rbenv/shims:~/.rbenv/bin:$PATH" }
-
 # Default branch is :master
 # ask :branch, `git rev-parse --abbrev-ref HEAD`.chomp
 
@@ -38,8 +36,14 @@ set :passenger_restart_with_touch, true
 # Default value for local_user is ENV['USER']
 # set :local_user, -> { `git config user.name`.chomp }
 
+set :rbenv_type, :user # or :system, or :fullstaq (for Fullstaq Ruby), depends on your rbenv setup
+set :rbenv_ruby, "3.0.1"
+
 # Default value for keep_releases is 5
 set :keep_releases, 5
 
 # Uncomment the following to require manually verifying the host key before first deploy.
 # set :ssh_options, verify_host_key: :secure
+set :rbenv_prefix, "RBENV_ROOT=#{fetch(:rbenv_path)} RBENV_VERSION=#{fetch(:rbenv_ruby)} #{fetch(:rbenv_path)}/bin/rbenv exec"
+set :rbenv_map_bins, %w{rake gem bundle ruby rails}
+set :rbenv_roles, :all # default value
