@@ -1,4 +1,5 @@
 class GridController < ApplicationController
+  before_action :authenticate_role
   require 'ftx_client'
 
   def index

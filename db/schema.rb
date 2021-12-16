@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_30_080227) do
+ActiveRecord::Schema.define(version: 2021_12_16_183129) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -171,6 +171,39 @@ ActiveRecord::Schema.define(version: 2021_09_30_080227) do
     t.datetime "updated_at", precision: 6, null: false
     t.index ["coin_id"], name: "index_rates_on_coin_id"
     t.index ["name"], name: "index_rates_on_name"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "email", default: "", null: false
+    t.string "encrypted_password", default: "", null: false
+    t.string "reset_password_token"
+    t.datetime "reset_password_sent_at"
+    t.datetime "remember_created_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.string "nickname"
+    t.string "encrypted_fund_pub"
+    t.string "encrypted_fund_pub_iv"
+    t.string "encrypted_fund_sec"
+    t.string "encrypted_fund_sec_iv"
+    t.string "encrypted_grid_pub"
+    t.string "encrypted_grid_pub_iv"
+    t.string "encrypted_grid_sec"
+    t.string "encrypted_grid_sec_iv"
+    t.string "account_fund"
+    t.string "account_grid"
+    t.string "role"
+    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["encrypted_fund_pub"], name: "index_users_on_encrypted_fund_pub", unique: true
+    t.index ["encrypted_fund_pub_iv"], name: "index_users_on_encrypted_fund_pub_iv", unique: true
+    t.index ["encrypted_fund_sec"], name: "index_users_on_encrypted_fund_sec", unique: true
+    t.index ["encrypted_fund_sec_iv"], name: "index_users_on_encrypted_fund_sec_iv", unique: true
+    t.index ["encrypted_grid_pub"], name: "index_users_on_encrypted_grid_pub", unique: true
+    t.index ["encrypted_grid_pub_iv"], name: "index_users_on_encrypted_grid_pub_iv", unique: true
+    t.index ["encrypted_grid_sec"], name: "index_users_on_encrypted_grid_sec", unique: true
+    t.index ["encrypted_grid_sec_iv"], name: "index_users_on_encrypted_grid_sec_iv", unique: true
+    t.index ["nickname"], name: "index_users_on_nickname", unique: true
+    t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
 end

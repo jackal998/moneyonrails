@@ -34,12 +34,16 @@ gem 'bootsnap', '>= 1.4.4', require: false
 
 gem 'rest-client'
 
+gem 'devise'
+gem "attr_encrypted", "~> 3.1.0"
+
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
 
   gem "capistrano", "~> 3.10", require: false
   gem "capistrano-rails", "~> 1.6", require: false
+  # gem 'capistrano-sidekiq'
   gem "capistrano-rbenv", "2.1.4"
   gem 'capistrano-passenger'
 end

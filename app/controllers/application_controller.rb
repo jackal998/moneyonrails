@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::Base
+  before_action :authenticate_user!
+
   def ftx_wallet_balance(account_name, coin_name)
     balances = {"totalusdValue" => 0.00}
 
@@ -15,5 +17,14 @@ class ApplicationController < ActionController::Base
     # 把USD移到最後
     balances["USD"] = balances.delete("USD") if balances["USD"]
     return balances
+  end
+
+protected
+
+  def authenticate_role
+    unless current_user.normal?
+      flash[:alert] = "沒有權限!"
+      sign_out_and_redirect(current_user)
+    end
   end
 end
