@@ -451,10 +451,13 @@ namespace :dev do
 
     data = FtxClient.funding_rates({:start_time => now_time_i})
 
-    coins = Coin.includes(:current_fund_stat).where("have_perp = ?", true)
+    coins = Coin.includes(:current_fund_stat).where("have_perp = ?", true).where.not(name: "BTT")
+
     coins_to_update = coins.count
-    last_1hr_rates_count = Rate.where("time >= ?",now_time).count
-    last_2hr_rates_count = Rate.where("time >= ?",now_time - 1.hour).count
+    last_1hr_rates_count = Rate.where("time >= ?",now_time).where.not(name: "BTT-PERP").count
+    last_2hr_rates_count = Rate.where("time >= ?",now_time - 1.hour).where.not(name: "BTT-PERP").count
+    # check if datas are aligned and ready to be update
+    # 2022/01/24 BTT 在亂...FTX上面已除名，先手動當例外處裡
 
     rate_datas_tbu = []
     tmp = data["result"].index_by {|result| "#{result["future"].split('-')[0]}"}
