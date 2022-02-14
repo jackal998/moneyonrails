@@ -75,3 +75,7 @@ https://www.ruby-forum.com/t/i-am-trying-to-install-ruby-on-rails-on-windows-10-
 `git config --global core.autocrlf true`
 9. for further deployment, here is way to regenerate the master key for Rails
 https://gist.github.com/db0sch/19c321cbc727917bc0e12849a7565af9
+10. for pg dump/restore use the follows:
+pg_dump -U rails -h localhost -p 5432 <dbname> -f <filename>
+psql -U rails -h localhost -d <dbname> -p 5432 -f <filename>
+doc.: https://www.alibabacloud.com/help/tc/doc-detail/26157.htm
