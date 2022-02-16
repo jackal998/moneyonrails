@@ -76,6 +76,13 @@ https://www.ruby-forum.com/t/i-am-trying-to-install-ruby-on-rails-on-windows-10-
 9. for further deployment, here is way to regenerate the master key for Rails
 https://gist.github.com/db0sch/19c321cbc727917bc0e12849a7565af9
 10. for pg dump/restore use the follows:
+Method 1.
 pg_dump -U rails -h localhost -p 5432 <dbname> -f <filename>
 psql -U rails -h localhost -d <dbname> -p 5432 -f <filename>
+Method 2.
+pg_dump -U rails -h localhost -p 5432 <dbname> -F c -f <filename>
+pg_restore <filename> -c -U rails -h localhost -p 5432 -d <dbname> -F c -v
+<!-- pg_dump -U rails -h localhost -p 5432 moneyonrails -F c -f /mnt/j/系統備份/moneyonrails/"$(date +'%Y%m%d')" -->
 doc.: https://www.alibabacloud.com/help/tc/doc-detail/26157.htm
+doc.: https://docs.postgresql.tw/reference/client-applications/pg_dump
+doc.: http://manpages.ubuntu.com/manpages/bionic/zh_TW/man1/pg_restore.1.html
