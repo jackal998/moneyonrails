@@ -11,6 +11,8 @@ Rails.application.routes.draw do
   post '/grid/create', :to => 'grid#creategrid'
   put '/grid/close', :to => 'grid#closegrid'
   
+  post '/webhook/msg', :to => 'webhook#receiver'
+
   # should be authed
   mount Sidekiq::Web => '/sidekiq'
 
