@@ -2,10 +2,11 @@ class WebhookController < ApplicationController
   protect_from_forgery except: :receiver
 
   def receiver
-    sub_account = tv_params["strategy_name"]
-    market = tv_params["order_market"].split("USDT")[0] + "-PERP"
-    side = tv_params["order_action"]
-    size = tv_params["order_size"]
+    permitted = tv_params_permit
+    sub_account = permitted["strategy_name"]
+    market = permitted["order_market"].split("USDT")[0] + "-PERP"
+    side = permitted["order_action"]
+    size = permitted["order_size"]
 
     payload = {market: market, side: side, price: nil, type: "market", size: size}
     
@@ -17,7 +18,7 @@ class WebhookController < ApplicationController
   end
 
 private
-  def tv_params
+  def tv_params_permit
     params.permit(:strategy_name, :order_action, :order_size, :order_price, :order_market, :strategy_position_size )
   end
 end
