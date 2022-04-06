@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::Base
+  before_action :authenticate_user!
+
   def ftx_wallet_balance(account_name, coin_name)
     balances = {"totalusdValue" => 0.00}
 
