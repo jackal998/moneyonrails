@@ -98,10 +98,18 @@
                                         <i class="fal fa-mailbox"></i>
                                         <span class="ml-2">Inbox </span>
                                     </a>
-                                    <a href="./page-login.html" class="dropdown-item">
+
+                                    <% if current_user %>
+                                      <%= link_to destroy_user_session_path, :method => :delete, :class => "dropdown-item" do %>
                                         <i class="fal fa-sign-out-alt"></i>
-                                        <span class="ml-2">Logout </span>
-                                    </a>
+                                        <span class="ml-2">登出 </span>
+                                      <% end %>
+                                    <% else %>
+                                      <%= link_to new_session_path(:user), :class => "dropdown-item" do %>
+                                        <i class="fal fa-sign-out-alt"></i>
+                                        <span class="ml-2">登入 </span>
+                                      <% end %>
+                                    <% end %>
                                 </div>
                             </li>
                         </ul>
