@@ -1,5 +1,10 @@
 module FundingsHelper
-require 'ftx_client'
+  require 'ftx_client'
+
+  def display_rate(r, n)
+    return "" unless r
+    (r * 100).round(n).to_s
+  end
 
   def decimals(a)
     num = 0

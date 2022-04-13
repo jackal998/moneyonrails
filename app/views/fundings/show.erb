@@ -54,42 +54,44 @@
                           </tr>
                         </thead>
                         <tbody>
-                            <% @positions.each do |coin_name, position| %>
-                              <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
-                              <tr>
-                                <td class="text-center">
-                                  <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
-                                </td>
-                                <td class="text-right">
-                                  <%= number_to_currency(position["cost"], precision: 2) %>
-                                </td>
-                                <td class="text-center">
-                                  <%= number_with_precision(position["netSize"], precision: position["precision"], delimiter: ',') %>
-                                  ：
-                                  <%= number_with_precision(balances[coin_name]["spot_amount"], precision: position["precision"], delimiter: ',') %>
-                                </td>
-                                <% days_to_show.each do |d| %>
-                                  <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
-                                  <% sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym %>
-                                  <td class="text-right border-left"><%= number_to_currency(fundingstat[sym_payment]) %></td>
-                                  <td class="text-right"><%= fundingstat[sym_irr] %>%</td>
-                                <% end %>
-                              </tr>
-                            <% end %>
-                            <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == "total_of_coins"} %>
-                              <tr>
-                                <td class="text-center">
-                                  小計
-                                </td>
-                                <td class="text-right card-title--medium"><%= number_to_currency(@positions.map {|k,v| v["cost"]}.sum, precision: 2) %></td>
-                                <td class="text-center"></td>
-                                <% days_to_show.each do |d| %>
-                                  <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
-                                  <% sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym %>
-                                  <td class="text-right border-left"><%= number_to_currency(fundingstat[sym_payment]) %></td>
-                                  <td class="text-right"><%= fundingstat[sym_irr] %>%</td>
-                                <% end %>
-                              </tr>
+                          <% @positions.each do |coin_name, position| %>
+                            <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
+                            <tr>
+                              <td class="text-center">
+                                <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
+                              </td>
+                              <td class="text-right">
+                                <%= number_to_currency(position["cost"], precision: 2) %>
+                              </td>
+                              <td class="text-center">
+                                <%= number_with_precision(position["netSize"], precision: position["precision"], delimiter: ',') %>
+                                ：
+                                <%= number_with_precision(balances[coin_name]["spot_amount"], precision: position["precision"], delimiter: ',') %>
+                              </td>
+                              <% days_to_show.each do |d| %>
+                                <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
+                                <% sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym %>
+                                <td class="text-right border-left"><%= number_to_currency(fundingstat[sym_payment]) %></td>
+                                <td class="text-right"><%= fundingstat[sym_irr] %>%</td>
+                              <% end %>
+                            </tr>
+                          <% end %>
+                          <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == "total_of_coins"} %>
+                          <% if fundingstat %>
+                            <tr>
+                              <td class="text-center">
+                                小計
+                              </td>
+                              <td class="text-right card-title--medium"><%= number_to_currency(@positions.map {|k,v| v["cost"]}.sum, precision: 2) %></td>
+                              <td class="text-center"></td>
+                              <% days_to_show.each do |d| %>
+                                <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
+                                <% sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym %>
+                                <td class="text-right border-left"><%= number_to_currency(fundingstat[sym_payment]) %></td>
+                                <td class="text-right"><%= fundingstat[sym_irr] %>%</td>
+                              <% end %>
+                            </tr>
+                          <% end %>
                         </tbody>
                       </table>
                     </div>
@@ -146,146 +148,146 @@
                 </div>
             </div>
             <div class="card">
-                <div class="stat-widget-two card-body">
-                    <div class="stat-content">
-                        <div class="stat-text">現貨價值</div>
-                        <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= balances["totalusdValue"].round(2) %></div>
-                        <%= pie_chart @pie_chart_balances_data, prefix: "$", donut: true, dataset: {borderWidth: 5, hoverOffset: 4,backgroundColor: ["#99b2e5","#ed9c88","#ffcc7f","#87ca8b","#cc7fcc","#9d9ed5","#7fcce2"]} %>
-                    </div>
+              <div class="stat-widget-two card-body">
+                <div class="stat-content">
+                  <div class="stat-text">現貨價值</div>
+                  <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= balances["totalusdValue"].round(2) %></div>
+                  <%= pie_chart @pie_chart_balances_data, prefix: "$", donut: true, dataset: {borderWidth: 5, hoverOffset: 4,backgroundColor: ["#99b2e5","#ed9c88","#ffcc7f","#87ca8b","#cc7fcc","#9d9ed5","#7fcce2"]} %>
                 </div>
+              </div>
             </div>
           </div>
           <div class="col-xl-3 col-md-6 col-sm-12">
             <div class="card">
-                <div class="stat-widget-two card-body">
-                    <div class="stat-content">
-                        <div class="stat-text">USD可用餘額</div>
-                        <div class="stat-digit">
-                          <i class="far fa-dollar-sign"></i><%= balances["USD"]["available_amount"].round(2) %>
-                        </div>
-                    </div>
-                    <div class="progress">
-                      <% percent = (balances["USD"]["available_amount"] / balances["totalusdValue"]) * 100.round(0) %>
-                      <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
-                        USD
-                      </div>
-                    </div>
+              <div class="stat-widget-two card-body">
+                <div class="stat-content">
+                  <div class="stat-text">USD可用餘額</div>
+                  <div class="stat-digit">
+                    <i class="far fa-dollar-sign"></i><%= balances["USD"]["available_amount"].round(2) %>
+                  </div>
                 </div>
+                <div class="progress">
+                  <% percent = (balances["USD"]["available_amount"] / balances["totalusdValue"]) * 100.round(0) %>
+                  <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
+                    USD
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="card">
               <div class="card-header">
                   <h4 class="card-title"><%= "開單設定" %></h4>
               </div>
               <div class="card-body">
-                  <table class="table table-sm mb-0">
-                    <% size = @coin[:spotsizeIncrement] > @coin[:perpsizeIncrement] ? @coin[:spotsizeIncrement] : @coin[:perpsizeIncrement] %>
-                    <% precision = decimals(size) %>
-                    <% max_additional_amount = 
-                      ((balances["USD"]["available_amount"] / @fund_stat.spot_ask_usd) / size).floor * size %>
-                    <thead>
-                      <tr>
-                        <th><%= "#{@coin.name}" %></th>
-                        <th>現貨</th>
-                        <th>永續</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td class="text-right">持有數量</td>
-                        <td class="text-right">
-                          <%= number_with_precision(balances[@coin.name]["spot_amount"], precision: precision, delimiter: ',') %>
-                        </td>
-                        <td class="text-right">
-                          <%= number_with_precision(@positions[@coin.name]["netSize"], precision: precision, delimiter: ',') %>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td class="text-right">美元價值</td>
-                        <td class="text-right"><%= "#{number_to_currency(balances[@coin.name]["usdValue"], precision: 2)}" %></td>
-                        <td class="text-right"><%= "#{number_to_currency(@positions[@coin.name]["cost"], precision: 2)}" %></td>
-                      </tr>
-                      <tr>
-                        <td class="text-right">當前成交價</td>
-                        <td class="text-right">
-                          <%= "#{number_to_currency(@fund_stat.spot_ask_usd, precision: decimals(@fund_stat.spot_ask_usd) > 8 ? 8 : decimals(@fund_stat.spot_ask_usd))}" %>
-                        </td>
-                        <td class="text-right">
-                          <%= "#{number_to_currency(@fund_stat.perp_bid_usd, precision: decimals(@fund_stat.perp_bid_usd) > 8 ? 8 : decimals(@fund_stat.perp_bid_usd))}" %>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td class="text-right">最大購買量</td>
-                        <td class="text-right">
-                          <%= number_with_precision(max_additional_amount, precision: precision) %></td>
-                        <td class="text-right"></td>
-                      </tr>
+                <table class="table table-sm mb-0">
+                  <% size = @coin[:spotsizeIncrement] > @coin[:perpsizeIncrement] ? @coin[:spotsizeIncrement] : @coin[:perpsizeIncrement] %>
+                  <% precision = decimals(size) %>
+                  <% max_additional_amount = 
+                    ((balances["USD"]["available_amount"] / @fund_stat.spot_ask_usd) / size).floor * size %>
+                  <thead>
+                    <tr>
+                      <th><%= "#{@coin.name}" %></th>
+                      <th>現貨</th>
+                      <th>永續</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="text-right">持有數量</td>
+                      <td class="text-right">
+                        <%= number_with_precision(balances[@coin.name]["spot_amount"], precision: precision, delimiter: ',') %>
+                      </td>
+                      <td class="text-right">
+                        <%= number_with_precision(@positions[@coin.name]["netSize"], precision: precision, delimiter: ',') %>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="text-right">美元價值</td>
+                      <td class="text-right"><%= "#{number_to_currency(balances[@coin.name]["usdValue"], precision: 2)}" %></td>
+                      <td class="text-right"><%= "#{number_to_currency(@positions[@coin.name]["cost"], precision: 2)}" %></td>
+                    </tr>
+                    <tr>
+                      <td class="text-right">當前成交價</td>
+                      <td class="text-right">
+                        <%= "#{number_to_currency(@fund_stat.spot_ask_usd, precision: decimals(@fund_stat.spot_ask_usd) > 8 ? 8 : decimals(@fund_stat.spot_ask_usd))}" %>
+                      </td>
+                      <td class="text-right">
+                        <%= "#{number_to_currency(@fund_stat.perp_bid_usd, precision: decimals(@fund_stat.perp_bid_usd) > 8 ? 8 : decimals(@fund_stat.perp_bid_usd))}" %>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="text-right">最大購買量</td>
+                      <td class="text-right">
+                        <%= number_with_precision(max_additional_amount, precision: precision) %></td>
+                      <td class="text-right"></td>
+                    </tr>
 
-                    </tbody>
-                    <thead>
-                      <% unless @underway_order %>
-                        <tr>
-                          <td class="align-bottom text-right" colspan="1">目標數量</td>
-                          <td class="text-right" colspan="12">
-                            <input type="range" id="a_slider"
-                              min="0"
-                              max="<%= number_with_precision(max_additional_amount + @positions[@coin.name]["netSize"].abs, precision: precision)%>"
-                              value="<%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>"
-                              step="<%= number_with_precision(size ,precision: precision) %>"
-                              aria-valuemin="0"
-                              aria-valuemax="<%= number_with_precision(max_additional_amount + @positions[@coin.name]["netSize"].abs,precision: precision) %>"
-                              aria-valuenow="<%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>">
-                            <div>
-                              <div id="bias" style="display: inline; padding-right: 0.3rem;">(+0)</div>
-                              <output for="a_slider" id="disp_amount" digits="<%= precision %>">
-                                <%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>
-                              </output>
-                            </div>  
-                          </td>
-                        </tr>
-                        <tr>
-                          <td colspan="1">
-                          </td>
-                          <td colspan="2">
-                            <!-- Button fund_order_form_trigger -->
-                            <button type="button" id="fund_order_form_trigger" class="btn btn-outline-secondary btn-rounded" 
-                            data-bs-toggle="modal" data-bs-target="#fund_order_form" disabled="true">
-                              確定
-                            </button>
-                          </td>
-                        </tr>
-                      <% else %>
-                        <tr>
-                          <td class="align-bottom text-right" colspan="1">目標數量</td>
-                          <td class="text-right" colspan="12">
+                  </tbody>
+                  <thead>
+                    <% unless @underway_order %>
+                      <tr>
+                        <td class="align-bottom text-right" colspan="1">目標數量</td>
+                        <td class="text-right" colspan="12">
+                          <input type="range" id="a_slider"
+                            min="0"
+                            max="<%= number_with_precision(max_additional_amount + @positions[@coin.name]["netSize"].abs, precision: precision)%>"
+                            value="<%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>"
+                            step="<%= number_with_precision(size ,precision: precision) %>"
+                            aria-valuemin="0"
+                            aria-valuemax="<%= number_with_precision(max_additional_amount + @positions[@coin.name]["netSize"].abs,precision: precision) %>"
+                            aria-valuenow="<%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>">
+                          <div>
+                            <div id="bias" style="display: inline; padding-right: 0.3rem;">(+0)</div>
+                            <output for="a_slider" id="disp_amount" digits="<%= precision %>">
+                              <%= number_with_precision(@positions[@coin.name]["netSize"].abs, precision: precision) %>
+                            </output>
+                          </div>  
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan="1">
+                        </td>
+                        <td colspan="2">
+                          <!-- Button fund_order_form_trigger -->
+                          <button type="button" id="fund_order_form_trigger" class="btn btn-outline-secondary btn-rounded" 
+                          data-bs-toggle="modal" data-bs-target="#fund_order_form" disabled="true">
+                            確定
+                          </button>
+                        </td>
+                      </tr>
+                    <% else %>
+                      <tr>
+                        <td class="align-bottom text-right" colspan="1">目標數量</td>
+                        <td class="text-right" colspan="12">
 
-                            <div class="align-bottom text-left text-primary" colspan="3">
-                              <% if @coin.id == @underway_order.coin_id %>
-                                系統已有訂單執行中
-                              <% else %>
-                                系統已有訂單執行中：<%= link_to " #{@underway_order.coin_name}", funding_show_path(coin_name: @underway_order.coin_name), data: { turbolinks: false } %>
-                              <% end %>
-                            </div>
-                            <div style="font-size: 1.2rem;">
-                                <%= @underway_order.target_spot_amount.abs %>
-                            </div>  
-                          </td>
-                        </tr>
-                        <tr>
-                        </tr>
-                        <tr>
-                          <td colspan="1">
-                          </td>
-                          <td colspan="2">
-                            <!-- Button change to abort -->
-                            <button type="button" class="btn btn-outline-danger btn-rounded" 
-                            data-bs-toggle="modal" data-bs-target="#fund_order_abort_alert">
-                              終止訂單？
-                            </button>
-                          </td>
-                        </tr>
-                      <% end %>
-                    </thead>
-                  </table>
+                          <div class="align-bottom text-left text-primary" colspan="3">
+                            <% if @coin.id == @underway_order.coin_id %>
+                              系統已有訂單執行中
+                            <% else %>
+                              系統已有訂單執行中：<%= link_to " #{@underway_order.coin_name}", funding_show_path(coin_name: @underway_order.coin_name), data: { turbolinks: false } %>
+                            <% end %>
+                          </div>
+                          <div style="font-size: 1.2rem;">
+                              <%= @underway_order.target_spot_amount.abs %>
+                          </div>  
+                        </td>
+                      </tr>
+                      <tr>
+                      </tr>
+                      <tr>
+                        <td colspan="1">
+                        </td>
+                        <td colspan="2">
+                          <!-- Button change to abort -->
+                          <button type="button" class="btn btn-outline-danger btn-rounded" 
+                          data-bs-toggle="modal" data-bs-target="#fund_order_abort_alert">
+                            終止訂單？
+                          </button>
+                        </td>
+                      </tr>
+                    <% end %>
+                  </thead>
+                </table>
               </div>
             </div>
           </div>
@@ -380,6 +382,7 @@
             <div class="container-fluid">
                  <%= form.hidden_field :coin_id %>
                  <%= form.hidden_field :coin_name %>
+                 <%= form.hidden_field :user_id %>
                 <div class="row">
                     <div class="text-center col-sm-4"></div>
                     <div class="text-center col-sm-4"><%= "#{form.object.coin_name} 現貨" %></div>

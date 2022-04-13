@@ -18,10 +18,7 @@
 
   </head>
 
-  <body>
-    <p class="notice"><%= notice %></p>
-    <p class="alert"><%= alert %></p>
-    
+  <body>    
     <!--*******************
         Preloader start
     ********************-->
@@ -63,30 +60,13 @@
                 <nav class="navbar navbar-expand">
                     <div class="collapse navbar-collapse justify-content-between">
                         <div class="header-left">
+                            <p class="notice"><%= notice %></p>
+                            <p class="alert"><%= alert %></p>
                         </div>
                         <ul class="navbar-nav header-right">
-                            <li class="nav-item dropdown notification_dropdown">
-                                <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="fal fa-bell"></i>
-                                    <div class="pulse-css"></div>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
-                                    <ul class="list-unstyled">
-                                        <li class="media dropdown-item">
-                                            <span class="primary"><i class="fal fa-shopping-cart"></i></span>
-                                            <div class="media-body">
-                                                <a href="#">
-                                                    <p><strong>Jennifer</strong> purchased Light Dashboard 2.0.</p>
-                                                </a>
-                                            </div>
-                                            <span class="notify-time">3:20 am</span>
-                                        </li>
-                                    </ul>
-                                    <a class="all-notification" href="#">See all notifications <i class="fal fa-arrow-right"></i></a>
-                                </div>
-                            </li>
                             <li class="nav-item dropdown header-profile">
                                 <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
+                                    <%= current_user.email if current_user %>
                                     <i class="fal fa-user"></i>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
@@ -110,6 +90,26 @@
                                         <span class="ml-2">登入 </span>
                                       <% end %>
                                     <% end %>
+                                </div>
+                            </li>
+                            <li class="nav-item dropdown notification_dropdown">
+                                <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fal fa-bell"></i>
+                                    <div class="pulse-css"></div>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
+                                    <ul class="list-unstyled">
+                                        <li class="media dropdown-item">
+                                            <span class="primary"><i class="fal fa-shopping-cart"></i></span>
+                                            <div class="media-body">
+                                                <a href="#">
+                                                    <p><strong>Jennifer</strong> purchased Light Dashboard 2.0.</p>
+                                                </a>
+                                            </div>
+                                            <span class="notify-time">3:20 am</span>
+                                        </li>
+                                    </ul>
+                                    <a class="all-notification" href="#">See all notifications <i class="fal fa-arrow-right"></i></a>
                                 </div>
                             </li>
                         </ul>

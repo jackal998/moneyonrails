@@ -1,6 +1,4 @@
 Rails.application.routes.draw do
-  devise_for :managers
-  devise_for :users
   require 'sidekiq/web'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
 
@@ -18,6 +16,18 @@ Rails.application.routes.draw do
   # should be authed
   mount Sidekiq::Web => '/sidekiq'
 
-  root :to => redirect('/funding')
+  # devise_for :managers
+  devise_for :users
+  
+  devise_scope :user do
+    authenticated :user do
+      root 'devise/registrations#edit', as: :authenticated_root
+    end
+
+    unauthenticated do
+      root 'devise/sessions#new', as: :unauthenticated_root
+    end
+  end
+  root :to => redirect('/users/sign_in')
   # get "*path", to: redirect('/funding')
 end

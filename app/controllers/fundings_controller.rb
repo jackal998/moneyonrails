@@ -1,13 +1,16 @@
 class FundingsController < ApplicationController
+  before_action :authenticate_user!
+  before_action :authenticate_fund
+
   require 'ftx_client'
+
   def index
-    helpers.update_market_infos
+    # should move to rake
+    # helpers.update_market_infos
     @coins = Coin.includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
     
     coin_name = params["coin_name"] ? params["coin_name"] : "BTC"
     @coin = @coins.detect { |coin| coin[:name] == coin_name }
-
-    @ftx_account = FtxClient.account("MoneyOnRails")
 
     list_index = {}
     li = 0
@@ -25,7 +28,7 @@ class FundingsController < ApplicationController
       end
     end
 
-    fundingpayments = FundingPayment.where("time > ?", 30.day.ago).group(:coin_name).group_by_day(:time, format: '%F').sum(:payment)
+    fundingpayments = FundingPayment.where("time > ?", 30.day.ago).where("user_id = ?", current_user).group(:coin_name).group_by_day(:time, format: '%F').sum(:payment)
     @fundingstats = FundingStat.all
 
     coin_name = ""
@@ -55,12 +58,12 @@ class FundingsController < ApplicationController
   end
 
   def show
-    @coins = Coin.includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
+    @coins = Coin.select("coins.name", "coins.spotsizeIncrement", "coins.perpsizeIncrement", "coins.weight").includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
     
     coin_name = params["coin_name"] ? params["coin_name"] : "BTC"
     @coin = @coins.detect { |coin| coin[:name] == coin_name }
 
-    @funding_orders = FundingOrder.includes(coin: :current_fund_stat).where(system: false).order("created_at desc")
+    @funding_orders = FundingOrder.includes(coin: :current_fund_stat).where(system: false).where("user_id = ?", current_user).order("created_at desc")
     
     @underway_order = @funding_orders.detect { |funding_order| funding_order[:order_status] == "Underway" }
     # 如果order_status有問題，要顯示出來
@@ -81,7 +84,7 @@ class FundingsController < ApplicationController
     days_to_show = [1,3,7,14,30] #,60,90,:historical]
 
     @fund_stat = @coin.current_fund_stat
-    @fundingstats = FundingStat.all
+    @fundingstats = FundingStat.where("user_id = ?", current_user)
 
     @line_chart_data = @coin.rates.where("time > ?", Time.now - 6.weeks).order("time asc").map { |r| [r.time.strftime('%m/%d %H:%M'),r.rate*100]}
     @zeros = @line_chart_data.map { |t,r| [t,0] }
@@ -98,6 +101,7 @@ class FundingsController < ApplicationController
     @funding_order = FundingOrder.new(
       :coin_id => @coin.id, 
       :coin_name => coin_name,
+      :user_id => current_user.id,
       :original_spot_amount => balances[coin_name]["spot_amount"],
       :original_perp_amount => @positions[coin_name]["netSize"]
       )
@@ -128,9 +132,16 @@ class FundingsController < ApplicationController
 
 private
   def createorder_params
-    params.require(:funding_order).permit(:coin_id,:coin_name,
+    params.require(:funding_order).permit(:coin_id,:coin_name,:user_id,
                                           :original_spot_amount,:original_perp_amount,
                                           :target_spot_amount,:target_perp_amount,
                                           :acceleration,:threshold)
+  end
+
+  def authenticate_fund
+    if current_user.permission_to_fund == "false"
+      flash[:alert] = "沒有權限!"
+      redirect_to edit_user_registration_path
+    end
   end
 end

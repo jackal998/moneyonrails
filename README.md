@@ -87,4 +87,3 @@ doc.: https://www.alibabacloud.com/help/tc/doc-detail/26157.htm
 doc.: https://docs.postgresql.tw/reference/client-applications/pg_dump
 doc.: http://manpages.ubuntu.com/manpages/bionic/zh_TW/man1/pg_restore.1.html
 11. start Webhook server:
-`ultrahook -k <api key> tvrails https://192.168.50.207:3000/webhook/msg`
