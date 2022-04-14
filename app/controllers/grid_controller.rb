@@ -20,7 +20,7 @@ class GridController < ApplicationController
     render locals: {balances: balances, coin_name: coin_name, tv_market_name: tv_market_name(market_name), grid_profits: grid_profits}
   end
 
-  def creategrid
+  def create
     @grid_setting = GridSetting.new(creategrid_params)
     input_totalUSD_amount = (@grid_setting["input_spot_amount"] * @grid_setting["trigger_price"] + @grid_setting["input_USD_amount"]).round(2)
     @grid_setting.attributes = {status: "new", input_totalUSD_amount: input_totalUSD_amount}
@@ -30,7 +30,7 @@ class GridController < ApplicationController
     redirect_to grid_path(:market_name => @grid_setting[:market_name])
   end
 
-  def closegrid
+  def close
     @grid_setting = GridSetting.find(params["grid_setting"]["id"])
     @grid_setting.update(:status => "closing") unless @grid_setting.status == "closed"
 
