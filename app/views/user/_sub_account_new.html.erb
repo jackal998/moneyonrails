@@ -1,0 +1,41 @@
+<div class="card">
+  <%= form_with model: @sub_account, url: sub_account_create_path do |form| %>
+    <div class="card-header">                  
+      <h4 class="card-title">API設定</h4>
+    </div>
+    <div class="card-body">
+      <%= form.hidden_field :user_id %>
+      <table class="table table-sm mb-0 table-borderless">
+        <thead>
+          <tr>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>子帳號</td>
+            <td>指定為</td>
+          </tr>
+          <tr>
+            <td><%= form.text_field :name, :class => "form-control" %></td>
+            <td><%= form.select :application, ['Funding', 'Grid'], :class => "form-control" %></td>
+          </tr>
+          <tr>
+            <td>API Key</td>
+          </tr>
+          <tr>
+            <td><%= form.text_field :encrypted_public_key, :class => "form-control" %></td>
+          </tr>
+          <tr>
+            <td>API Secret</td>
+          </tr>
+          <tr>
+            <td><%= form.text_field :encrypted_secret_key, :class => "form-control" %></td>
+          </tr>
+        </tbody>
+      </table>
+      <%= form.submit "送 出", :class => "text-center btn btn-outline-secondary btn-rounded" %>
+      &nbsp;
+    </div>
+  <% end %>
+</div>

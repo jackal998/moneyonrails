@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_04_13_114914) do
+ActiveRecord::Schema.define(version: 2022_04_14_023526) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -188,6 +188,17 @@ ActiveRecord::Schema.define(version: 2022_04_13_114914) do
     t.datetime "updated_at", precision: 6, null: false
     t.index ["coin_id"], name: "index_rates_on_coin_id"
     t.index ["name"], name: "index_rates_on_name"
+  end
+
+  create_table "sub_accounts", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "name", default: "", null: false
+    t.string "application", default: "", null: false
+    t.string "encrypted_public_key", default: "", null: false
+    t.string "encrypted_secret_key", default: "", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_id"], name: "index_sub_accounts_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|

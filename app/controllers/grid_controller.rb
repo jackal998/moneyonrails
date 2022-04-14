@@ -1,16 +1,18 @@
 class GridController < ApplicationController
   before_action :authenticate_user!
   before_action :authenticate_grid
+
   require 'ftx_client'
 
   def index
-    market_name = index_params["market_name"] || ("#{index_params["coin_name"]}/USD" if index_params["coin_name"]) || GridSetting.last["market_name"]
+    @grid_settings = GridSetting.where(status: ["active", "closing"]).where("grid_settings.user_id = ?", current_user).includes(:grid_orders).order('grid_orders.price asc')
+    
+    market_name = index_params["market_name"] || ("#{index_params["coin_name"]}/USD" if index_params["coin_name"]) || "BTC/USD"
 
     @market = FtxClient.market_info(market_name)["result"]
     coin_name = @market["type"] == "spot" ? @market["baseCurrency"] : nil
 
-    @grid_setting = GridSetting.new(market_name: market_name, price_step: @market["priceIncrement"], size_step: @market["sizeIncrement"])
-    @grid_settings = GridSetting.includes(:grid_orders).order('grid_orders.price asc').where(status: ["active", "closing"])
+    @grid_setting = GridSetting.new(market_name: market_name, user_id: current_user.id, price_step: @market["priceIncrement"], size_step: @market["sizeIncrement"])
 
     grid_profits = {}
     @grid_settings.each {|g| grid_profits[g.id] = profit(g)}
@@ -90,7 +92,7 @@ private
   end
 
   def creategrid_params
-    params.require(:grid_setting).permit(:market_name, :order_size, :price_step, :size_step,
+    params.require(:grid_setting).permit(:market_name, :user_id, :order_size, :price_step, :size_step,
                                           :lower_limit,:upper_limit,:grids,:grid_gap,
                                           :input_USD_amount,:input_spot_amount,
                                           :trigger_price,:threshold,

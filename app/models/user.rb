@@ -9,4 +9,5 @@ class User < ApplicationRecord
   has_many :funding_stats
   has_many :grid_orders
   has_many :grid_settings
+  has_many :sub_accounts
 end
