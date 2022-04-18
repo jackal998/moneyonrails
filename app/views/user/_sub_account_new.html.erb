@@ -18,22 +18,23 @@
           </tr>
           <tr>
             <td><%= form.text_field :name, :class => "form-control" %></td>
-            <td><%= form.select :application, ['Funding', 'Grid'], :class => "form-control" %></td>
+            <td><%= form.select(:application, options_for_select(['Funding', 'Grid']),{}, {:class => "form-select"}) %></td>
           </tr>
           <tr>
-            <td>API Key</td>
+            <td colspan="2">API Key</td>
           </tr>
           <tr>
-            <td><%= form.text_field :encrypted_public_key, :class => "form-control" %></td>
+            <td colspan="2"><%= form.text_field :encrypted_public_key, :class => "form-control" %></td>
           </tr>
           <tr>
-            <td>API Secret</td>
+            <td colspan="2">API Secret</td>
           </tr>
           <tr>
-            <td><%= form.text_field :encrypted_secret_key, :class => "form-control" %></td>
+            <td colspan="2"><%= form.text_field :encrypted_secret_key, :class => "form-control" %></td>
           </tr>
         </tbody>
       </table>
+      &nbsp;
       <%= form.submit "送 出", :class => "text-center btn btn-outline-secondary btn-rounded" %>
       &nbsp;
     </div>

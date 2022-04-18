@@ -13,8 +13,9 @@ class UserController < ApplicationController
     end
 
     @sub_account.save
+    flash_msg = @sub_account.errors.full_messages.present? ? @sub_account.errors.full_messages : nil
 
-    redirect_to authenticated_root_path
+    redirect_to authenticated_root_path, flash: { alert: flash_msg }
   end
 
 private

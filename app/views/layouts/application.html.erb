@@ -60,8 +60,12 @@
                 <nav class="navbar navbar-expand">
                     <div class="collapse navbar-collapse justify-content-between">
                         <div class="header-left">
-                            <p class="notice"><%= notice %></p>
-                            <p class="alert"><%= alert %></p>
+                          <% if alert || notice %>
+                            <div class="alert alert-warning">
+                              <%=  notice.kind_of?(Array) ? (notice.join('<br>')).html_safe : notice %>
+                              <%=  alert.kind_of?(Array) ? (alert.join('<br>')).html_safe : alert %>
+                            </div>
+                          <% end %>
                         </div>
                         <ul class="navbar-nav header-right">
                             <li class="nav-item dropdown header-profile">
@@ -70,26 +74,27 @@
                                     <i class="fal fa-user"></i>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
-                                    <a href="./app-profile.html" class="dropdown-item">
-                                        <i class="fal fa-address-card"></i>
-                                        <span class="ml-2">Profile </span>
-                                    </a>
-                                    <a href="./email-inbox.html" class="dropdown-item">
-                                        <i class="fal fa-mailbox"></i>
-                                        <span class="ml-2">Inbox </span>
-                                    </a>
+                                  <%= link_to authenticated_root_path, :class => "dropdown-item" do %>
+                                    <i class="fal fa-address-card"></i>
+                                    <span class="ml-2">Profile </span>
+                                  <% end %>
 
-                                    <% if current_user %>
-                                      <%= link_to destroy_user_session_path, :method => :delete, :class => "dropdown-item" do %>
-                                        <i class="fal fa-sign-out-alt"></i>
-                                        <span class="ml-2">登出 </span>
-                                      <% end %>
-                                    <% else %>
-                                      <%= link_to new_session_path(:user), :class => "dropdown-item" do %>
-                                        <i class="fal fa-sign-out-alt"></i>
-                                        <span class="ml-2">登入 </span>
-                                      <% end %>
+                                  <a href="./email-inbox.html" class="dropdown-item">
+                                      <i class="fal fa-mailbox"></i>
+                                      <span class="ml-2">Inbox </span>
+                                  </a>
+
+                                  <% if current_user %>
+                                    <%= link_to destroy_user_session_path, :method => :delete, :class => "dropdown-item" do %>
+                                      <i class="fal fa-sign-out-alt"></i>
+                                      <span class="ml-2">登出 </span>
                                     <% end %>
+                                  <% else %>
+                                    <%= link_to new_session_path(:user), :class => "dropdown-item" do %>
+                                      <i class="fal fa-sign-out-alt"></i>
+                                      <span class="ml-2">登入 </span>
+                                    <% end %>
+                                  <% end %>
                                 </div>
                             </li>
                             <li class="nav-item dropdown notification_dropdown">
