@@ -28,7 +28,7 @@ class GridController < ApplicationController
     @grid_setting.attributes = {status: "new", input_totalUSD_amount: input_totalUSD_amount}
     @grid_setting.save
 
-    GridExecutorJob.perform_later(@grid_setting[:id])
+    GridExecutorJob.perform_later(is_main_job: true, grid_setting_id: @grid_setting[:id])
     redirect_to grid_path(:market_name => @grid_setting[:market_name])
   end
 

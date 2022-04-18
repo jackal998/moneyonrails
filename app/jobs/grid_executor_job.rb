@@ -2,20 +2,37 @@ class GridExecutorJob < ApplicationJob
   queue_as :default
   require "ftx_client"
 
-  def perform(grid_setting_id)
+  def perform(job_params = {})
+    return main_loop(job_params[:grid_setting_id]) unless job_params[:is_main_job]
+    return main_loop(job_params[:grid_setting_id]) if EM.reactor_running?
 
-    @grid_setting = GridSetting.includes(:grid_orders).find(grid_setting_id)
-    puts console_prefix(@grid_setting) + "sidekiq GridExecutorJob starting..."
-    return unless params_check(@grid_setting)
+    # 2022/04/11 user_id is not in use yet
+    # current_user or User.find(job_params[:user_id])
+    grid_setting_ids = GridSetting.where(status: "active").pluck("id")
 
-    grid_orders_init!(@grid_setting)
-    @grid_setting.update(:status => "active")
-    puts console_prefix(@grid_setting) + "Grid Orders initialized, ready for main loop."
+    dominance_grid_setting_id = grid_setting_ids.pop
+  
+    grid_setting_ids.each do |grid_setting_id|
+      Thread.new{ GridExecutorJob.perform_later(grid_setting_id: grid_setting_id) }
+    end
 
-    # main loop
-    ws_start(@grid_setting)
+    main_loop(dominance_grid_setting_id)
+  end
 
-    puts console_prefix(@grid_setting) + "sidekiq GridExecutorJob on market_name: #{@grid_setting["market_name"]} closed, See You!"
+  def main_loop(grid_setting_id)
+    grid_setting = GridSetting.find_by(id: grid_setting_id)
+
+    return puts console_prefix(grid_setting) + "abort. grid_setting: #{grid_setting_id} not found." unless grid_setting
+
+    puts console_prefix(grid_setting) + "GridExecutorJob starting..."
+    return unless params_check(grid_setting)
+
+    grid_orders_init!(grid_setting)
+    grid_setting.update(:status => "active")
+
+    puts console_prefix(grid_setting) + "Initialized, ready for main loop."
+    ws_start(grid_setting)
+    puts console_prefix(grid_setting) + "jid=#{self.provider_job_id} added to EventMachine" if EM.reactor_running?
   end
 
   def params_check(grid_setting)
@@ -197,7 +214,8 @@ class GridExecutorJob < ApplicationJob
   def ws_restart(grid_setting)
     puts console_prefix(grid_setting) + "WebSocket restarting..."
     grid_orders_init!(grid_setting)
-    puts console_prefix(grid_setting) + "Grid Orders initialized for restart, ready for main loop."
+    
+    puts console_prefix(grid_setting) + "Initialized, ready for main loop."
     ws_start(grid_setting)
   end
 
@@ -293,6 +311,7 @@ class GridExecutorJob < ApplicationJob
           grid_setting.update(status: "closed")
           puts console_prefix(grid_setting) + "Updated db status to canceled."
 
+          puts console_prefix(grid_setting) + "sidekiq GridExecutorJob on market_name: #{market_name} closed, See You!"
           ws.close
         end
       end
@@ -553,7 +572,8 @@ class GridExecutorJob < ApplicationJob
   end
 
   def console_prefix(grid_setting)
-    return "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting.id}: "
+    grid_setting_id = grid_setting ? grid_setting.id : " "
+    return "#{Time.now.strftime('%H:%M:%S')}: grid_setting_id: #{grid_setting_id}: "
   end
 
   def order_result_to_output(order_result)

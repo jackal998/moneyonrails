@@ -39,8 +39,7 @@ Fixing Order => Base + Typography >> General Layout + Grid >> Page Layout + Comp
 .alert {
   position: relative;
   padding: 0.75rem 1.25rem;
-  margin-bottom: 1rem;
-  border: 1px solid transparent;
+  margin-bottom: 0rem;
   border-radius: 0.25rem;
 }
 
@@ -607,20 +606,10 @@ Fixing Order => Base + Typography >> General Layout + Grid >> Page Layout + Comp
   margin-top: 3px;
 }
 
-.form-control {
-  display: block;
-  width: 100%;
+.form-control, .form-select {
   height: 2rem;
-  padding: 0;
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.5;
   color: #495057;
-  background-color: #fff;
-  background-clip: padding-box;
   border: 1px solid #eaeaea;
-  border-radius: 0.25rem;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 
   &::-ms-expand {
     background-color: transparent;
@@ -629,9 +618,7 @@ Fixing Order => Base + Typography >> General Layout + Grid >> Page Layout + Comp
 
   &:focus {
     color: #495057;
-    background-color: #fff;
     border-color: #b4a7ef;
-    outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(89, 59, 219, 0.25);
   }
 
@@ -639,6 +626,14 @@ Fixing Order => Base + Typography >> General Layout + Grid >> Page Layout + Comp
     background-color: #e9ecef;
     opacity: 1;
   }
+}
+
+.form-control {
+  padding: 0 0.3rem;
+}
+
+.form-select {
+  padding: 0 1.2rem 0 0.3rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -651,10 +646,6 @@ Fixing Order => Base + Typography >> General Layout + Grid >> Page Layout + Comp
   font-size: 80%;
   color: #6c757d;
   text-align: right;
-}
-
-.form-select {
-  padding: 0 0.6rem;
 }
 
 .hamburger {
