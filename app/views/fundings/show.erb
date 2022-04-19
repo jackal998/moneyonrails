@@ -462,7 +462,7 @@
         </div>
         <div class="modal-footer" style="display: block;">
           <div class="col-md-4 offset-md-4 text-left">
-            <%= form_with model: @underway_order, url: funding_order_path, method: "PUT" do |form| %>
+            <%= form_with model: @underway_order, url: funding_abortorder_path, method: "PUT" do |form| %>
               <%= form.hidden_field :id %>
               <%= hidden_field_tag(:current_coin_name, @coin.name) %>
               <%= form.submit "確 定", :class => "text-center btn btn-outline-danger btn-rounded" %>
