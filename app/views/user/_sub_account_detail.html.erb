@@ -1,50 +1,56 @@
 <div class="card">
   <div class="card-header">
     <h4 class="card-title">
-      帳戶名稱： <%= sub_account.name %>
+      子帳號： <%= sub_account.name %>
     </h4>
   </div>
 
   <div class="card-body">
     <div class="row">
-      <div class="col-md-6">
+      <div class="col-12">
         <h6>應用類型：</br> <%= sub_account.application %></h6>
         <h6>API 公鑰：</br>
           <div class="custom-control-inline"> <%= sub_account.encrypted_public_key %> </div>
         </h6>
       </div>
     </div>
-  </div>
+    <div class="row">
+      <div class="col-12">
+        <!-- Button trigger delete -->
+        <button type="button" class="btn btn-outline-danger btn-rounded" 
+        data-bs-toggle="modal" data-bs-target="#sub_account_delete_alert">
+          刪除API設定？
+        </button>
 
-<!-- 以下待修改為刪除API用 -->
-<!-- <div class="card-body">
-  Button sub_account_close_form_trigger
-    <button type="button" id="sub_account_<%= sub_account.id %>_close_form_trigger" class="btn btn-outline-danger btn-rounded" 
-    data-bs-toggle="modal" data-bs-target="#sub_account_<%= sub_account.id %>_close_form">
-      刪除？
-    </button>
+      </div>
+    </div>
   </div>
-  <div class="modal fade" id="sub_account_<%= sub_account.id %>_close_form" tabindex="-1" aria-labelledby="sub_account_<%= sub_account.id %>_modal" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="sub_account_<%= sub_account.id %>_modal">子帳號： GridOnRails</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div class="modal fade" id="sub_account_delete_alert" tabindex="-1" aria-labelledby="sub_account_modal" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sub_account_modal">子帳號： <%= sub_account.name %></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body table-sm">
+        <div class="container-fluid">
+          <div class="text-center">
+            <h3>
+              <%= "確定刪除 #{sub_account.encrypted_public_key} ？" %>
+            </h3>
+          </div>
         </div>
-        <div class="modal-body table-sm">
-            <div class="container-fluid">
-              <div class="text-center">
-                <h3><%= "確定刪除 #{sub_account.name} ？" %></h3>
-              </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-          <%= form_with model: sub_account, url: grid_close_path, method: "PUT" do |form| %>
+      </div>
+      <div class="modal-footer" style="display: block;">
+        <div class="col-md-4 offset-md-4 text-left">
+          <%= form_with model: sub_account, url: sub_account_delete_path, method: "DELETE" do |form| %>
             <%= form.hidden_field :id %>
             <%= form.submit "確 定", :class => "text-center btn btn-outline-danger btn-rounded" %>
           <% end %>
         </div>
       </div>
     </div>
-  </div> -->
+  </div>
 </div>

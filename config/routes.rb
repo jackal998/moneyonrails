@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   
   scope :controller => "user", :path => "/sub_account", :as => "sub_account" do
     post '/create' => :createsubaccount, :as => "create"
+    delete '/delete' => :deletesubaccount, :as => "delete"
   end
 
   post '/', :to => 'webhook#receiver'
