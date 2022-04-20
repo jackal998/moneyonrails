@@ -2,61 +2,46 @@ class FtxClient
   attr_accessor :method, :auth, :subaccount, :url
 
   def initialize params = {}
-    init = {method: "GET", url: "https://ftx.com", auth: false}
+    init = {method: "GET", url: "https://ftx.com/api", auth: false}
 
     init.merge(params).each { |key, value| send "#{key}=", value }
   end
 
   def self.account(subaccount)
-    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/account")
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/account")
   end
 
   def self.wallet_balances(subaccount)
-    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/wallet/balances")
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/wallet/balances")
   end
 
   def self.positions(subaccount)
-    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/positions")
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/positions")
   end
 
   def self.funding_payments(subaccount, params = {})
     # start_time        number  1559881511  optional
     # end_time          number  1559881711  optional
     # future            string  BTC-PERP    optional
+    params_str = params_to_s(params)
 
-    params_str = ""
-    unless params.empty?
-      params.each {|k,v| params_str += "&#{k}=#{v}"}
-      params_str[0]="?"
-    end
-
-    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/funding_payments" + params_str)
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/funding_payments" + params_str)
   end
 
   def self.orders(subaccount, order_id)
-    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/orders/#{order_id}")
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/orders/#{order_id}")
   end
 
   def self.open_orders(subaccount, params = {})
-    
-    params_str = ""
-    unless params.empty?
-      params.each {|k,v| params_str += "&#{k}=#{v}"}
-      params_str[0]="?"
-    end
+    params_str = params_to_s(params)
 
-    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/orders" + params_str)
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/orders" + params_str)
   end
 
   def self.order_history(subaccount, params = {})
-    
-    params_str = ""
-    unless params.empty?
-      params.each {|k,v| params_str += "&#{k}=#{v}"}
-      params_str[0]="?"
-    end
+    params_str = params_to_s(params)
 
-    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/api/orders/history" + params_str)
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("GET", "/orders/history" + params_str)
   end
 
   def self.place_order(subaccount, params = {})
@@ -76,59 +61,50 @@ class FtxClient
 
     # params = {market: "BTC-PERP", side: "buy", price: 5000, size: 0.001, type: "limit"}
 
-    [:market, :side, :size, :type].each do |key|
-      return "params: :#{key} is nil, please check." unless params[key]
-    end
+    [:market, :side, :size, :type].each {|key| return "params :#{key} missing, please check." unless params[key] }
 
     case params[:type]
-      when "market"
-        return 'Markettype is "market", but given price #{params[:price]} is not nil, please check.' if params[:price]
-
-      when "limit"
-        return 'Market type is "limit", but price is nil, please check.' unless params[:price]
+    when "market" then return "Markettype is 'market', but given price #{params[:price]} is not nil, please check." if params[:price]
+    when "limit" then return "Market type is 'limit', but price is nil, please check." unless params[:price]
     end
 
     payload = params.to_json
 
-    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("POST", "/api/orders", {payload: payload})
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("POST", "/orders", {payload: payload})
   end
  
   def self.cancel_order(subaccount, order_id)
-    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("DELETE", "/api/orders/#{order_id}")
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("DELETE", "/orders/#{order_id}")
   end
 
   def self.future_stats(future_name)
-    return FtxClient.new._request("GET", "/api/futures/#{future_name}/stats")
+    return FtxClient.new._request("GET", "/futures/#{future_name}/stats")
   end
 
   def self.funding_rates(params={})
-    params_str = ""
-    unless params.empty?
-      params.each {|k,v| params_str += "&#{k}=#{v}"}
-      params_str[0]="?"
-    end
+    params_str = params_to_s(params)
 
-    return FtxClient.new._request("GET", "/api/funding_rates" + params_str)
+    return FtxClient.new._request("GET", "/funding_rates" + params_str)
   end
 
   def self.market_info(market)
     # BTC/USD, BTC-PERP, BTC-0626
-    return FtxClient.new._request("GET", "/api/markets/#{market}")
+    return FtxClient.new._request("GET", "/markets/#{market}")
   end
 
   def self.markets_info
-    return FtxClient.new._request("GET", "/api/markets")
+    return FtxClient.new._request("GET", "/markets")
   end
 
   def self.orderbook(market, params = {})
-    params_str = ""
+    params_str = params_to_s(params)
 
-    unless params.empty?
-      params.each {|k,v| params_str += "&#{k}=#{v}"}
-      params_str[0]="?"
-    end
+    return FtxClient.new._request("GET", "/markets/#{market}/orderbook" + params_str)
+  end
 
-    return FtxClient.new._request("GET", "/api/markets/#{market}/orderbook" + params_str)
+  def self.withdrawals_for_validation(subaccount, params = {})
+    # NOT A REAL FUNCTION, used in api validation
+    return FtxClient.new(:auth => true, :subaccount => subaccount)._request("POST", "/wallet/withdrawals", {payload: {}.to_json})
   end
 
   def _request(http_method, path, params = {})
@@ -139,19 +115,17 @@ class FtxClient
     if self.auth
       ts = DateTime.now.strftime('%Q')
 
-      signature_payload = ts + http_method + path
+      signature_payload = ts + http_method + "/api" + path
       signature_payload += payload if payload
-
       signature = OpenSSL::HMAC.hexdigest(
         "SHA256",
-        Rails.application.credentials.ftx[self.subaccount.to_sym][:sec], 
+        self.subaccount.crypt.decrypt_and_verify(self.subaccount[:encrypted_secret_key]), 
         signature_payload)
-      
       headers = {
-        'FTX-KEY' => Rails.application.credentials.ftx[self.subaccount.to_sym][:pub],
+        'FTX-KEY' => self.subaccount.crypt.decrypt_and_verify(self.subaccount[:encrypted_public_key]),
         'FTX-SIGN' => signature,
         'FTX-TS' => ts,
-        'FTX-SUBACCOUNT' => self.subaccount}
+        'FTX-SUBACCOUNT' => self.subaccount.name}
       headers['Content-Type'] = 'application/json' if payload
     end
 
@@ -169,13 +143,20 @@ class FtxClient
         response_is_JSON = true
       rescue
         retry_time += 1
-        puts "(attempt: #{retry_time}) FtxClient request of #{req_url} is not JSON. => " + Nokogiri::HTML.parse(response.body).title
-        sleep(5)
-        return_data = Nokogiri::HTML.parse(response.body).title
+        return_data = Nokogiri::HTML.parse(response.body)
+        puts "(attempt: #{retry_time}) FtxClient return_data of #{req_url} is not JSON. => " + return_data.title
+        sleep(2)
+        puts return_data if retry_time >= 5
         response_is_JSON = false
       end
     end
     
     return return_data
+  end
+
+private
+  def self.params_to_s(params = {}, params_str = "")
+    params.each {|k,v| params_str += params_str.empty? ? "?#{k}=#{v}" : "&#{k}=#{v}" } if params
+    return params_str
   end
 end
