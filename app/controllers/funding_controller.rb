@@ -1,4 +1,4 @@
-class FundingsController < ApplicationController
+class FundingController < ApplicationController
   before_action :authenticate_user!
   before_action :authenticate_fund
 
@@ -136,12 +136,5 @@ private
                                           :original_spot_amount,:original_perp_amount,
                                           :target_spot_amount,:target_perp_amount,
                                           :acceleration,:threshold)
-  end
-
-  def authenticate_fund
-    if current_user.permission_to_fund == "false"
-      flash[:alert] = "沒有權限!"
-      redirect_to edit_user_registration_path
-    end
   end
 end

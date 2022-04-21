@@ -1,7 +1,7 @@
 Rails.application.routes.draw do
   require 'sidekiq/web'
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
-  scope :controller => "fundings", :path => "/funding", :as => "funding" do
+  scope :controller => "funding", :path => "/funding", :as => "funding" do
     get '/' => :index
     get '/show'   => :show        , :as => "show"
     post '/order' => :createorder , :as => "createorder"
