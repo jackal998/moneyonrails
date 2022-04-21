@@ -14,7 +14,7 @@ class FundingController < ApplicationController
 
     list_index = {}
     li = 0
-    balances = ftx_wallet_balance("MoneyOnRails", coin_name)
+    balances = ftx_wallet_balance(current_user.funding_account, coin_name)
 
     @col_chart_payment_data = []
     @pie_chart_payment_data = []
@@ -69,7 +69,7 @@ class FundingController < ApplicationController
     # 如果order_status有問題，要顯示出來
 
     @positions = {coin_name => {"netSize" => 0, "cost" => 0}}
-    FtxClient.account("MoneyOnRails")["result"]["positions"].each do |position|
+    FtxClient.account(current_user.funding_account)["result"]["positions"].each do |position|
       next if position["netSize"] == 0
 
       p_coin_name = position["future"].split("-")[0]
@@ -89,8 +89,8 @@ class FundingController < ApplicationController
     @line_chart_data = @coin.rates.where("time > ?", Time.now - 6.weeks).order("time asc").map { |r| [r.time.strftime('%m/%d %H:%M'),r.rate*100]}
     @zeros = @line_chart_data.map { |t,r| [t,0] }
 
-    @ftx_account = FtxClient.account("MoneyOnRails")
-    balances = ftx_wallet_balance("MoneyOnRails", coin_name)
+    @ftx_account = FtxClient.account(current_user.funding_account)
+    balances = ftx_wallet_balance(current_user.funding_account, coin_name)
 
     @pie_chart_balances_data = []
     

@@ -17,7 +17,7 @@ class GridController < ApplicationController
     grid_profits = {}
     @grid_settings.each {|g| grid_profits[g.id] = profit(g)}
 
-    balances = ftx_wallet_balance("GridOnRails", coin_name)
+    balances = ftx_wallet_balance(current_user.grid_account, coin_name)
 
     render locals: {balances: balances, coin_name: coin_name, tv_market_name: tv_market_name(market_name), grid_profits: grid_profits}
   end
@@ -39,7 +39,7 @@ class GridController < ApplicationController
     close_price = @grid_setting["id"] * @grid_setting["price_step"]
     payload = {market: @grid_setting[:market_name], side: "buy", price: close_price, type: "limit", size: @grid_setting["order_size"]}
 
-    order_result = FtxClient.place_order("GridOnRails", payload)["result"]
+    order_result = FtxClient.place_order(current_user.grid_account, payload)["result"]
     puts "closegrid order result:" + order_result.select {|k,v| {k => v} if ["market","side","price","size","status","createdAt"].include?(k)}.to_s
 
     redirect_to grid_path(:market_name => @grid_setting[:market_name])

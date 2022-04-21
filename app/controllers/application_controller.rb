@@ -1,9 +1,9 @@
 class ApplicationController < ActionController::Base
 
-  def ftx_wallet_balance(account_name, coin_name)
+  def ftx_wallet_balance(sub_account, coin_name)
     balances = {"totalusdValue" => 0.00}
 
-    ftx_wallet_balances_response = FtxClient.wallet_balances(account_name)
+    ftx_wallet_balances_response = FtxClient.wallet_balances(sub_account)
     if ftx_wallet_balances_response["success"] 
       ftx_wallet_balances_response["result"].each do |result|
         balances[result["coin"]] = {"spot_amount" => result["total"], "available_amount" => result["availableWithoutBorrow"], "usdValue" => result["usdValue"]}
