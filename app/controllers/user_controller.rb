@@ -1,8 +1,13 @@
 class UserController < ApplicationController
   def show
     @sub_account = SubAccount.new(user: current_user)
-    @sub_accounts = SubAccount.select("id", "name", "application", "encrypted_public_key").where("user_id = ?", current_user)
-    @sub_accounts.each { |sa| sa[:encrypted_public_key] = sa.display_key}
+    @sub_accounts = []
+
+    APPNAMES.each do |app|
+      app_account = current_user.send("#{app}_account")
+      app_account[:encrypted_public_key] = app_account.display_key if app_account
+      @sub_accounts << app_account
+    end
   end
 
   def createsubaccount
@@ -14,6 +19,7 @@ class UserController < ApplicationController
     
     if @sub_account.ftx_api_validation?
       @sub_account.save
+      current_user.send("#{@sub_account.application}_account=", @sub_account)
     else
       @sub_account.errors.add(:api, "API設定不正確")
     end
@@ -25,7 +31,10 @@ class UserController < ApplicationController
   def deletesubaccount
     @sub_account = SubAccount.where("user_id = ?", current_user).find(deletesubaccount_params["id"])
     
-    @sub_account.delete if @sub_account
+    if @sub_account
+      current_user.send("#{@sub_account.application}_account=", nil)
+      @sub_account.delete
+    end
 
     flash_msg = error_message_helper(@sub_account.errors.messages)
     redirect_to authenticated_root_path, flash: { alert: flash_msg }

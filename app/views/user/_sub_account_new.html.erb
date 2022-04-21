@@ -18,7 +18,7 @@
           </tr>
           <tr>
             <td><%= form.text_field :name, :class => "form-control" %></td>
-            <td><%= form.select(:application, options_for_select(['Funding', 'Grid']),{}, {:class => "form-select"}) %></td>
+            <td><%= form.select(:application, options_for_select(APPNAMES),{}, {:class => "form-select"}) %></td>
           </tr>
           <tr>
             <td colspan="2">API Key</td>

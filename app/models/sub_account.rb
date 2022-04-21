@@ -6,8 +6,8 @@ class SubAccount < ApplicationRecord
   validates_uniqueness_of :name, :scope => :user_id, message: "子帳號名稱重複"
   validates_uniqueness_of :application, :scope => :user_id, message: "已有 %{value} API 設定"
 
-  validates_inclusion_of :application, :in => ["Funding", "Grid"]
-
+  validates_inclusion_of :application, :in => APPNAMES
+  
   def crypt
     ActiveSupport::MessageEncryptor.new(Rails.application.secrets.secret_key_base[0..31])
   end
@@ -24,7 +24,7 @@ class SubAccount < ApplicationRecord
       "cancel" => FtxClient.cancel_order(self, 1)["error"], # the number 1 stands for choosen random order_id in ftx
       "withdrawals" => FtxClient.withdrawals_for_validation(self)["error"]
     }
-    
+
     return error_msg_filter(ftx_errors)["error"].empty?
   end
 

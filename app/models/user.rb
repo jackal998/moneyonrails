@@ -10,4 +10,15 @@ class User < ApplicationRecord
   has_many :grid_orders
   has_many :grid_settings
   has_many :sub_accounts
+
+  after_initialize :set_sub_accounts
+
+  attr_accessor :funding_account
+  attr_accessor :grid_account
+
+  def set_sub_accounts
+    APPNAMES.each do |app|
+      self.sub_accounts.each { |sub_account| self.send("#{app}_account=", sub_account) if sub_account.application == app}
+    end
+  end
 end

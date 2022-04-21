@@ -1,6 +1,6 @@
 class FundingController < ApplicationController
   before_action :authenticate_user!
-  before_action :authenticate_fund
+  before_action :authenticate_for_funding
 
   require 'ftx_client'
 

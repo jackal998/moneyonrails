@@ -17,4 +17,17 @@ class ApplicationController < ActionController::Base
     balances["USD"] = balances.delete("USD") if balances["USD"]
     return balances
   end
+
+  APPNAMES.each do |app|
+    define_method(:"authenticate_for_#{app}") do
+
+      if current_user.public_send("permission_to_#{app}") == "false"
+        error_msg = "沒有使用 #{app.capitalize} 權限"
+      else
+        error_msg = "請先建立 #{app.capitalize} 子帳戶API" unless current_user.send("#{app}_account")
+      end
+
+      redirect_to authenticated_root_path, flash: { alert: error_msg} if error_msg
+    end
+  end
 end

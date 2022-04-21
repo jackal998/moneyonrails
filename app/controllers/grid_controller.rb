@@ -1,6 +1,6 @@
 class GridController < ApplicationController
   before_action :authenticate_user!
-  before_action :authenticate_grid
+  before_action :authenticate_for_grid
 
   require 'ftx_client'
 
@@ -101,12 +101,5 @@ private
 
   def index_params
     params.permit(:coin_name, :market_name)
-  end
-
-  def authenticate_grid
-    if current_user.permission_to_grid == "false"
-      flash[:alert] = "沒有權限!"
-      redirect_to edit_user_registration_path
-    end
   end
 end

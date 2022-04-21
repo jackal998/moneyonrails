@@ -1,0 +1,1 @@
+APPNAMES = ['funding', 'grid'].freeze
