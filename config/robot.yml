@@ -1,0 +1,9 @@
+funding: 
+  id: 1
+  name: funding
+  zh_name: 資金費率機器人
+
+grid:
+  id: 2
+  name: grid
+  zh_name: 網格交易機器人

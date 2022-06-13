@@ -2,7 +2,7 @@ class UserController < ApplicationController
   def show
     @sub_accounts = current_user.sub_accounts
 
-    @sub_account = SubAccount.new(user: current_user) if @sub_accounts.size < APPNAMES.size
+    @sub_account = SubAccount.new(user: current_user) if @sub_accounts.size < ROBOT.size
   
     @sub_accounts.each do |sub_account|
       sub_account[:encrypted_public_key] = sub_account.display_key

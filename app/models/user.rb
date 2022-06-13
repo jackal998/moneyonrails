@@ -17,8 +17,8 @@ class User < ApplicationRecord
   attr_accessor :grid_account
 
   def set_sub_accounts
-    APPNAMES.each do |app|
-      self.sub_accounts.each { |sub_account| self.send("#{app}_account=", sub_account) if sub_account.application == app}
+    ROBOT.each do |name, data|
+      self.sub_accounts.each { |sub_account| self.send("#{name}_account=", sub_account) if sub_account.application == name}
     end
   end
 end

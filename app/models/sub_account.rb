@@ -6,7 +6,7 @@ class SubAccount < ApplicationRecord
   validates_uniqueness_of :name, :scope => :user_id, message: "子帳號名稱重複"
   validates_uniqueness_of :application, :scope => :user_id, message: "已有 %{value} API 設定"
 
-  validates_inclusion_of :application, :in => APPNAMES
+  validates_inclusion_of :application, :in => ROBOT.keys
   
   def crypt
     ActiveSupport::MessageEncryptor.new(Rails.application.secrets.secret_key_base[0..31])

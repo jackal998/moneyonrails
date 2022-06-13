@@ -18,13 +18,13 @@ class ApplicationController < ActionController::Base
     return balances
   end
 
-  APPNAMES.each do |app|
-    define_method(:"authenticate_for_#{app}") do
+  ROBOT.each do |name, data|
+    define_method(:"authenticate_for_#{name}") do
 
-      if current_user.public_send("permission_to_#{app}") == "false"
-        error_msg = "沒有使用 #{app.capitalize} 權限"
+      if current_user.public_send("permission_to_#{name}") == "false"
+        error_msg = "沒有使用#{data["zh_name"]}的權限"
       else
-        error_msg = "請先建立 #{app.capitalize} 子帳戶API" unless current_user.send("#{app}_account")
+        error_msg = "請先建立#{data["zh_name"]}的子帳戶API" unless current_user.send("#{name}_account")
       end
 
       redirect_to authenticated_root_path, flash: { alert: error_msg} if error_msg
