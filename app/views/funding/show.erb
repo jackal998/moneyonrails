@@ -25,123 +25,123 @@
 <!-- row -->
 <div class="row">
   <div class="col-xl-8 col-md-12 col-sm-12">
-      <div class="card">
-          <div class="stat-widget-two card-body">
-            <div class="stat-content">
-              <table class="table table-hover table-fixhead table-responsive mb-0">
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <% days_to_show.each do |d| %>
-                      <% col_name = d == :historical ? "歷史" : "#{d}日" %>
-                      <th colspan="2"><%= col_name %></th>
-                    <% end %>
-                  </tr>
-                  <tr>
-                    <th></th>
-                    <th>持倉</th>
-                    <th>永續：現貨</th>
-                    <% days_to_show.each do |d| %>
-                      <th>收益</th>
-                      <th>年化</th>
-                    <% end %>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% @positions.each do |coin_name, position| %>
-                    <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
-                    <tr>
-                      <td class="text-center">
-                        <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
-                      </td>
-                      <td class="text-right">
-                        <%= number_to_currency(position["cost"], precision: 2) %>
-                      </td>
-                      <td class="text-center">
-                        <%= number_with_precision(position["netSize"], precision: position["precision"], delimiter: ',') %>
-                        ：
-                        <%= number_with_precision(balances[coin_name]["spot_amount"], precision: position["precision"], delimiter: ',') %>
-                      </td>
-                      <% days_to_show.each do |d| %>
-                        <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
-                        <% sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym %>
-                        <td class="text-right border-left"><%= number_to_currency(fundingstat[sym_payment]) %></td>
-                        <td class="text-right"><%= fundingstat[sym_irr] %>%</td>
-                      <% end %>
-                    </tr>
+    <div class="card">
+      <div class="stat-widget-two card-body">
+        <div class="stat-content">
+          <table class="table table-hover table-fixhead table-responsive mb-0">
+            <thead>
+              <tr>
+                <th></th>
+                <th></th>
+                <th></th>
+                <% days_to_show.each do |d| %>
+                  <% col_name = d == :historical ? "歷史" : "#{d}日" %>
+                  <th colspan="2"><%= col_name %></th>
+                <% end %>
+              </tr>
+              <tr>
+                <th></th>
+                <th>持倉</th>
+                <th>永續：現貨</th>
+                <% days_to_show.each do |d| %>
+                  <th>收益</th>
+                  <th>年化</th>
+                <% end %>
+              </tr>
+            </thead>
+            <tbody>
+              <% @positions.each do |coin_name, position| %>
+                <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
+                <tr>
+                  <td class="text-center">
+                    <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
+                  </td>
+                  <td class="text-right">
+                    <%= number_to_currency(position["cost"], precision: 2) %>
+                  </td>
+                  <td class="text-center">
+                    <%= number_with_precision(position["netSize"], precision: position["precision"], delimiter: ',') %>
+                    ：
+                    <%= number_with_precision(balances[coin_name]["spot_amount"], precision: position["precision"], delimiter: ',') %>
+                  </td>
+                  <% days_to_show.each do |d| %>
+                    <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
+                    <% sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym %>
+                    <td class="text-right border-left"><%= number_to_currency(fundingstat[sym_payment]) %></td>
+                    <td class="text-right"><%= fundingstat[sym_irr] %>%</td>
                   <% end %>
-                  <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == "total_of_coins"} %>
-                  <% if fundingstat %>
-                    <tr>
-                      <td class="text-center">
-                        小計
-                      </td>
-                      <td class="text-right card-title--medium"><%= number_to_currency(@positions.map {|k,v| v["cost"]}.sum, precision: 2) %></td>
-                      <td class="text-center"></td>
-                      <% days_to_show.each do |d| %>
-                        <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
-                        <% sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym %>
-                        <td class="text-right border-left"><%= number_to_currency(fundingstat[sym_payment]) %></td>
-                        <td class="text-right"><%= fundingstat[sym_irr] %>%</td>
-                      <% end %>
-                    </tr>
+                </tr>
+              <% end %>
+              <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == "total_of_coins"} %>
+              <% if fundingstat %>
+                <tr>
+                  <td class="text-center">
+                    小計
+                  </td>
+                  <td class="text-right card-title--medium"><%= number_to_currency(@positions.map {|k,v| v["cost"]}.sum, precision: 2) %></td>
+                  <td class="text-center"></td>
+                  <% days_to_show.each do |d| %>
+                    <% sym_payment = d == :historical ? "#{d}_payments".to_sym : "last_#{d}_day_payments".to_sym %>
+                    <% sym_irr = d == :historical ? "#{d}_irr".to_sym : "last_#{d}_day_irr".to_sym %>
+                    <td class="text-right border-left"><%= number_to_currency(fundingstat[sym_payment]) %></td>
+                    <td class="text-right"><%= fundingstat[sym_irr] %>%</td>
                   <% end %>
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
       </div>
+    </div>
   </div>
   <div class="col-xl-4 col-md-12 col-sm-12">
-      <div class="card">
-          <div class="card-header">
-            <div class="dropdown card-title">
-              <a class="btn btn-rounded btn-outline-light dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
-                <%= "#{@coin.name}-PERP" %>
-              </a>
-              <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                <% @coins.each do |coin| %>
-                  <li>
-                  <%= link_to coin.name, funding_show_path(:coin_name => coin.name), :class => "dropdown-item #{('text-muted' unless coin.weight > 0)}", data: { turbolinks: false } %>
-                  </li>
-                <% end %>
-              </ul>
-            </div>
-          </div>
-          <div class="card-body">
-            <%= line_chart [{name: "費率", data:  @line_chart_data},{name: "", data: @zeros}], id: "funding-rates", points: false, suffix: "%", colors: ["#6cc30ca1","#593bdba1"], height: "300px", loading: "Loading...",dataset: {borderWidth: 1.5}, discrete: true %>
-          </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="dropdown card-title">
+          <a class="btn btn-rounded btn-outline-light dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+            <%= "#{@coin.name}-PERP" %>
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+            <% @coins.each do |coin| %>
+              <li>
+              <%= link_to coin.name, funding_show_path(:coin_name => coin.name), :class => "dropdown-item #{('text-muted' unless coin.weight > 0)}", data: { turbolinks: false } %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
       </div>
+      <div class="card-body">
+        <%= line_chart [{name: "費率", data:  @line_chart_data},{name: "", data: @zeros}], id: "funding-rates", points: false, suffix: "%", colors: ["#6cc30ca1","#593bdba1"], height: "300px", loading: "Loading...",dataset: {borderWidth: 1.5}, discrete: true %>
+      </div>
+    </div>
   </div>
 </div>
 <div class="row">
   <div class="col-xl-3 col-md-6 col-sm-12">
     <div class="card">
-        <div class="stat-widget-two card-body">
-            <div class="stat-content">
-              <% leverage = (@ftx_account["result"]["totalPositionSize"]/@ftx_account["result"]["collateral"]).round(2) if @ftx_account["result"]["collateral"] %>
-              <% if leverage >= 1 %>
-                <% percentage = (1 / leverage) * 100.round(0) %>
-                <% percentage_over = 100 - percentage %>
-              <% else %>
-                <% percentage = leverage * 100.round(0) %>
-                <% percentage_over = 0 %>
-              <% end %>
-              <div class="stat-text">持倉槓桿</div>
-              <div class="stat-digit">
-                <%= leverage %> <i class="far fa-times"></i>
-              </div>
-            </div>
-            <div class="progress">
-              <% lev_color = "bg-success" %>
-              <% lev_color = "bg-warning" if leverage >= 2 %>
-              <% lev_color = "bg-danger" if leverage >= 6.5 %>
-              <div class="progress-bar bg-success" style="width: <%= percentage %>%" role="progressbar" aria-valuenow="<%= percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
-              <div class="progress-bar progress-bar-striped progress-bar-animated <%= lev_color %>" style="width: <%= percentage_over %>%" role="progressbar" aria-valuenow="<%= percentage_over %>" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
+      <div class="stat-widget-two card-body">
+        <div class="stat-content">
+          <% leverage = (@ftx_account["result"]["totalPositionSize"]/@ftx_account["result"]["collateral"]).round(2) if @ftx_account["result"]["collateral"] %>
+          <% if leverage >= 1 %>
+            <% percentage = (1 / leverage) * 100.round(0) %>
+            <% percentage_over = 100 - percentage %>
+          <% else %>
+            <% percentage = leverage * 100.round(0) %>
+            <% percentage_over = 0 %>
+          <% end %>
+          <div class="stat-text">持倉槓桿</div>
+          <div class="stat-digit">
+            <%= leverage %> <i class="far fa-times"></i>
+          </div>
         </div>
+        <div class="progress">
+          <% lev_color = "bg-success" %>
+          <% lev_color = "bg-warning" if leverage >= 2 %>
+          <% lev_color = "bg-danger" if leverage >= 6.5 %>
+          <div class="progress-bar bg-success" style="width: <%= percentage %>%" role="progressbar" aria-valuenow="<%= percentage %>" aria-valuemin="0" aria-valuemax="100"></div>
+          <div class="progress-bar progress-bar-striped progress-bar-animated <%= lev_color %>" style="width: <%= percentage_over %>%" role="progressbar" aria-valuenow="<%= percentage_over %>" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      </div>
     </div>
     <div class="card">
       <div class="stat-widget-two card-body">
@@ -163,8 +163,8 @@
           </div>
         </div>
         <div class="progress">
-          <% percent = (balances["USD"]["available_amount"] / balances["totalusdValue"]) * 100.round(0) %>
-          <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
+          <% usd_percent = coin_balances_percent(balances, "USD") %>
+          <div class="progress-bar bg-success" style="width: <%= usd_percent %>%" role="progressbar" aria-valuenow="<%= usd_percent %>" aria-valuemin="0" aria-valuemax="100">
             USD
           </div>
         </div>

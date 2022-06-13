@@ -15,6 +15,10 @@ module FundingHelper
     num   
   end
 
+  def coin_balances_percent(balances, coin_name)
+    balances["totalusdValue"] == 0 ? 0 : (balances[coin_name]["available_amount"] / balances["totalusdValue"]) * 100.round(0)
+  end
+  # should not be here
   def update_market_infos
     init_time = Time.now
     
