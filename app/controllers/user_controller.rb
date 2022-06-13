@@ -22,7 +22,7 @@ class UserController < ApplicationController
       @sub_account.save
       current_user.send("#{@sub_account.application}_account=", @sub_account)
     else
-      @sub_account.errors.add(:api, "API設定不正確")
+      @sub_account.errors.add(:api, "請確認API之權限設定或是子帳號名稱是否正確")
     end
 
     flash_msg = error_message_helper(@sub_account.errors.messages)
