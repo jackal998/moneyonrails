@@ -1,7 +1,7 @@
 <div class="row">
   <div class="col-xl-3 col-md-6 col-sm-12">
     <%= @error_msgs %>
-    <%= render "user/sub_account_new", sub_account: @sub_account %>
+    <%= render "user/sub_account_new", sub_account: @sub_account if @sub_account %>
   </div>
 
   <% @sub_accounts.each do |sub_account| %>

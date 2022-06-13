@@ -1,13 +1,14 @@
 class UserController < ApplicationController
   def show
-    @sub_account = SubAccount.new(user: current_user)
-    @sub_accounts = []
+    @sub_accounts = current_user.sub_accounts
 
-    APPNAMES.each do |app|
-      app_account = current_user.send("#{app}_account")
-      app_account[:encrypted_public_key] = app_account.display_key if app_account
-      @sub_accounts << app_account
+    @sub_account = SubAccount.new(user: current_user) if @sub_accounts.size < APPNAMES.size
+  
+    @sub_accounts.each do |sub_account|
+      sub_account[:encrypted_public_key] = sub_account.display_key
+      sub_account[:encrypted_secret_key] = "[FILTERED]"
     end
+
   end
 
   def createsubaccount
