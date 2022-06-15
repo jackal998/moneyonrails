@@ -15,8 +15,8 @@ Things you may want to cover:
 * Deployment instructions
 * ...
 
-=======
 # run
+
 1. check gem whenever working run `whenever -i` for crontab updating, then `whenever -w` for crontab execute.
 use `crontab -l` for scheduled job listing and config ruby file is ./config/schedule.rb, log file is ./log/cron.log
 2. start redis server `redis-server`
@@ -25,9 +25,9 @@ use `crontab -l` for scheduled job listing and config ruby file is ./config/sche
   `sudo visudo` and add line: `%sudo ALL=NOPASSWD: /usr/sbin/service cron start`
   press Ctrl+o then Ctrl+x to save and exit.
 
-  set windows task scheduler to start a task when computer starts => program:
+5. set windows task scheduler to start a task when computer starts => program:
   `C:\Windows\System32\wsl.exe` and argument `sudo /usr/sbin/service cron start`
-=======
+
 # current env
 
 ### System
