@@ -1,0 +1,50 @@
+### Ubuntu
+
+1. ubuntu user name is some thing like this NAME_REGEX="^[a-z][-a-z0-9_]*$" and things like RAILS(uppercase) is not allowed
+
+#### wsl
+
+1. the fisrst time i do rails new myapp and some Operation not permitted failed occurrd, the solution can be things like this 
+`sudo umount /mnt/c sudo mount -t drvfs C: /mnt/c -o metadata`
+and make sure to delete files from incomplete rails new command first
+https://devblogs.microsoft.com/commandline/chmod-chown-wsl-improvements/
+https://www.ruby-forum.com/t/i-am-trying-to-install-ruby-on-rails-on-windows-10-but-need-help/253284
+2. for fatal:LF would be replaced by CRLF issue, i force my files to windows(CRLF) by sublime text 
+
+{ "default_line_ending": "windows" } since i'm using windows.
+`git config --global core.safecrlf true`
+`git config --global core.autocrlf true`
+
+### PG under windows
+
+1. I chose C rather than [Default locale] on postgresql installation. like the step 7. in this article 
+https://blog.csdn.net/u012325865/article/details/81951916
+
+2. to use postgresql, make sure your username setting like premission / cluster setting, 
+make sure your postgresql is running before trying to connect from rails. 
+like the step 1.6 in this article (my host name is localhost and the article is localhost_presql)
+https://blog.csdn.net/hadues/article/details/103757594
+
+3. To connect postgresql with localhost, try to new a user from pgAdmin 4 rather than from ubuntu command line, 
+not sure what's wrong with my setup but i found those users created from command line are somehow not sync or show in pgAdmin.
+
+4. if username permission things bother you a lot, try to ALTER ROLE as superuser or simply use username: postgres password: postgres.
+
+5. My rails app can't connect to my postgres server as first before i add "host: localhost" in database.yml
+
+6. for pg dump/restore use the follows:
+Method 1.
+pg_dump -U rails -h localhost -p 5432 <dbname> -f <filename>
+psql -U rails -h localhost -d <dbname> -p 5432 -f <filename>
+Method 2.
+pg_dump -U rails -h localhost -p 5432 <dbname> -F c -f <filename>
+pg_restore <filename> -c -U rails -h localhost -p 5432 -d <dbname> -F c -v
+<!-- pg_dump -U rails -h localhost -p 5432 moneyonrails -F c -f /mnt/j/系統備份/moneyonrails/"$(date +'%Y%m%d')" -->
+doc.: https://www.alibabacloud.com/help/tc/doc-detail/26157.htm
+doc.: https://docs.postgresql.tw/reference/client-applications/pg_dump
+doc.: http://manpages.ubuntu.com/manpages/bionic/zh_TW/man1/pg_restore.1.html
+
+### rails
+
+1. for further deployment, here is way to regenerate the master key for Rails
+https://gist.github.com/db0sch/19c321cbc727917bc0e12849a7565af9
