@@ -104,6 +104,8 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/source
 
 sudo apt update
 sudo apt-get install -y nodejs yarn
+
+npm install
 ```
 
 Rails

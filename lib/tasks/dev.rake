@@ -1,5 +1,4 @@
 require 'csv'
-require 'ftx_client'
 
 namespace :dev do
 
