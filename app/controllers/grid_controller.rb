@@ -2,8 +2,6 @@ class GridController < ApplicationController
   before_action :authenticate_user!
   before_action :authenticate_for_grid
 
-  require 'ftx_client'
-
   def index
     @grid_settings = GridSetting.where(status: ["active", "closing"]).where("grid_settings.user_id = ?", current_user).includes(:grid_orders).order('grid_orders.price asc')
     
@@ -25,10 +23,9 @@ class GridController < ApplicationController
   def create
     @grid_setting = GridSetting.new(creategrid_params)
     input_totalUSD_amount = (@grid_setting["input_spot_amount"] * @grid_setting["trigger_price"] + @grid_setting["input_USD_amount"]).round(2)
-    @grid_setting.attributes = {status: "new", input_totalUSD_amount: input_totalUSD_amount}
-    @grid_setting.save
+    @grid_setting.update(status: "new", input_totalUSD_amount: input_totalUSD_amount)
 
-    GridExecutorJob.perform_later(is_main_job: true, grid_setting_id: @grid_setting[:id])
+    GridInitJob.perform_later(@grid_setting.user.grid_account.id)
     redirect_to grid_path(:market_name => @grid_setting[:market_name])
   end
 
