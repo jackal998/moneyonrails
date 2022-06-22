@@ -104,6 +104,8 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/source
 
 sudo apt update
 sudo apt-get install -y nodejs yarn
+
+npm install
 ```
 
 Rails
@@ -155,6 +157,45 @@ compile
 rake webpacker:compile
 ```
 
+#### 安裝Redis
+
+```
+sudo apt install redis-server
+```
+```
+sudo vi /etc/security/limits.conf
+```
+
+加入這一行
+`* hard nofile 10032`
+
+然後設定root密碼
+
+```
+sudo passwd root
+```
+
+```
+su root
+echo never > /sys/kernel/mm/transparent_hugepage/enabled
+su <your name>
+ulimit -n 10032
+```
+
+重新開啟ubuntu
+
+*開新的terminal (PowerShell)
+```
+wsl --shutdown
+```
+
+重新打開Ubuntu
+
+```
+sysctl vm.overcommit_memory=1
+redis-server
+```
+
 #### start server
 
 ```
@@ -164,3 +205,6 @@ Or
 ```
 rails s -b 'ssl://0.0.0.0:3000?key=./localhost.key&cert=./localhost.crt'
 ```
+
+
+bundle exec sidekiq
