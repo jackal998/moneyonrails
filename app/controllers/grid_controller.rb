@@ -3,7 +3,7 @@ class GridController < ApplicationController
   before_action :authenticate_for_grid
 
   def index
-    @grid_settings = GridSetting.where(status: ["active", "closing"]).where("grid_settings.user_id = ?", current_user).includes(:grid_orders).order('grid_orders.price asc')
+    @grid_settings = GridSetting.where(status: ["new", "active", "closing"]).where("grid_settings.user_id = ?", current_user).includes(:grid_orders).order('grid_orders.price asc')
     
     market_name = index_params["market_name"] || ("#{index_params["coin_name"]}/USD" if index_params["coin_name"]) || "BTC/USD"
 
@@ -30,16 +30,8 @@ class GridController < ApplicationController
   end
 
   def close
-    @grid_setting = GridSetting.find(params["grid_setting"]["id"])
-    @grid_setting.update(:status => "closing") unless @grid_setting.status == "closed"
-
-    close_price = @grid_setting["id"] * @grid_setting["price_step"]
-    payload = {market: @grid_setting[:market_name], side: "buy", price: close_price, type: "limit", size: @grid_setting["order_size"]}
-
-    order_result = FtxClient.place_order(current_user.grid_account, payload)["result"]
-    puts "closegrid order result:" + order_result.select {|k,v| {k => v} if ["market","side","price","size","status","createdAt"].include?(k)}.to_s
-
-    redirect_to grid_path(:market_name => @grid_setting[:market_name])
+    GridCloseJob.perform_later(params["grid_setting"]["id"])
+    redirect_to grid_path(:market_name => params["grid_setting"]["market_name"])
   end
 
 private
