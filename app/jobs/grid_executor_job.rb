@@ -1,6 +1,5 @@
 class GridExecutorJob < ApplicationJob
   queue_as :default
-  require "ftx_client"
 
   def perform(job_params = {})
     return main_loop(job_params[:grid_setting_id]) unless job_params[:is_main_job]

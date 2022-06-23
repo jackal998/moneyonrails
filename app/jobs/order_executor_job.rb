@@ -1,6 +1,5 @@
 class OrderExecutorJob < ApplicationJob
   queue_as :default
-  require "ftx_client"
 
   def perform(funding_order_id)
     @funding_order = FundingOrder.find(funding_order_id)

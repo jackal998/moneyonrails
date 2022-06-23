@@ -1,5 +1,4 @@
 module FundingHelper
-  require 'ftx_client'
 
   def display_rate(r, n)
     return "" unless r

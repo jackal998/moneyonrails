@@ -2,8 +2,6 @@ class FundingController < ApplicationController
   before_action :authenticate_user!
   before_action :authenticate_for_funding
 
-  require 'ftx_client'
-
   def index
     # should move to rake
     # helpers.update_market_infos
