@@ -11,14 +11,15 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <%= favicon_pack_tag 'media/packs/images/favicon-bootstrap.png', :size => "16" %>
+    <%= favicon_pack_tag 'media/images/favicon-bootstrap.png', :size => "16" %>
 
     <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
     <%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>
 
   </head>
 
-  <body>    
+  <body>
+ 
     <!--*******************
         Preloader start
     ********************-->
@@ -32,186 +33,189 @@
     <!--*******************
         Preloader end
     ********************-->
+    
     <div id="main-wrapper">
-
-        <!--**********************************
-            Nav header start
-        ***********************************-->
-        <div class="nav-header">
-          <%= link_to request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path, :class => "brand-logo", data: { turbolinks: false } do %>
-            <%= image_pack_tag 'media/packs/images/favicon-bootstrap-logo.png',  :class => "logo-abbr" %>
-            <div class="brand-title">Platform J</div>
-          <% end %>
-          <div class="nav-control">
-            <div class="hamburger">
-              <span class="line"></span><span class="line"></span><span class="line"></span>
-            </div>
+      <!--**********************************
+          Nav header start
+      ***********************************-->
+      <div class="nav-header">
+        <%= link_to request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path, :class => "brand-logo", data: { turbolinks: false } do %>
+          <%= image_pack_tag 'media/images/favicon-bootstrap-logo.png',  :class => "logo-abbr" %>
+          <div class="brand-title">Platform J</div>
+        <% end %>
+        <div class="nav-control">
+          <div class="hamburger">
+            <span class="line"></span><span class="line"></span><span class="line"></span>
           </div>
         </div>
-        <!--**********************************
-            Nav header end
-        ***********************************-->
+      </div>
+      <!--**********************************
+          Nav header end
+      ***********************************-->
+      
+      <!--**********************************
+          Header start
+      ***********************************-->
+      <div class="header">
+          <div class="header-content">
+              <nav class="navbar navbar-expand">
+                  <div class="collapse navbar-collapse justify-content-between">
+                      <div class="header-left">
+                        <% if alert || notice %>
+                          <div class="alert alert-warning">
+                            <%=  notice.kind_of?(Array) ? (notice.join('<br>')).html_safe : notice %>
+                            <%=  alert.kind_of?(Array) ? (alert.join('<br>')).html_safe : alert %>
+                          </div>
+                        <% end %>
+                      </div>
+                      <ul class="navbar-nav header-right">
+                          <li class="nav-item dropdown header-profile">
+                              <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
+                                  <%= current_user.email if current_user %>
+                                  <i class="fal fa-user"></i>
+                              </a>
+                              <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
+                                <%= link_to authenticated_root_path, :class => "dropdown-item" do %>
+                                  <i class="fal fa-address-card"></i>
+                                  <span class="ml-2">Profile </span>
+                                <% end %>
 
-        <!--**********************************
-            Header start
-        ***********************************-->
-        <div class="header">
-            <div class="header-content">
-                <nav class="navbar navbar-expand">
-                    <div class="collapse navbar-collapse justify-content-between">
-                        <div class="header-left">
-                          <% if alert || notice %>
-                            <div class="alert alert-warning">
-                              <%=  notice.kind_of?(Array) ? (notice.join('<br>')).html_safe : notice %>
-                              <%=  alert.kind_of?(Array) ? (alert.join('<br>')).html_safe : alert %>
-                            </div>
-                          <% end %>
-                        </div>
-                        <ul class="navbar-nav header-right">
-                            <li class="nav-item dropdown header-profile">
-                                <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
-                                    <%= current_user.email if current_user %>
-                                    <i class="fal fa-user"></i>
+                                <a href="./email-inbox.html" class="dropdown-item">
+                                    <i class="fal fa-mailbox"></i>
+                                    <span class="ml-2">Inbox </span>
                                 </a>
-                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
-                                  <%= link_to authenticated_root_path, :class => "dropdown-item" do %>
-                                    <i class="fal fa-address-card"></i>
-                                    <span class="ml-2">Profile </span>
+
+                                <% if current_user %>
+                                  <%= link_to destroy_user_session_path, :method => :delete, :class => "dropdown-item" do %>
+                                    <i class="fal fa-sign-out-alt"></i>
+                                    <span class="ml-2">登出 </span>
                                   <% end %>
-
-                                  <a href="./email-inbox.html" class="dropdown-item">
-                                      <i class="fal fa-mailbox"></i>
-                                      <span class="ml-2">Inbox </span>
-                                  </a>
-
-                                  <% if current_user %>
-                                    <%= link_to destroy_user_session_path, :method => :delete, :class => "dropdown-item" do %>
-                                      <i class="fal fa-sign-out-alt"></i>
-                                      <span class="ml-2">登出 </span>
-                                    <% end %>
-                                  <% else %>
-                                    <%= link_to new_session_path(:user), :class => "dropdown-item" do %>
-                                      <i class="fal fa-sign-out-alt"></i>
-                                      <span class="ml-2">登入 </span>
-                                    <% end %>
+                                <% else %>
+                                  <%= link_to new_session_path(:user), :class => "dropdown-item" do %>
+                                    <i class="fal fa-sign-out-alt"></i>
+                                    <span class="ml-2">登入 </span>
                                   <% end %>
-                                </div>
-                            </li>
-                            <li class="nav-item dropdown notification_dropdown">
-                                <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="fal fa-bell"></i>
-                                    <div class="pulse-css"></div>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
-                                    <ul class="list-unstyled">
-                                        <li class="media dropdown-item">
-                                            <span class="primary"><i class="fal fa-shopping-cart"></i></span>
-                                            <div class="media-body">
-                                                <a href="#">
-                                                    <p><strong>Jennifer</strong> purchased Light Dashboard 2.0.</p>
-                                                </a>
-                                            </div>
-                                            <span class="notify-time">3:20 am</span>
-                                        </li>
-                                    </ul>
-                                    <a class="all-notification" href="#">See all notifications <i class="fal fa-arrow-right"></i></a>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                </nav>
-            </div>
-        </div>
-        <!--**********************************
-            Header end ti-comment-alt
-        ***********************************-->
-
-        <!--**********************************
-            Sidebar start
-        ***********************************-->
-        <div class="quixnav">
-            <div class="quixnav-scroll">
-                <ul class="metismenu" id="menu">
-                    <li class="nav-label first">量化交易機器人</li>
-                    <% coin_name = @coin ? @coin.name : coin_name %>
-                    <li>
-                      <a class="has-arrow" href="javascript:void()" aria-expanded="false">
-                        <i>
-                          <%= image_pack_tag 'media/packs/images/ftx-logo.png'%>
-                        </i>
-                        <span class="nav-text">FTX 資費機器人</span>
-                      </a>
-                      <ul aria-expanded="false">
-                        <li><%= link_to "資金費率報表", request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path(:coin_name => coin_name), data: { turbolinks: false } %></li>
-                        <li><%= link_to "幣種收益報表", request.env['PATH_INFO'] == funding_show_path ? "javascript:void(0)" : funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %></li>
+                                <% end %>
+                              </div>
+                          </li>
+                          <li class="nav-item dropdown notification_dropdown">
+                              <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
+                                  <i class="fal fa-bell"></i>
+                                  <div class="pulse-css"></div>
+                              </a>
+                              <div class="dropdown-menu dropdown-menu-right dropdown-menu-end">
+                                  <ul class="list-unstyled">
+                                      <li class="media dropdown-item">
+                                          <span class="primary"><i class="fal fa-shopping-cart"></i></span>
+                                          <div class="media-body">
+                                              <a href="#">
+                                                  <p><strong>Jennifer</strong> purchased Light Dashboard 2.0.</p>
+                                              </a>
+                                          </div>
+                                          <span class="notify-time">3:20 am</span>
+                                      </li>
+                                  </ul>
+                                  <a class="all-notification" href="#">See all notifications <i class="fal fa-arrow-right"></i></a>
+                              </div>
+                          </li>
                       </ul>
-                    </li>
-                    <li>
-                      <a class="has-arrow" href="javascript:void()" aria-expanded="false">
-                        <i>
-                          <%= image_pack_tag 'media/packs/images/ftx-logo.png'%>
-                        </i>
-                        <span class="nav-text">FTX 網格機器人</span>
-                      </a>
-                      <ul aria-expanded="false">
-                        <li><%= link_to "網格設定", request.env['PATH_INFO'] == grid_path ? "javascript:void(0)" : grid_path(:coin_name => coin_name), data: { turbolinks: false } %></li>
-                      </ul>
-                    </li>
-                    <li class="nav-label">Apps</li>
-                    <li>
-                      <a class="has-arrow" href="javascript:void()" aria-expanded="false">
-                        <i class="fal fa-shapes"></i><span class="nav-text">Apps</span>
-                      </a>
-                        <ul aria-expanded="false">
-                            <li><a href="./app-profile.html">Profile</a></li>
-                            <li><a class="has-arrow" href="javascript:void()" aria-expanded="false">Email</a>
-                                <ul aria-expanded="false">
-                                    <li><a href="./email-compose.html">Compose</a></li>
-                                    <li><a href="./email-inbox.html">Inbox</a></li>
-                                    <li><a href="./email-read.html">Read</a></li>
-                                </ul>
-                            </li>
-                            <li><a href="./app-calender.html">Calendar</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                      <a class="has-arrow" href="javascript:void()" aria-expanded="false">
-                        <i class="fal fa-analytics"></i><span class="nav-text">Charts</span>
-                      </a>
-                      <ul aria-expanded="false">
-                        <li><a href="./chart-flot.html">Flot</a></li>
-                      </ul>
-                    </li>
+                  </div>
+              </nav>
+          </div>
+      </div>
+      <!--**********************************
+          Header end ti-comment-alt
+      ***********************************-->
+      
+      <!--**********************************
+          Sidebar start
+      ***********************************-->
+      <div class="quixnav">
+        <div class="quixnav-scroll">
+          <ul class="metismenu" id="menu">
+            <li class="nav-label first">量化交易機器人</li>
+            <% coin_name = @coin ? @coin.name : coin_name %>
+            <li>
+              <a class="has-arrow" href="javascript:void()" aria-expanded="false">
+                <i>
+                  <%= image_pack_tag 'media/images/ftx-logo.png'%>
+                </i>
+                <span class="nav-text">FTX 資費機器人</span>
+              </a>
+              <ul aria-expanded="false">
+                <li><%= link_to "資金費率報表", request.env['PATH_INFO'] == funding_path ? "javascript:void(0)" : funding_path(:coin_name => coin_name), data: { turbolinks: false } %></li>
+                <li><%= link_to "幣種收益報表", request.env['PATH_INFO'] == funding_show_path ? "javascript:void(0)" : funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %></li>
+              </ul>
+            </li>
+            <li>
+              <a class="has-arrow" href="javascript:void()" aria-expanded="false">
+                <i>
+                  <%= image_pack_tag 'media/images/ftx-logo.png'%>
+                </i>
+                <span class="nav-text">FTX 網格機器人</span>
+              </a>
+              <ul aria-expanded="false">
+                <li><%= link_to "網格設定", request.env['PATH_INFO'] == grid_path ? "javascript:void(0)" : grid_path(:coin_name => coin_name), data: { turbolinks: false } %></li>
+              </ul>
+            </li>
+            <!--**********************************
+                2022/06/23 hide  功能生出來再說
+              <li class="nav-label">Apps</li>
+              <li>
+                <a class="has-arrow" href="javascript:void()" aria-expanded="false">
+                  <i class="fal fa-shapes"></i><span class="nav-text">Apps</span>
+                </a>
+                  <ul aria-expanded="false">
+                      <li><a href="./app-profile.html">Profile</a></li>
+                      <li><a class="has-arrow" href="javascript:void()" aria-expanded="false">Email</a>
+                          <ul aria-expanded="false">
+                              <li><a href="./email-compose.html">Compose</a></li>
+                              <li><a href="./email-inbox.html">Inbox</a></li>
+                              <li><a href="./email-read.html">Read</a></li>
+                          </ul>
+                      </li>
+                      <li><a href="./app-calender.html">Calendar</a></li>
+                  </ul>
+              </li>
+              <li>
+                <a class="has-arrow" href="javascript:void()" aria-expanded="false">
+                  <i class="fal fa-analytics"></i><span class="nav-text">Charts</span>
+                </a>
+                <ul aria-expanded="false">
+                  <li><a href="./chart-flot.html">Flot</a></li>
                 </ul>
-            </div>
+              </li>
+            ***********************************-->
+          </ul>
         </div>
-        <!--**********************************
-            Sidebar end
-        ***********************************-->
+      </div>
+      <!--**********************************
+          Sidebar end
+      ***********************************-->
 
-        <!--**********************************
-            Content body start
-        ***********************************-->
-        <div class="content-body">
-          <div class="container-fluid">
-            <%= yield %>
+      <!--**********************************
+          Content body start
+      ***********************************-->
+      <div class="content-body">
+        <div class="container-fluid">
+          <%= yield %>
+        </div>
+      </div>
+      <!--**********************************
+          Content body end
+      ***********************************-->
+      
+      <!--**********************************
+          Footer start
+      ***********************************-->
+      <div class="footer">
+          <div class="copyright">
+              <p>Copyright © Designed &amp; Developed by <a href="#" target="_blank">Quixkit</a> 2019</p>
           </div>
-        </div>
-        <!--**********************************
-            Content body end
-        ***********************************-->
-
-        <!--**********************************
-            Footer start
-        ***********************************-->
-        <div class="footer">
-            <div class="copyright">
-                <p>Copyright © Designed &amp; Developed by <a href="#" target="_blank">Quixkit</a> 2019</p>
-            </div>
-        </div>
-        <!--**********************************
-            Footer end
-        ***********************************-->
+      </div>
+      <!--**********************************
+          Footer end
+      ***********************************-->
     </div>
     <!--**********************************
         Main wrapper end
