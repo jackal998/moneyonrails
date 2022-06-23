@@ -98,12 +98,12 @@ class GridInitJob < ApplicationJob
 
         if db_price == market_price_on_grid
           to_save_orders << FtxClient.orders(@sub_account, db_ftx_order_id)["result"]
-          logger.info(@grid_setting.id) {"#{grid_orders_info_for_debug}"}
+          logger.warn(@grid_setting.id) {"grid_price for debug     = #{grid_orders_info_for_debug}"}
           db_i += 1
         end
 
         if ftx_price == market_price_on_grid
-          logger.info(@grid_setting.id) {"#{grid_orders_info_for_debug}"}
+          logger.warn(@grid_setting.id) {"grid_price for debug     = #{grid_orders_info_for_debug}"}
           ftx_i += 1 
         end
         next 
@@ -111,7 +111,7 @@ class GridInitJob < ApplicationJob
 
       while db_i + 1 <= db_i_max ? (db_orders[db_i].price == db_orders[db_i + 1].price) : false
         to_save_orders << FtxClient.orders(@sub_account, db_ftx_order_id)["result"]
-        logger.info(@grid_setting.id) {"#{grid_price}:  db_i: #{db_i}, #{db_price}"}
+        logger.warn(@grid_setting.id) {"grid_price for debug     = #{grid_price}:  db_i: #{db_i}, #{db_price}"}
         db_i += 1
         db_ftx_order_id = db_orders[db_i].ftx_order_id.to_i
       end
@@ -122,14 +122,14 @@ class GridInitJob < ApplicationJob
       if ftx_price != grid_price
         missing_grids[grid_side] << grid_price
         to_save_orders << FtxClient.orders(@sub_account, db_ftx_order_id)["result"] if db_price == grid_price
-        logger.info(@grid_setting.id) {"#{grid_orders_info_for_debug}"}
+        logger.warn(@grid_setting.id) {"grid_price for debug     = #{grid_orders_info_for_debug}"}
         db_i -= 1 if db_price != grid_price
         ftx_i -= 1
       elsif ftx_price == grid_price
         unless db_ftx_order_id == ftx_orders[ftx_i]["id"]
           to_save_orders << ftx_orders[ftx_i]
           to_save_orders << FtxClient.orders(@sub_account, db_ftx_order_id)["result"] if db_price == grid_price
-          logger.info(@grid_setting.id) {"#{grid_orders_info_for_debug}"}
+          logger.warn(@grid_setting.id) {"grid_price for debug     = #{grid_orders_info_for_debug}"}
           db_i -= 1 if db_price != grid_price
         end
       end
@@ -153,8 +153,8 @@ class GridInitJob < ApplicationJob
         payload = payload_limit.merge({price: price})
         order_result = FtxClient.place_order(@sub_account, payload)["result"]
 
-        logger.info(@grid_setting.id) {"payload(#{side}) :" + payload.to_s}
-        logger.info(@grid_setting.id) {"result:" + order_result_to_output(order_result)}
+        logger.info(@grid_setting.id) {"payload                  = " + payload.to_s}
+        logger.info(@grid_setting.id) {"result                   = " + order_result_to_output(order_result)}
       end
     end
     # 感覺好像回傳會少，多等一下下好了
@@ -314,7 +314,7 @@ class GridInitJob < ApplicationJob
       end
 
       if dead_loop >=3
-        logger.warn(@grid_setting.id) {"quit bias_required_amount_exec: dead_loop"}
+        logger.error(@grid_setting.id) {"bias_required_amount_exec= dead_loop, quit!"}
         # 回傳已執行
         return market_orders
       end

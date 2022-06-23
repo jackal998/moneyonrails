@@ -6,11 +6,8 @@ class ApplicationJob < ActiveJob::Base
   # discard_on ActiveJob::DeserializationError
   
   def order_result_to_output(order_result)
-    if order_result
-      order_result.select {|k,v| {k => v} if ["market","type","side","price","size"].include?(k)}.to_s
-    else
-      return "order_result is nil"
-    end
+    return "" unless order_result
+    order_result.select {|k,v| {k => v} if ["market","type","side","price","size"].include?(k)}.to_s
   end
   
   def attributes_from_ftx_to_db(ftx_order)

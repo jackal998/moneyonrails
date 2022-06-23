@@ -89,7 +89,7 @@ class GridWebsocketJob < ApplicationJob
         next if ws_message["type"] == "pong"
         next set_ws_state(@sub_account.id, "connected") if ws_message["type"] == "subscribed"
 
-        logger.info(@sub_account.id) {ws_message.to_s}
+        # logger.info(@sub_account.id) {ws_message.to_s}
         ws_message_handler(ws_message)
       end
 
@@ -100,7 +100,6 @@ class GridWebsocketJob < ApplicationJob
 
       EM.add_periodic_timer(58) { 
         ws.send(ws_op("ping"))
-        # 放一起免得打架
         GridInitJob.perform_later(@sub_account.id) if Time.now.to_i % 60 == 0 
       }
     }
