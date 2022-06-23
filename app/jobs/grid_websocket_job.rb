@@ -28,13 +28,11 @@ class GridWebsocketJob < ApplicationJob
       Redis.new.set("sub_account:grids:ws_state", "connecting")
 
       sub_account_ids = SubAccount.where(application: "grid").pluck(:id)
-      sub_account_ids.each {|id| Thread.new{ GridWebsocketJob.perform_later(id) }}
-
-      last_ws_state = get_ws_state(sub_account_ids.last)
-
-      while last_ws_state != "connected"
-        sleep(1)
-        last_ws_state = get_ws_state(sub_account_ids.last)
+      sub_account_ids.each do |id| 
+        while get_ws_state(id) != "connected"
+          Thread.new{ GridWebsocketJob.perform_later(id) }
+          sleep(5)
+        end
       end
 
       Redis.new.del("sub_account:grids:ws_state")
