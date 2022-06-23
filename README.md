@@ -25,7 +25,7 @@ use `crontab -l` for scheduled job listing and config ruby file is ./config/sche
   `sudo visudo` and add line: `%sudo ALL=NOPASSWD: /usr/sbin/service cron start`
   press Ctrl+o then Ctrl+x to save and exit.
 
-  set windows task scheduler to start a task when computer starts => program:
+5. set windows task scheduler to start a task when computer starts => program:
   `C:\Windows\System32\wsl.exe` and argument `sudo /usr/sbin/service cron start`
 =======
 # current env
