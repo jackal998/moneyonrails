@@ -953,6 +953,10 @@ Fixing Order => Base + Typography >> General Layout + Grid >> Page Layout + Comp
   padding: 1rem;
 }
 
+.modal-backdrop {
+  z-index: 1045;
+}
+
 .modal-content {
   position: relative;
   display: flex;

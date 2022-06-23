@@ -43,11 +43,11 @@
   </div>
   <% unless grid_setting.status == "closing" %>
     <div class="card-body">
-    <!-- Button grid_setting_close_form_trigger -->
-    <button type="button" id="grid_setting_<%= grid_setting.id %>_close_form_trigger" class="btn btn-outline-danger btn-rounded" 
-    data-bs-toggle="modal" data-bs-target="#grid_setting_<%= grid_setting.id %>_close_form">
-      終止
-    </button>
+      <!-- Button grid_setting_close_form_trigger -->
+      <button type="button" id="grid_setting_<%= grid_setting.id %>_close_form_trigger" class="btn btn-outline-danger btn-rounded" 
+      data-bs-toggle="modal" data-bs-target="#grid_setting_<%= grid_setting.id %>_close_form">
+        終止
+      </button>
     </div>
     <div class="modal fade" id="grid_setting_<%= grid_setting.id %>_close_form" tabindex="-1" aria-labelledby="grid_setting_<%= grid_setting.id %>_modal" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
