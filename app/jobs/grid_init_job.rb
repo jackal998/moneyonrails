@@ -7,6 +7,7 @@ class GridInitJob < ApplicationJob
 
   def perform(sub_account_id)
     @sub_account = SubAccount.find_by_id(sub_account_id)
+    return unless @sub_account
     @user = @sub_account.user
     @grid_settings = @user.grid_settings.includes(:grid_orders).where(status: ["active", "new"])
 

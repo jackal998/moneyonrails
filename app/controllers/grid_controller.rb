@@ -24,9 +24,11 @@ class GridController < ApplicationController
     @grid_setting = GridSetting.new(creategrid_params)
     input_totalUSD_amount = (@grid_setting["input_spot_amount"] * @grid_setting["trigger_price"] + @grid_setting["input_USD_amount"]).round(2)
     @grid_setting.update(status: "new", input_totalUSD_amount: input_totalUSD_amount)
-
-    GridInitJob.perform_later(@grid_setting.user.grid_account.id)
-    redirect_to grid_path(:market_name => @grid_setting[:market_name])
+    @sub_account = @grid_setting.user.grid_account
+    sleep(1)
+    GridWebsocketJob.perform_later(@sub_account.id)
+    GridInitJob.perform_later(@sub_account.id)
+    redirect_to grid_path(:market_name => @grid_setting["market_name"])
   end
 
   def close

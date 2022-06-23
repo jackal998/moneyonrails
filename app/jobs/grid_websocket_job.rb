@@ -7,8 +7,17 @@ class GridWebsocketJob < ApplicationJob
 
   def perform(sub_account_id)
 
-    return if get_ws_state(sub_account_id) == "connected"
+    # single_sub_account
+    case get_ws_state(sub_account_id)
+    when "connected"
+      return
+    when "connecting"
+      @sub_account = SubAccount.find_by_id(sub_account_id)
+      ws_start
+      return
+    end
 
+    # all sub_accounts
     if Redis.new.get("sub_account:grids:ws_state") == "connecting"
       @sub_account = SubAccount.find_by_id(sub_account_id)
       grids_init_and_ws_start
@@ -59,7 +68,7 @@ class GridWebsocketJob < ApplicationJob
   end
 
   def ws_restart
-    logger.warning(@sub_account.id) {"WebSocket restarting..."}
+    logger.warn(@sub_account.id) {"WebSocket restarting..."}
     grids_init_and_ws_start
   end
 
