@@ -297,12 +297,12 @@ class GridInitJob < ApplicationJob
       batch_amount = batch_amount_calc(bias_remained_amount)
 
       unless batch_amount == 0
-        logger.info(@grid_setting.id) {"#{order_side}ing amount            = #{batch_amount}/#{bias_remained_amount}"}
+        logger.info(@grid_setting.id) {"executing amount         = #{batch_amount}/#{bias_remained_amount}"}
         payload = payload_market.merge({size: batch_amount.abs})
 
         order_result = FtxClient.place_order(@sub_account, payload)["result"]
-        logger.info(@grid_setting.id) {"payload:" + payload.to_s}
-        logger.info(@grid_setting.id) {"result: " + order_result_to_output(order_result)}
+        logger.info(@grid_setting.id) {"payload                  = " + payload.to_s}
+        logger.info(@grid_setting.id) {"result                   = " + order_result_to_output(order_result)}
 
         dead_loop += last[:executed_amount] == executed_amount && last[:batch_amount] == batch_amount && last[:bias_remained_amount] == bias_remained_amount ? 1 : -dead_loop
 

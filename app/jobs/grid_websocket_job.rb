@@ -66,7 +66,7 @@ class GridWebsocketJob < ApplicationJob
   end
 
   def ws_restart
-    logger.warn(@sub_account.id) {"WebSocket restarting..."}
+    logger.info(@sub_account.id) {"Restarting..."}
     grids_init_and_ws_start
   end
 
@@ -94,7 +94,7 @@ class GridWebsocketJob < ApplicationJob
       end
 
       ws.on :close do |event|
-        del_ws_state(@sub_account.id, "WebSocket on close with event code: #{event.code}")
+        del_ws_state(@sub_account.id, "close: #{event.code}")
         ws_restart
       end
 
@@ -194,12 +194,12 @@ class GridWebsocketJob < ApplicationJob
 
   def set_ws_state(sub_account_id, state = "")
     Redis.new.set("sub_account:#{sub_account_id}:ws_state", state)
-    logger.info(sub_account_id) {state}
+    logger.info(sub_account_id) {state.capitalize}
   end
 
   def del_ws_state(sub_account_id, msg = "")
     Redis.new.del("sub_account:#{sub_account_id}:ws_state")
-    logger.info(sub_account_id) {msg}
+    logger.warn(sub_account_id) {msg.capitalize}
   end
 
   def reset_ws_states
