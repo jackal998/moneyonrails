@@ -170,7 +170,8 @@ class GridWebsocketJob < ApplicationJob
   end
 
   def get_current_grid_setting(market_name)
-    current_grid_settings = Redis.new.keys "sub_account\:#{@sub_account.id}\:grid_setting\:[0-9]*"
+    # *[0-9] is a work around
+    current_grid_settings = Redis.new.keys "sub_account\:#{@sub_account.id}\:grid_setting\:*[0-9]"
     return nil if current_grid_settings.empty?
     (Redis.new.mget current_grid_settings).each do |redis_data|
       grid_setting = JSON.parse(redis_data)

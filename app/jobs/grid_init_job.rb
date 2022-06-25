@@ -17,6 +17,10 @@ class GridInitJob < ApplicationJob
   def grid_orders_init!(grid_setting)
     @grid_setting = grid_setting
 
+    return if get_grid_state(@grid_setting.id, "init_state") == "processing"
+    set_grid_state(@grid_setting.id, "processing", "init_state")
+    logger.info(@grid_setting.id) {"========== Init Start ======="}
+
     # 1. remove duplicated ftx orders and calc market_price_on_grid
     ftx_orders, market_price_on_grid = ftx_dup_orders_and_market_price_on_grid_check
     logger.info(@grid_setting.id) {"market_price_on_grid     = #{market_price_on_grid}"}
@@ -36,11 +40,12 @@ class GridInitJob < ApplicationJob
     grids_orders = gird_orders_exec(missing_grids)
     logger.info(@grid_setting.id) {"orders: gird_orders_exec = " + create_or_update_orders_status!(grids_orders).to_s}
 
-    @grid_setting.update(:status => "active")
+    @grid_setting.update(:status => "active") if @grid_setting.status != "active"
 
     # 6. Register grid_setting to redis
-    Redis.new.set("sub_account:#{@sub_account.id}:grid_setting:#{@grid_setting.id}", @grid_setting.to_json)
-    return "init OK."
+    set_grid_state(@grid_setting.id, @grid_setting.to_json)
+    set_grid_state(@grid_setting.id, "done", "init_state")
+    return "========== Init OK =========="
   end
 
   def ftx_dup_orders_and_market_price_on_grid_check
@@ -338,6 +343,24 @@ class GridInitJob < ApplicationJob
     batch_amount = target_amount.abs >= batch_size_limit.abs ? batch_size_limit : target_amount
 
     return batch_amount
+  end
+
+  def del_grid_state(id, type = "")
+    redis_key = "sub_account:#{@sub_account.id}:grid_setting:#{id}"
+    redis_key += ":#{type}" unless type.empty?
+    Redis.new.del(redis_key)
+  end
+
+  def get_grid_state(id, type = "")
+    redis_key = "sub_account:#{@sub_account.id}:grid_setting:#{id}"
+    redis_key += ":#{type}" unless type.empty?
+    Redis.new.get(redis_key)
+  end
+
+  def set_grid_state(id, data, type = "")
+    redis_key = "sub_account:#{@sub_account.id}:grid_setting:#{id}"
+    redis_key += ":#{type}" unless type.empty?
+    Redis.new.set(redis_key, data)
   end
 end
 
