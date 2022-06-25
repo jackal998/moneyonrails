@@ -17,7 +17,9 @@ class GridController < ApplicationController
 
     balances = ftx_wallet_balance(current_user.grid_account, coin_name)
 
-    render locals: {balances: balances, coin_name: coin_name, tv_market_name: tv_market_name(market_name), grid_profits: grid_profits}
+    closing_grid_ids = get_closing_jobs
+    
+    render locals: {balances: balances, closing_grid_ids: closing_grid_ids, coin_name: coin_name, tv_market_name: tv_market_name(market_name), grid_profits: grid_profits}
   end
 
   def create
@@ -80,6 +82,17 @@ private
 
   def tv_market_name(ftx_market_name)
     ftx_market_name.dup.sub!('-', '') || ftx_market_name.dup.sub!('/', '')
+  end
+
+  def get_closing_jobs
+    output = []
+    Sidekiq::Workers.new.each do |_process_id, _thread_id, work|
+      work["payload"]["args"].each do |job|
+        next unless job["job_class"] == "GridCloseJob"
+        output += job["arguments"]
+      end
+    end
+    output
   end
 
   def creategrid_params

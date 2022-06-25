@@ -9,7 +9,6 @@ class GridCloseJob < ApplicationJob
     @grid_setting = GridSetting.find_by_id(grid_setting_id)
     return unless @grid_setting
     return if @grid_setting.status == "closed"
-
     @grid_setting.update(:status => "closing")
     @sub_account = @grid_setting.user.grid_account
 
@@ -21,8 +20,11 @@ class GridCloseJob < ApplicationJob
 
     @grid_setting.grid_orders.where(ftx_order_id: to_cancel_order_ids).update_all(status: 'canceled')
     @grid_setting.update(status: "closed")
+    
+    current_redis_keys = ["sub_account:#{@sub_account.id}:grid_setting:#{@grid_setting.id}"]
+    current_redis_keys += Redis.new.keys "sub_account:#{@sub_account.id}:grid_setting:#{@grid_setting.id}:*"
+    Redis.new.del(current_redis_keys)
 
-    Redis.new.del("sub_account:#{@sub_account.id}:grid_setting:#{@grid_setting.id}")
     logger.info(@grid_setting.id) {"Closed and total #{to_cancel_order_ids.count} orders canceled OK. See you."}
   end
 end

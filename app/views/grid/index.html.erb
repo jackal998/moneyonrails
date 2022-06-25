@@ -46,7 +46,7 @@
   <div class="col-xl-3 col-md-6 col-sm-12">
     <% grid_setting = @grid_settings.detect {|gs| gs[:market_name] == @grid_setting["market_name"] } %>
     <% if grid_setting %>
-      <%= render "grid/grid_detial", grid_setting: grid_setting, grid_profits: grid_profits %>
+      <%= render "grid/grid_detial", closing_grid_ids: closing_grid_ids, grid_setting: grid_setting, grid_profits: grid_profits %>
     <% else %>
       <%= render "grid/grid_new", coin_name: coin_name, balances: balances, spot_data: spot_data %>
     <% end %>
