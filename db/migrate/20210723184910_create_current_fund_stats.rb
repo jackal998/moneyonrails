@@ -1,7 +1,7 @@
 class CreateCurrentFundStats < ActiveRecord::Migration[6.1]
   def change
     create_table :current_fund_stats do |t|
-      t.integer :coin_id, :index => true
+      t.integer :coin_id, index: true
 
       # data from api https://ftx.com/api/futures/{BTC-PERP}/stats
       t.decimal :nextFundingRate

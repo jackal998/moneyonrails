@@ -5,8 +5,8 @@ class WebhookController < ApplicationController
     permitted = tv_params_permit
 
     market_permited = permitted["order_market"].split(/(?=(USD)|(USDT)|(PERP)|(-PERP))/)
-    render plain: "sufix mismatch: #{permitted['order_market']}", status: 200 if market_permited.size == 1
-      
+    render plain: "sufix mismatch: #{permitted["order_market"]}", status: 200 if market_permited.size == 1
+
     market = market_permited[0] + "-PERP"
     market_info = FtxClient.market_info(market)["result"]
 
@@ -14,10 +14,10 @@ class WebhookController < ApplicationController
     side = permitted["order_action"]
     size = permitted["order_size"]
 
-    if market_info
-      price = side == "buy" ? market_info["bid"] : market_info["ask"]
+    price = if market_info
+      side == "buy" ? market_info["bid"] : market_info["ask"]
     else
-      price = permitted["order_price"]
+      permitted["order_price"]
     end
 
     payload = {market: market, side: side, price: price, type: "limit", size: size}
@@ -35,11 +35,12 @@ class WebhookController < ApplicationController
       sleep(5) unless order_result["success"]
     end
 
-    render plain: 'ok', status: 200
+    render plain: "ok", status: 200
   end
 
-private
+  private
+
   def tv_params_permit
-    params.permit(:strategy_name, :order_action, :order_size, :order_price, :order_market, :strategy_position_size )
+    params.permit(:strategy_name, :order_action, :order_size, :order_price, :order_market, :strategy_position_size)
   end
 end

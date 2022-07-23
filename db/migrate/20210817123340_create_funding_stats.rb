@@ -1,8 +1,8 @@
 class CreateFundingStats < ActiveRecord::Migration[6.1]
   def change
     create_table :funding_stats do |t|
-      t.integer :coin_id, :index => true
-      t.string :coin_name, :index => true
+      t.integer :coin_id, index: true
+      t.string :coin_name, index: true
 
       t.decimal :last_1_day_payments, default: 0
       t.decimal :last_1_day_irr, default: 0

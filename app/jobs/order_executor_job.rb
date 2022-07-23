@@ -7,7 +7,7 @@ class OrderExecutorJob < ApplicationJob
     order_status = @funding_order["order_status"]
 
     return unless order_status == "Underway"
-    
+
     puts "sidekiq OrderExecutorJob for funding_order_id: #{funding_order_id} starting..."
 
     @coin = Coin.find(@funding_order.coin_id)
@@ -15,7 +15,7 @@ class OrderExecutorJob < ApplicationJob
     spot_name = @coin.name
     perp_name = "#{@coin.name}-PERP"
 
-    order_config = set_order_config(@coin,@funding_order,spot_name,perp_name)
+    order_config = set_order_config(@coin, @funding_order, spot_name, perp_name)
     order_status = order_config["order_status"]
 
     while order_status == "Underway"
@@ -28,12 +28,12 @@ class OrderExecutorJob < ApplicationJob
 
       case order_config["direction"]
       when "more"
-        current_ratio = ((perp_data["result"]["bid"] / spot_data["result"]["ask"] - 1 ) * 100)
+        current_ratio = ((perp_data["result"]["bid"] / spot_data["result"]["ask"] - 1) * 100)
       when "less"
-        current_ratio = ((spot_data["result"]["bid"] / perp_data["result"]["ask"] - 1 ) * 100)
+        current_ratio = ((spot_data["result"]["bid"] / perp_data["result"]["ask"] - 1) * 100)
       end
 
-      puts "#{Time.now.strftime('%H:%M:%S')}: funding_order_id: #{funding_order_id} => #{spot_name}, Current ratio: #{current_ratio}, Threshold: #{@funding_order.threshold}, Direction: #{order_config["direction"]}" if Time.now.to_i % 30 == 0
+      puts "#{Time.now.strftime("%H:%M:%S")}: funding_order_id: #{funding_order_id} => #{spot_name}, Current ratio: #{current_ratio}, Threshold: #{@funding_order.threshold}, Direction: #{order_config["direction"]}" if Time.now.to_i % 30 == 0
 
       spot_order_size = order_sizer("spot", @coin, @funding_order, order_config)
       perp_order_size = order_sizer("perp", @coin, @funding_order, order_config)
@@ -80,14 +80,14 @@ class OrderExecutorJob < ApplicationJob
         order_status = order_config["order_status"] if order_config["order_status"]
 
         unless spot_order_size == 0
-          puts 'payload_spot:' + payload_spot.to_s
-          puts 'spot_order_result:'
+          puts "payload_spot:" + payload_spot.to_s
+          puts "spot_order_result:"
           puts spot_order_result.to_json
         end
 
-        unless perp_order_size ==0
-          puts 'payload_perp:' + payload_perp.to_s
-          puts 'perp_order_result:'
+        unless perp_order_size == 0
+          puts "payload_perp:" + payload_perp.to_s
+          puts "perp_order_result:"
           puts perp_order_result.to_json
         end
       end
@@ -109,22 +109,21 @@ class OrderExecutorJob < ApplicationJob
       error_msg = "System Close triggered by manually Abort for funding_order_id: #{funding_order_id}"
       @system_order_for_abort = create_system_order(error_msg, @funding_order, spot_name, perp_name)
       @funding_order["description"] = "Manual abort."
-      
+
       puts msg_frefix + "manually abort!"
     when "Nothing Happened"
       payload_perp = {market: perp_name, side: "buy", price: nil, type: "market", size: spot_order_size}
       perp_order_result = FtxClient.place_order("MoneyOnRails", payload_perp)
-      
-      
+
       error_msg = "System Close when order(s) were not executed for funding_order_id: #{funding_order_id}"
-      @system_order_for_abort = create_system_order(error_msg,@funding_order,spot_name,perp_name)
+      @system_order_for_abort = create_system_order(error_msg, @funding_order, spot_name, perp_name)
       @funding_order["description"] = "Order(s) were not executed, system abort!"
 
       puts msg_frefix + "order(s) were not executed, system abort!"
 
       order_status = "Abort"
     else
-      @system_order_for_abort = create_system_order(order_status, @funding_order,spot_name,perp_name)
+      @system_order_for_abort = create_system_order(order_status, @funding_order, spot_name, perp_name)
       @funding_order["description"] = order_status
 
       puts msg_frefix + "stoped with errors:"
@@ -137,7 +136,7 @@ class OrderExecutorJob < ApplicationJob
     @funding_order.save
   end
 
-  def order_sizer(type,coin,funding_order,order_config)
+  def order_sizer(type, coin, funding_order, order_config)
     case type
     when "spot"
       config_type = "spot_steps"
@@ -145,28 +144,28 @@ class OrderExecutorJob < ApplicationJob
       config_type = "perp_steps"
     end
 
-    size = coin.spotsizeIncrement > coin.perpsizeIncrement ? coin.spotsizeIncrement : coin.perpsizeIncrement 
+    size = coin.spotsizeIncrement > coin.perpsizeIncrement ? coin.spotsizeIncrement : coin.perpsizeIncrement
 
     if order_config[config_type].abs >= funding_order.acceleration
-      return funding_order.acceleration * size
+      funding_order.acceleration * size
     else
-      return order_config[config_type].abs * size
+      order_config[config_type].abs * size
     end
   end
 
-  def set_order_config(coin,funding_order,spot_name,perp_name)
+  def set_order_config(coin, funding_order, spot_name, perp_name)
     tmp = {"order_status" => funding_order["order_status"]}
 
-    account_data = get_account_amount(spot_name,perp_name)
+    account_data = get_account_amount(spot_name, perp_name)
 
     if account_data["error_msg"]
-      tmp["order_status"] = account_data["error_msg"] 
+      tmp["order_status"] = account_data["error_msg"]
       return tmp
-    end 
+    end
 
-    puts 'account_data:' + account_data.to_json
-    
-    size = coin.spotsizeIncrement > coin.perpsizeIncrement ? coin.spotsizeIncrement : coin.perpsizeIncrement 
+    puts "account_data:" + account_data.to_json
+
+    size = coin.spotsizeIncrement > coin.perpsizeIncrement ? coin.spotsizeIncrement : coin.perpsizeIncrement
 
     tmp["spot_bias"] = funding_order.target_spot_amount - account_data[spot_name]
     tmp["spot_steps"] = (tmp["spot_bias"] / size).round(0)
@@ -179,7 +178,7 @@ class OrderExecutorJob < ApplicationJob
     tmp["direction"] = tmp["spot_steps"] > tmp["perp_steps"] ? "more" : "less"
 
     unless step_bias == 0
-      case tmp["direction"] 
+      case tmp["direction"]
       when "more"
         tmp["spot_steps"] = step_bias > 0 ? step_bias : 0
         tmp["perp_steps"] = step_bias < 0 ? step_bias : 0
@@ -191,17 +190,17 @@ class OrderExecutorJob < ApplicationJob
 
     tmp["order_status"] = "Close" if tmp["spot_steps"] == 0 && tmp["perp_steps"] == 0
 
-    print 'spot_bias:' + tmp["spot_bias"].to_s
-    puts ' => spot_steps:' + tmp["spot_steps"].to_s
-    print 'perp_bias:' + tmp["perp_bias"].to_s
-    puts ' => perp_steps:' + tmp["perp_steps"].to_s
-    puts 'direction:' + tmp["direction"].to_s
-    puts 'order_status:' + tmp["order_status"].to_s
+    print "spot_bias:" + tmp["spot_bias"].to_s
+    puts " => spot_steps:" + tmp["spot_steps"].to_s
+    print "perp_bias:" + tmp["perp_bias"].to_s
+    puts " => perp_steps:" + tmp["perp_steps"].to_s
+    puts "direction:" + tmp["direction"].to_s
+    puts "order_status:" + tmp["order_status"].to_s
 
-    return tmp
+    tmp
   end
 
-  def get_account_amount(spot_name,perp_name)
+  def get_account_amount(spot_name, perp_name)
     tmp = {}
 
     tmp[spot_name] = 0
@@ -212,7 +211,7 @@ class OrderExecutorJob < ApplicationJob
 
     tmp["error_msg"] = "FtxClient.wallet_balances result Error" unless wallet_balances_data["success"]
     tmp["error_msg"] = "FtxClient.positions result Error" unless positions_data["success"]
-    
+
     return tmp["error_msg"] if tmp["error_msg"]
 
     wallet_balances_data["result"].each do |result|
@@ -223,11 +222,11 @@ class OrderExecutorJob < ApplicationJob
       tmp[perp_name] = result["netSize"] if result["future"] == perp_name
     end
 
-    return tmp
+    tmp
   end
 
-  def create_system_order(error_msg,funding_order,spot_name,perp_name)
-    account_data = get_account_amount(spot_name,perp_name)
+  def create_system_order(error_msg, funding_order, spot_name, perp_name)
+    account_data = get_account_amount(spot_name, perp_name)
 
     @system_order_for_abort = funding_order.dup
     @system_order_for_abort.assign_attributes(
@@ -235,9 +234,10 @@ class OrderExecutorJob < ApplicationJob
       target_perp_amount: account_data[perp_name],
       order_status: "Close",
       system: true,
-      description: error_msg)
+      description: error_msg
+    )
 
     @system_order_for_abort.save
-    return @system_order_for_abort 
+    @system_order_for_abort
   end
 end
