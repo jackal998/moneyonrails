@@ -312,30 +312,36 @@ namespace :market do
       last_response_data_count = 1
 
       while last_response_data_count > 0
-        pre_size = 0
+        pre_size, retry_count = 0, 0
         data = {"success" => false, "result" => []}
-        until data["success"] && pre_size == data["result"].size
+
+        until data["success"] && pre_size == data["result"].size || retry_count >= 3
           pre_size = data["result"].size
           data = FtxClient.funding_rates({future: "#{coin.name}-PERP", end_time: end_time})
 
           unless data["success"]
-            logger.warn "ftx response failed #{data}"
+            retry_count += 1
+            logger.warn "ftx response #{coin.name}-PERP failed #{data} #{retry_count}/3"
+            data["result"] = []
             sleep(1)
           end
         end
 
         last_response_data_count = data["result"].size
-        end_time = data["result"].last["time"].to_time.to_i - 1 if last_response_data_count > 0
 
-        data["result"].each do |result|
-          rate_datas_tbn << {
-            coin_id: coin.id,
-            name: result["future"],
-            rate: result["rate"],
-            time: result["time"],
-            created_at: Time.now,
-            updated_at: Time.now
-          }
+        if last_response_data_count > 0
+          end_time = data["result"].last["time"].to_time.to_i - 1
+
+          data["result"].each do |result|
+            rate_datas_tbn << {
+              coin_id: coin.id,
+              name: result["future"],
+              rate: result["rate"],
+              time: result["time"],
+              created_at: Time.now,
+              updated_at: Time.now
+            }
+          end
         end
       end
 
