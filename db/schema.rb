@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_09_30_080227) do
+ActiveRecord::Schema.define(version: 2022_07_24_122506) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -69,6 +69,7 @@ ActiveRecord::Schema.define(version: 2021_09_30_080227) do
     t.datetime "updated_at", precision: 6, null: false
     t.boolean "system", default: false
     t.string "description"
+    t.integer "user_id"
     t.index ["coin_id"], name: "index_funding_orders_on_coin_id"
     t.index ["coin_name"], name: "index_funding_orders_on_coin_name"
     t.index ["order_status"], name: "index_funding_orders_on_order_status"
@@ -83,6 +84,7 @@ ActiveRecord::Schema.define(version: 2021_09_30_080227) do
     t.decimal "rate"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.integer "user_id"
     t.index ["coin_id"], name: "index_funding_payments_on_coin_id"
     t.index ["coin_name"], name: "index_funding_payments_on_coin_name"
     t.index ["time"], name: "index_funding_payments_on_time"
@@ -109,6 +111,7 @@ ActiveRecord::Schema.define(version: 2021_09_30_080227) do
     t.decimal "historical_irr", default: "0.0"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.integer "user_id"
     t.index ["coin_id"], name: "index_funding_stats_on_coin_id"
     t.index ["coin_name"], name: "index_funding_stats_on_coin_name"
   end
@@ -129,6 +132,7 @@ ActiveRecord::Schema.define(version: 2021_09_30_080227) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "market_name"
+    t.integer "user_id"
     t.index ["ftx_order_id"], name: "index_grid_orders_on_ftx_order_id"
     t.index ["grid_setting_id"], name: "index_grid_orders_on_grid_setting_id"
     t.index ["market_name"], name: "index_grid_orders_on_market_name"
@@ -158,8 +162,21 @@ ActiveRecord::Schema.define(version: 2021_09_30_080227) do
     t.string "market_name"
     t.decimal "price_step"
     t.decimal "size_step"
+    t.integer "user_id"
     t.index ["market_name"], name: "index_grid_settings_on_market_name"
     t.index ["status"], name: "index_grid_settings_on_status"
+  end
+
+  create_table "managers", force: :cascade do |t|
+    t.string "email", default: "", null: false
+    t.string "encrypted_password", default: "", null: false
+    t.string "reset_password_token"
+    t.datetime "reset_password_sent_at"
+    t.datetime "remember_created_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["email"], name: "index_managers_on_email", unique: true
+    t.index ["reset_password_token"], name: "index_managers_on_reset_password_token", unique: true
   end
 
   create_table "rates", force: :cascade do |t|
@@ -171,6 +188,34 @@ ActiveRecord::Schema.define(version: 2021_09_30_080227) do
     t.datetime "updated_at", precision: 6, null: false
     t.index ["coin_id"], name: "index_rates_on_coin_id"
     t.index ["name"], name: "index_rates_on_name"
+    t.index ["time", "coin_id"], name: "index_rates_on_time_and_coin_id"
+    t.index ["time"], name: "index_rates_on_time"
+  end
+
+  create_table "sub_accounts", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.string "name", default: "", null: false
+    t.string "application", default: "", null: false
+    t.string "encrypted_public_key", default: "", null: false
+    t.string "encrypted_secret_key", default: "", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_id"], name: "index_sub_accounts_on_user_id"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "email", default: "", null: false
+    t.string "encrypted_password", default: "", null: false
+    t.string "reset_password_token"
+    t.datetime "reset_password_sent_at"
+    t.datetime "remember_created_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.string "name"
+    t.string "permission_to_funding", default: "false", null: false
+    t.string "permission_to_grid", default: "false", null: false
+    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
 end
