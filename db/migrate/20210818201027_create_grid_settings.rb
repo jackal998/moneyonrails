@@ -1,8 +1,8 @@
 class CreateGridSettings < ActiveRecord::Migration[6.1]
   def change
     create_table :grid_settings do |t|
-      t.integer :coin_id, :index => true
-      t.string :coin_name, :index => true
+      t.integer :coin_id, index: true
+      t.string :coin_name, index: true
 
       t.decimal :lower_limit
       t.boolean :dyn_lower_limit, default: false
@@ -24,7 +24,7 @@ class CreateGridSettings < ActiveRecord::Migration[6.1]
 
       t.decimal :threshold, default: 0.00
 
-      t.string :status, default: "waiting", :index => true
+      t.string :status, default: "waiting", index: true
 
       t.timestamps
     end

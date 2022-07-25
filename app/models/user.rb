@@ -2,7 +2,7 @@ class User < ApplicationRecord
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
-         :recoverable, :rememberable, :validatable, :timeoutable
+    :recoverable, :rememberable, :validatable, :timeoutable
 
   has_many :funding_orders
   has_many :funding_payments
@@ -18,7 +18,7 @@ class User < ApplicationRecord
 
   def set_sub_accounts
     ROBOT.each do |name, data|
-      self.sub_accounts.each { |sub_account| self.send("#{name}_account=", sub_account) if sub_account.application == name}
+      sub_accounts.each { |sub_account| send("#{name}_account=", sub_account) if sub_account.application == name }
     end
   end
 end

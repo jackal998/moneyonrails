@@ -4,11 +4,11 @@ class DeviseCreateManagers < ActiveRecord::Migration[6.1]
   def change
     create_table :managers do |t|
       ## Database authenticatable
-      t.string :email,              null: false, default: ""
+      t.string :email, null: false, default: ""
       t.string :encrypted_password, null: false, default: ""
 
       ## Recoverable
-      t.string   :reset_password_token
+      t.string :reset_password_token
       t.datetime :reset_password_sent_at
 
       ## Rememberable
@@ -32,11 +32,10 @@ class DeviseCreateManagers < ActiveRecord::Migration[6.1]
       # t.string   :unlock_token # Only if unlock strategy is :email or :both
       # t.datetime :locked_at
 
-
       t.timestamps null: false
     end
 
-    add_index :managers, :email,                unique: true
+    add_index :managers, :email, unique: true
     add_index :managers, :reset_password_token, unique: true
     # add_index :managers, :confirmation_token,   unique: true
     # add_index :managers, :unlock_token,         unique: true
