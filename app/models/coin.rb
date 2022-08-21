@@ -1,6 +1,8 @@
 class Coin < ApplicationRecord
   self.filter_attributes = []
 
+  scope :with_perp, -> { where(have_perp: true) }
+
   has_many :rates
   has_many :funding_orders
   has_many :funding_payments

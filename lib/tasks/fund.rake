@@ -1,4 +1,72 @@
 namespace :funding do
+  task update_payments: :environment do
+    def logger
+      Logger.new("log/task_funding_update_payments.log")
+    end
+
+    init_time = Time.now
+
+    @users = User.can_funding
+    coin_ids = Coin.with_perp.pluck(:name, :id).to_h
+    latest_funding_payments = FundingPayment
+      .group("user_id", "coin_name")
+      .maximum(:time)
+      .each_with_object({}) do |((user_id, coin_name), time), h|
+        if h[user_id]
+          h[user_id][coin_name] = time
+        else
+          h[user_id] = {coin_name => time}
+        end
+      end
+
+    logger.info "Total users: #{@users.size}"
+    funding_payment_datas_tbu = []
+
+    @users.each do |user|
+      query_start_time = [latest_funding_payments[user.id]&.values&.min, 1.day.ago.beginning_of_hour].compact.max
+
+      pre_size, retry_count = 0, 0
+      data = {"success" => false, "result" => []}
+
+      until data["success"] && pre_size == data["result"].size || retry_count >= 3
+        pre_size = data["result"].size
+
+        data = FtxClient.funding_payments(user.funding_account, {start_time: query_start_time.to_i})
+
+        unless data["success"]
+          retry_count += 1
+          logger.warn "ftx response for user: #{user.id} failed #{data} #{retry_count}/3"
+          data["result"] = []
+          sleep(1)
+        end
+      end
+
+      last_response_data_count = data["result"].size
+
+      if last_response_data_count.in?(1..500)
+        funding_payment_datas_tbu += data["result"].map do |result|
+          coin_name, _ = result["future"].split("-")
+          latest_payment_time = latest_funding_payments[user.id]&.[](coin_name)
+          next if latest_payment_time && latest_payment_time >= result["time"].to_time
+          FundingPayment.new(
+            coin_id: coin_ids[coin_name],
+            user_id: user.id,
+            coin_name: coin_name,
+            created_at: Time.now,
+            updated_at: Time.now,
+            **result.slice("payment", "rate", "time")
+          )
+        end
+      else
+        logger.error "ftx response response_size = #{last_response_data_count}, please check rake logic."
+      end
+    end
+
+    FundingPayment.import funding_payment_datas_tbu.compact, validate: true, validate_uniqueness: true, batch_size: 10000
+
+    logger.info "update ok (#{Time.now - init_time}s)"
+  end
+
   task update_stats: :environment do
     def logger
       Logger.new("log/task_funding_update_stats.log")

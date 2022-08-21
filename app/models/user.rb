@@ -4,6 +4,9 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
     :recoverable, :rememberable, :validatable, :timeoutable
 
+  scope :can_funding, -> { where.not(permission_to_funding: "false") }
+  scope :can_grid, -> { where.not(permission_to_grid: "false") }
+
   has_many :funding_orders
   has_many :funding_payments
   has_many :funding_stats
