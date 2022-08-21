@@ -7,9 +7,11 @@ env :PATH, ENV["PATH"]
 set :output, "#{path}/log/cron.log"
 set :environment, :development
 
-every "3 * * * *" do
-  rake "dev:update_funding_payment"
+every "5 * * * *" do
   rake "market:update_infos"
-  rake "market:update_funding_infos"
   rake "market:update_rates"
+
+  rake "funding:update_coin_stats"
+  rake "funding:update_payments"
+  rake "funding:update_stats"
 end
