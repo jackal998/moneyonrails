@@ -1,4 +1,80 @@
 namespace :funding do
+  task update_coin_stats: :environment do
+    def logger
+      Logger.new("log/task_funding_update_coin_stats.log")
+    end
+
+    def calculate_raw_irr(raw_irr, rate)
+      (raw_irr * (1 + rate.rate)).round(6)
+    end
+
+    init_time = Time.now
+    last_48_hrs = 2.days.ago.beginning_of_hour
+    last_week = 1.week.ago.beginning_of_hour
+
+    irr = {week: 1, month: 1}
+    success_rate = {two_days: 0.00, week: 0.00}
+
+    @coins = Coin.with_perp.includes(:sorted_rates).where(sorted_rates: {time: 1.month.ago.beginning_of_hour..})
+
+    logger.info "updating: #{@coins.size}"
+    fund_stat_datas_tbu = []
+
+    @coins.each do |coin|
+      retry_count = 0
+      # finding ways to websocket ftx...
+      data = {"success" => false}
+      until data["success"] || retry_count >= 3
+        data = FtxClient.future_stats("#{coin.name}-PERP")
+
+        unless data["success"]
+          retry_count += 1
+          logger.warn "ftx response #{coin.name}-PERP failed #{data} #{retry_count}/3"
+          sleep(1)
+        end
+      end
+
+      next if retry_count >= 3
+
+      coin.sorted_rates.each do |rate|
+        irr[:month] = calculate_raw_irr(irr[:month], rate)
+        next if rate.time < last_week
+        irr[:week] = calculate_raw_irr(irr[:week], rate)
+        next if rate.rate < 0
+        success_rate[:week] += 1
+        next if rate.time < last_48_hrs
+        success_rate[:two_days] += 1
+      end
+
+      fund_stat_datas_tbu << {}.tap do |h|
+        h[:coin_id] = coin.id
+        h[:nextFundingRate] = data["result"]["nextFundingRate"]
+        h[:nextFundingTime] = data["result"]["nextFundingTime"]
+        h[:openInterest] = data["result"]["openInterest"]
+        h[:rate] = coin.sorted_rates.last.rate
+        h[:success_rate_past_48_hrs] = (success_rate[:two_days] / 48).round(5)
+        h[:success_rate_past_week] = ((success_rate[:week] / (7 * 24))).round(5)
+        h[:irr_past_week] = (((irr[:week] - 1) / 7) * 365).round(3)
+        h[:irr_past_month] = ((irr[:month] - 1) * 12).round(3)
+      end
+    end
+
+    update_columns = %i[coin_id
+      nextFundingRate
+      nextFundingTime
+      openInterest
+      rate
+      success_rate_past_48_hrs
+      success_rate_past_week
+      irr_past_week
+      irr_past_month]
+
+    result = CoinFundingStat.import fund_stat_datas_tbu, on_duplicate_key_update: {conflict_target: :coin_id, columns: update_columns}, batch_size: 10000
+
+    logger.info result
+    logger.info "update ok (#{Time.now - init_time}s)"
+  end
+
   task update_payments: :environment do
     def logger
       Logger.new("log/task_funding_update_payments.log")

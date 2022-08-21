@@ -1,6 +1,6 @@
 require "test_helper"
 
-class CurrentFundStatTest < ActiveSupport::TestCase
+class CoinFundingStatTest < ActiveSupport::TestCase
   # test "the truth" do
   #   assert true
   # end

@@ -161,42 +161,42 @@
                 <td class="text-center"> 
                   <%= link_to coin.name, funding_show_path(:coin_name => coin.name), :class => ('text-muted' unless coin.weight > 0), data: { turbolinks: false } %>
                 </td>
-                <td class="text-right"><%= display_rate(coin.current_fund_stat.rate, 4) %></td>
-                <td class="text-right"><%= display_rate(coin.current_fund_stat.nextFundingRate, 4) %></td>
-                <% rate_past_48hrs = coin.current_fund_stat.success_rate_past_48_hrs %>
+                <td class="text-right"><%= display_rate(coin.coin_funding_stat.rate, 4) %></td>
+                <td class="text-right"><%= display_rate(coin.coin_funding_stat.nextFundingRate, 4) %></td>
+                <% rate_past_48hrs = coin.coin_funding_stat.success_rate_past_48_hrs %>
                 <% rate_past_48hrs_class = 'text-success' if rate_past_48hrs && rate_past_48hrs > 0.85 %>
                 <td class="text-right <%= rate_past_48hrs_class %>">
                   <%= display_rate(rate_past_48hrs, 1) %>
                 </td>
-                <% rate_past_week = coin.current_fund_stat.success_rate_past_week %>
+                <% rate_past_week = coin.coin_funding_stat.success_rate_past_week %>
                 <% rate_past_week_class = 'text-success' if rate_past_week && rate_past_week > 0.8 %>
                 <td class="text-right <%= rate_past_week_class %>">
                   <%= display_rate(rate_past_week, 1) %>
                 </td>
-                <% irr_past_week = coin.current_fund_stat.irr_past_week %>
+                <% irr_past_week = coin.coin_funding_stat.irr_past_week %>
                 <% irr_past_week_class = 'text-success' if irr_past_week && irr_past_week > 0.18 %>
                 <% irr_past_week_class = 'text-danger' if irr_past_week && irr_past_week < 0 %>
                 <td class="text-right <%= irr_past_week_class %>">
                   <%= display_rate(irr_past_week, 1) %>
                 </td>
-                <% irr_past_month = coin.current_fund_stat.irr_past_month %>
+                <% irr_past_month = coin.coin_funding_stat.irr_past_month %>
                 <% irr_past_month_class = 'text-success' if irr_past_month && irr_past_month > 0.18 %>
                 <% irr_past_month_class = 'text-danger' if irr_past_month && irr_past_month < 0 %>
                 <td class="text-right <%= irr_past_month_class %>">
                   <%= display_rate(irr_past_month, 1) %>
                 </td>
-                <td class="text-right <%= 'text-primary'if coin.current_fund_stat.perp_over_spot > 1 %>">
-                  <%= display_rate(coin.current_fund_stat.perp_over_spot - 1, 3) %>
+                <td class="text-right <%= 'text-primary'if coin.coin_funding_stat.perp_over_spot > 1 %>">
+                  <%= display_rate(coin.coin_funding_stat.perp_over_spot - 1, 3) %>
                 </td>
-                <td class="text-right <%= 'text-primary'if coin.current_fund_stat.spot_over_perp > 1 %>">
-                  <%= display_rate(coin.current_fund_stat.spot_over_perp - 1, 3) %>
+                <td class="text-right <%= 'text-primary'if coin.coin_funding_stat.spot_over_perp > 1 %>">
+                  <%= display_rate(coin.coin_funding_stat.spot_over_perp - 1, 3) %>
                 </td>
-                <td class="text-right"><%= "#{number_to_currency(coin.current_fund_stat.spot_price_usd, precision: 5)}" %></td>
-                <td class="text-right"><%= "#{number_to_currency(coin.current_fund_stat.spot_volume)}" %></td>
-                <td class="text-right"><%= "#{number_to_currency(coin.current_fund_stat.perp_volume)}" %></td>
+                <td class="text-right"><%= "#{number_to_currency(coin.coin_funding_stat.spot_price_usd, precision: 5)}" %></td>
+                <td class="text-right"><%= "#{number_to_currency(coin.coin_funding_stat.spot_volume)}" %></td>
+                <td class="text-right"><%= "#{number_to_currency(coin.coin_funding_stat.perp_volume)}" %></td>
                 <!-- openInterest volume is based on coin rather than USD -->
                 <td class="text-right">
-                  <%= "#{number_to_currency(coin.current_fund_stat.openInterest * coin.current_fund_stat.spot_price_usd)}" %>
+                  <%= "#{number_to_currency(coin.coin_funding_stat.openInterest * coin.coin_funding_stat.spot_price_usd)}" %>
                 </td>
                 <td class="text-right"><%= coin.weight %></td>
               </tr>

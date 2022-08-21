@@ -3,7 +3,7 @@ class FundingController < ApplicationController
   before_action :authenticate_for_funding
 
   def index
-    @coins = Coin.includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
+    @coins = Coin.includes(:coin_funding_stat).where(coin_funding_stat: {market_type: "normal"}).order("coin_funding_stat.irr_past_month desc")
 
     coin_name = params["coin_name"] || "BTC"
     @coin = @coins.detect { |coin| coin[:name] == coin_name }
@@ -54,12 +54,12 @@ class FundingController < ApplicationController
   end
 
   def show
-    @coins = Coin.select("coins.name", "coins.spotsizeIncrement", "coins.perpsizeIncrement", "coins.weight").includes(:current_fund_stat).where(current_fund_stat: {market_type: "normal"}).order("current_fund_stat.irr_past_month desc")
+    @coins = Coin.select("coins.name", "coins.spotsizeIncrement", "coins.perpsizeIncrement", "coins.weight").includes(:coin_funding_stat).where(coin_funding_stat: {market_type: "normal"}).order("coin_funding_stat.irr_past_month desc")
 
     coin_name = params["coin_name"] || "BTC"
     @coin = @coins.detect { |coin| coin[:name] == coin_name }
 
-    @funding_orders = FundingOrder.includes(coin: :current_fund_stat).where(system: false).where("user_id = ?", current_user).order("created_at desc")
+    @funding_orders = FundingOrder.includes(coin: :coin_funding_stat).where(system: false).where("user_id = ?", current_user).order("created_at desc")
 
     @underway_order = @funding_orders.detect { |funding_order| funding_order[:order_status] == "Underway" }
     # 如果order_status有問題，要顯示出來
@@ -80,7 +80,7 @@ class FundingController < ApplicationController
     end
     days_to_show = [1, 3, 7, 14, 30] # ,60,90,:historical]
 
-    @fund_stat = @coin.current_fund_stat
+    @fund_stat = @coin.coin_funding_stat
     @fundingstats = FundingStat.where("user_id = ?", current_user)
 
     @line_chart_data = @coin.rates.where("time > ?", Time.now - 6.weeks).order("time asc").map { |r| [r.time.strftime("%m/%d %H:%M"), r.rate * 100] }

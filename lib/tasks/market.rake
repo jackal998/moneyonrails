@@ -129,12 +129,12 @@ namespace :market do
     coin_datas_tbu, fund_stat_datas_tbu = [], []
     last_coin_id = 0
 
-    @coins = Coin.includes(:current_fund_stat).order("id ASC").all
+    @coins = Coin.includes(:coin_funding_stat).order("id ASC").all
     @coins.each do |coin|
       current_coin_counts += 1
       if tmp[coin.name]
         matched_coin_counts += 1
-        fund_stat_datas_tbu << fund_stat_attr(coin.current_fund_stat, tmp[coin.name])
+        fund_stat_datas_tbu << fund_stat_attr(coin.coin_funding_stat, tmp[coin.name])
         coin_datas_tbu << coin_attr(coin, tmp[coin.name]) unless coin_data_equal?(coin, tmp[coin.name])
         tmp.except!(coin.name)
       else
@@ -152,18 +152,18 @@ namespace :market do
     end
 
     last_coin_id = @coins.empty? ? 0 : @coins.last.id
-    last_fund_stat_id = @coins.empty? ? 0 : @coins.last.current_fund_stat.id
+    last_fund_stat_id = @coins.empty? ? 0 : @coins.last.coin_funding_stat.id
 
     tmp.each do |coin_name, result|
       last_coin_id += 1
       last_fund_stat_id += 1
 
       coin_datas_tbu << coin_attr(Coin.new(id: last_coin_id, name: coin_name, created_at: Time.now), result)
-      fund_stat_datas_tbu << fund_stat_attr(CurrentFundStat.new(id: last_fund_stat_id, coin_id: last_coin_id, created_at: Time.now), result)
+      fund_stat_datas_tbu << fund_stat_attr(CoinFundingStat.new(id: last_fund_stat_id, coin_id: last_coin_id, created_at: Time.now), result)
     end
 
     Coin.upsert_all(coin_datas_tbu) unless coin_datas_tbu.empty?
-    CurrentFundStat.upsert_all(fund_stat_datas_tbu) unless fund_stat_datas_tbu.empty?
+    CoinFundingStat.upsert_all(fund_stat_datas_tbu) unless fund_stat_datas_tbu.empty?
 
     logger.info "new coin counts: #{tmp.size}, #{tmp.keys}" unless tmp.empty?
 

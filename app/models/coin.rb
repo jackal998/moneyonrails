@@ -4,13 +4,18 @@ class Coin < ApplicationRecord
   scope :with_perp, -> { where(have_perp: true) }
 
   has_many :rates
+  has_many :sorted_rates, -> { order(:time) }, class_name: "Rate"
   has_many :funding_orders
   has_many :funding_payments
-  has_one :current_fund_stat
+  has_one :coin_funding_stat
 
   attribute :weight, default: 0.00
 
   validates_uniqueness_of :name, message: "coin name can not be same"
+
+  def latest_rate
+    sorted_rates.last
+  end
 
   def self.to_csv
     require "csv"

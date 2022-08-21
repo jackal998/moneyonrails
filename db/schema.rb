@@ -10,26 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_07_24_122506) do
+ActiveRecord::Schema.define(version: 2022_08_20_132505) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
-  create_table "coins", force: :cascade do |t|
-    t.string "name"
-    t.decimal "weight"
-    t.decimal "minProvideSize"
-    t.boolean "have_perp"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.decimal "perppriceIncrement"
-    t.decimal "perpsizeIncrement"
-    t.decimal "spotpriceIncrement"
-    t.decimal "spotsizeIncrement"
-    t.index ["name"], name: "index_coins_on_name", unique: true
-  end
-
-  create_table "current_fund_stats", force: :cascade do |t|
+  create_table "coin_funding_stats", force: :cascade do |t|
     t.integer "coin_id"
     t.decimal "nextFundingRate"
     t.datetime "nextFundingTime"
@@ -52,7 +38,21 @@ ActiveRecord::Schema.define(version: 2022_07_24_122506) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.decimal "rate"
-    t.index ["coin_id"], name: "index_current_fund_stats_on_coin_id"
+    t.index ["coin_id"], name: "index_coin_funding_stats_on_coin_id", unique: true
+  end
+
+  create_table "coins", force: :cascade do |t|
+    t.string "name"
+    t.decimal "weight"
+    t.decimal "minProvideSize"
+    t.boolean "have_perp"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.decimal "perppriceIncrement"
+    t.decimal "perpsizeIncrement"
+    t.decimal "spotpriceIncrement"
+    t.decimal "spotsizeIncrement"
+    t.index ["name"], name: "index_coins_on_name", unique: true
   end
 
   create_table "funding_orders", force: :cascade do |t|
@@ -103,17 +103,17 @@ ActiveRecord::Schema.define(version: 2022_07_24_122506) do
     t.decimal "last_14_day_irr", default: "0.0"
     t.decimal "last_30_day_payments", default: "0.0"
     t.decimal "last_30_day_irr", default: "0.0"
-    t.decimal "last_60_day_payments", default: "0.0"
-    t.decimal "last_60_day_irr", default: "0.0"
     t.decimal "last_90_day_payments", default: "0.0"
     t.decimal "last_90_day_irr", default: "0.0"
-    t.decimal "historical_payments", default: "0.0"
-    t.decimal "historical_irr", default: "0.0"
+    t.decimal "last_365_day_payments", default: "0.0"
+    t.decimal "last_365_day_irr", default: "0.0"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.integer "user_id"
     t.index ["coin_id"], name: "index_funding_stats_on_coin_id"
     t.index ["coin_name"], name: "index_funding_stats_on_coin_name"
+    t.index ["user_id", "coin_name"], name: "index_funding_stats_on_user_id_and_coin_name", unique: true
+    t.index ["user_id"], name: "index_funding_stats_on_user_id"
   end
 
   create_table "grid_orders", force: :cascade do |t|
