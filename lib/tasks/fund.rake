@@ -12,15 +12,16 @@ namespace :funding do
     last_48_hrs = 2.days.ago.beginning_of_hour
     last_week = 1.week.ago.beginning_of_hour
 
-    irr = {week: 1, month: 1}
-    success_rate = {two_days: 0.00, week: 0.00}
-
-    @coins = Coin.with_perp.includes(:sorted_rates).where(sorted_rates: {time: 1.month.ago.beginning_of_hour..})
+    @coins = Coin.active.with_perp.includes(:sorted_rates).where(sorted_rates: {time: 1.month.ago.beginning_of_hour..})
 
     logger.info "updating: #{@coins.size}"
     fund_stat_datas_tbu = []
 
     @coins.each do |coin|
+      irr = {week: 1, month: 1}
+      success_rates = {two_days: 0.00, week: 0.00}
+      rate_counts = {two_days: 0.00, week: 0.00}
+
       retry_count = 0
       # finding ways to websocket ftx...
       data = {"success" => false}
@@ -38,12 +39,15 @@ namespace :funding do
 
       coin.sorted_rates.each do |rate|
         irr[:month] = calculate_raw_irr(irr[:month], rate)
+
         next if rate.time < last_week
         irr[:week] = calculate_raw_irr(irr[:week], rate)
-        next if rate.rate < 0
-        success_rate[:week] += 1
+        rate_counts[:week] += 1
+        success_rates[:week] += 1 if rate.rate > 0
+
         next if rate.time < last_48_hrs
-        success_rate[:two_days] += 1
+        rate_counts[:two_days] += 1
+        success_rates[:two_days] += 1 if rate.rate > 0
       end
 
       fund_stat_datas_tbu << {}.tap do |h|
@@ -52,8 +56,8 @@ namespace :funding do
         h[:nextFundingTime] = data["result"]["nextFundingTime"]
         h[:openInterest] = data["result"]["openInterest"]
         h[:rate] = coin.sorted_rates.last.rate
-        h[:success_rate_past_48_hrs] = (success_rate[:two_days] / 48).round(5)
-        h[:success_rate_past_week] = ((success_rate[:week] / (7 * 24))).round(5)
+        h[:success_rate_past_48_hrs] = (success_rates[:two_days] / rate_counts[:two_days]).round(5)
+        h[:success_rate_past_week] = ((success_rates[:week] / rate_counts[:week])).round(5)
         h[:irr_past_week] = (((irr[:week] - 1) / 7) * 365).round(3)
         h[:irr_past_month] = ((irr[:month] - 1) * 12).round(3)
       end
