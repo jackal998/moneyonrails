@@ -129,7 +129,7 @@ namespace :market do
     coin_datas_tbu, fund_stat_datas_tbu = [], []
     last_coin_id = 0
 
-    @coins = Coin.includes(:coin_funding_stat).order("id ASC").all
+    @coins = Coin.active.includes(:coin_funding_stat).order("id ASC").all
     @coins.each do |coin|
       current_coin_counts += 1
       if tmp[coin.name]
@@ -207,7 +207,7 @@ namespace :market do
     abort("") unless response
 
     datas = response["result"].index_by { |data| data["future"].split("-")[0] }
-    @coins = Coin.with_perp.includes(:sorted_rates)
+    @coins = Coin.active.with_perp.includes(:sorted_rates)
 
     logger.info "db_coins: #{@coins.size}, datas_size: #{datas.size}"
 
@@ -255,7 +255,7 @@ namespace :market do
       Logger.new("log/task_market_update_all_rates.log")
     end
 
-    list = args[:list_no_db_rates] || Coin.with_perp.includes(:sorted_rates)
+    list = args[:list_no_db_rates] || Coin.active.with_perp.includes(:sorted_rates)
     init_time = args[:init_time] || Time.now
 
     coin_counter, rate_datas_tbn = 0, []

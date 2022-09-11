@@ -2,9 +2,10 @@ class Coin < ApplicationRecord
   self.filter_attributes = []
 
   scope :with_perp, -> { where(have_perp: true) }
+  scope :active, -> { where(status: "active") }
 
   has_many :rates
-  has_many :sorted_rates, -> { order(:time) }, class_name: "Rate"
+  has_many :sorted_rates, -> { order("time asc") }, class_name: "Rate"
   has_many :funding_orders
   has_many :funding_payments
   has_one :coin_funding_stat

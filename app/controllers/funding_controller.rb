@@ -3,7 +3,7 @@ class FundingController < ApplicationController
   before_action :authenticate_for_funding
 
   def index
-    @coins = Coin.includes(:coin_funding_stat).where(coin_funding_stat: {market_type: "normal"}).order("coin_funding_stat.irr_past_month desc")
+    @coins = Coin.active.with_perp.includes(:coin_funding_stat).where(coin_funding_stat: {market_type: "normal"}).order("coin_funding_stat.irr_past_month desc")
 
     coin_name = params["coin_name"] || "BTC"
     @coin = @coins.detect { |coin| coin[:name] == coin_name }
@@ -54,7 +54,7 @@ class FundingController < ApplicationController
   end
 
   def show
-    @coins = Coin.select("coins.name", "coins.spotsizeIncrement", "coins.perpsizeIncrement", "coins.weight").includes(:coin_funding_stat).where(coin_funding_stat: {market_type: "normal"}).order("coin_funding_stat.irr_past_month desc")
+    @coins = Coin.active.select("coins.name", "coins.spotsizeIncrement", "coins.perpsizeIncrement", "coins.weight").includes(:coin_funding_stat).where(coin_funding_stat: {market_type: "normal"}).order("coin_funding_stat.irr_past_month desc")
 
     coin_name = params["coin_name"] || "BTC"
     @coin = @coins.detect { |coin| coin[:name] == coin_name }
