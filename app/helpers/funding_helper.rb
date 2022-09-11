@@ -1,7 +1,7 @@
 module FundingHelper
   def display_rate(r, n)
     return "" unless r
-    (r * 100).round(n).to_s
+    "#{(r * 100).round(n)}%"
   end
 
   def decimals(a)
