@@ -14,7 +14,7 @@
               </tr>
             </thead>
             <tbody>
-              <% list_index.each do |coin_name, i| %>
+              <% list_index.each_with_index do |coin_name, i| %>
                 <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
                 <tr>
                   <td class="text-center">
@@ -48,7 +48,7 @@
               </tr>
             </thead>
             <tbody>
-                <% list_index.each do |coin_name, i| %>
+                <% list_index.each_with_index do |coin_name, i| %>
                   <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
                   <tr>
                     <td class="text-center">

@@ -5,50 +5,39 @@ class FundingController < ApplicationController
   def index
     @coins = Coin.active.with_perp.includes(:coin_funding_stat).where(coin_funding_stat: {market_type: "normal"}).order("coin_funding_stat.irr_past_month desc")
 
-    coin_name = params["coin_name"] || "BTC"
-    @coin = @coins.detect { |coin| coin[:name] == coin_name }
+    @coin = @coins.detect { |coin| coin[:name] == selected_coin }
 
-    list_index = {}
-    li = 0
-    balances = ftx_wallet_balance(current_user.funding_account, coin_name)
+    fundingpayments = FundingPayment
+      .where("time > ?", 30.day.ago)
+      .where("user_id = ?", current_user)
+      .group(:coin_name)
+      .group_by_day(:time, format: "%F")
+      .sum(:payment)
+      .each_with_object({}) do |((coin_name, date), payment), h|
+        h[coin_name] ||= {}
+        h[coin_name][date] = payment
+      end
 
+    list_index = []
     @col_chart_payment_data = []
     @pie_chart_payment_data = []
 
-    balances.each do |k, v|
-      if k != "totalusdValue" && v["usdValue"] > 0.001 && k != "USD"
-        list_index[k] = li
-        @col_chart_payment_data << {name: k, data: []}
-        @pie_chart_payment_data << [k, 0]
-        li += 1
+    fundingpayments.each_with_index do |(coin_name, payments), index|
+      list_index << coin_name
+      @col_chart_payment_data << {name: coin_name, data: []}
+      @pie_chart_payment_data << [coin_name, 0]
+
+      payments.each do |date, payment|
+        @col_chart_payment_data[index][:data] << [date, (0 - payment)]
+        @pie_chart_payment_data[index][1] += (0 - payment)
       end
     end
 
-    fundingpayments = FundingPayment.where("time > ?", 30.day.ago).where("user_id = ?", current_user).group(:coin_name).group_by_day(:time, format: "%F").sum(:payment)
+    @pie_chart_payment_data.delete_if { |(_coin_name, payment)| payment < 0.000001 }
+
     @fundingstats = FundingStat.all
 
-    coin_name = ""
-    fundingpayments.each do |coin_day, payment|
-      # coin_day = ["BAO", "2021-08-18"]
-      if coin_name != coin_day[0]
-        coin_name = coin_day[0]
-        unless list_index[coin_name]
-          list_index[coin_name] = list_index.size
-          @col_chart_payment_data << {name: coin_name, data: []}
-          @pie_chart_payment_data << [coin_name, 0]
-        end
-      end
-
-      @pie_chart_payment_data[list_index[coin_name]][1] += (0 - payment)
-      @col_chart_payment_data[list_index[coin_name]][:data] << [coin_day[1], (0 - payment)]
-    end
-
-    @pie_chart_payment_data.delete_if do |data|
-      next if data[1] >= 0.01
-      coin_name = data[0]
-      list_index.except!(coin_name)
-      @col_chart_payment_data.delete_if { |dataset| dataset[:name] == coin_name }
-    end
+    balances = ftx_wallet_balance(current_user.funding_account, selected_coin)
 
     render locals: {balances: balances, list_index: list_index}
   end
@@ -128,6 +117,10 @@ class FundingController < ApplicationController
   end
 
   private
+
+  def selected_coin
+    params["coin_name"] || "BTC"
+  end
 
   def createorder_params
     params.require(:funding_order).permit(:coin_id, :coin_name, :user_id,
