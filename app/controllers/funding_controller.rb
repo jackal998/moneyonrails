@@ -1,12 +1,11 @@
 class FundingController < ApplicationController
   before_action :authenticate_user!
   before_action :authenticate_for_funding
+  before_action :set_coin_and_coins, only: [:index, :show]
+
+  LINE_CHART_START_TIME = Time.now - 6.weeks
 
   def index
-    @coins = Coin.active.with_perp.includes(:coin_funding_stat).where(coin_funding_stat: {market_type: "normal"}).order("coin_funding_stat.irr_past_month desc")
-
-    @coin = @coins.detect { |coin| coin[:name] == selected_coin }
-
     fundingpayments = FundingPayment
       .where("time > ?", 30.day.ago)
       .where("user_id = ?", current_user)
@@ -43,54 +42,44 @@ class FundingController < ApplicationController
   end
 
   def show
-    @coins = Coin.active.select("coins.name", "coins.spotsizeIncrement", "coins.perpsizeIncrement", "coins.weight").includes(:coin_funding_stat).where(coin_funding_stat: {market_type: "normal"}).order("coin_funding_stat.irr_past_month desc")
-
-    coin_name = params["coin_name"] || "BTC"
-    @coin = @coins.detect { |coin| coin[:name] == coin_name }
-
-    @funding_orders = FundingOrder.includes(coin: :coin_funding_stat).where(system: false).where("user_id = ?", current_user).order("created_at desc")
+    @funding_orders = FundingOrder.includes(coin: :coin_funding_stat).belongs_to_user(current_user)
 
     @underway_order = @funding_orders.detect { |funding_order| funding_order[:order_status] == "Underway" }
-    # 如果order_status有問題，要顯示出來
 
-    @positions = {coin_name => {"netSize" => 0, "cost" => 0}}
-    FtxClient.account(current_user.funding_account)["result"]["positions"].each do |position|
+    @positions = FtxClient.account(current_user.funding_account)["result"]["positions"].each_with_object({}) do |position, h|
       next if position["netSize"] == 0
 
-      p_coin_name = position["future"].split("-")[0]
-      p_coin = @coins.detect { |coin| coin[:name] == p_coin_name }
-      precision = helpers.decimals(p_coin[:spotsizeIncrement] > p_coin[:perpsizeIncrement] ? p_coin[:spotsizeIncrement] : p_coin[:perpsizeIncrement])
+      position_coin_name, _ = position["future"].split("-")
+      precision =
+        helpers.decimals(@coins.detect { |coin| coin[:name] == position_coin_name }.values_at([:spotsizeIncrement, :perpsizeIncrement]).max)
 
-      @positions[position["future"].split("-")[0]] = {
-        "netSize" => position["netSize"],
-        "cost" => position["cost"],
-        "precision" => precision
+      h[position_coin_name] = {
+        "precision" => precision,
+        **position.slice("netSize", "cost")
       }
     end
-    days_to_show = [1, 3, 7, 14, 30] # ,60,90,:historical]
+    @positions[selected_coin] ||= {"netSize" => 0, "cost" => 0}
 
     @fund_stat = @coin.coin_funding_stat
-    @fundingstats = FundingStat.where("user_id = ?", current_user)
+    @fundingstats = current_user.funding_stats
 
-    @line_chart_data = @coin.rates.where("time > ?", Time.now - 6.weeks).order("time asc").map { |r| [r.time.strftime("%m/%d %H:%M"), r.rate * 100] }
-    @zeros = @line_chart_data.map { |t, r| [t, 0] }
+    @line_chart_data = @coin.rates.where("time > ?", LINE_CHART_START_TIME).order("time asc").map { |r| [r.time.strftime("%m/%d %H:%M"), r.rate * 100] }
+    @zeros = @line_chart_data.map { |t, _| [t, 0] }
 
     @ftx_account = FtxClient.account(current_user.funding_account)
-    balances = ftx_wallet_balance(current_user.funding_account, coin_name)
 
-    @pie_chart_balances_data = []
-
-    balances.each do |k, v|
-      @pie_chart_balances_data << [k, v["usdValue"].round(2)] if k != "totalusdValue" && v["usdValue"] > 0.001
-    end
+    balances = ftx_wallet_balance(current_user.funding_account, selected_coin)
+    @pie_chart_balances_data = balances.map { |coin_name, value| [coin_name, value["usdValue"].round(2)] if coin_name != "totalusdValue" && value["usdValue"] > 0.001 }.compact
 
     @funding_order = FundingOrder.new(
-      coin_id: @coin.id,
-      coin_name: coin_name,
-      user_id: current_user.id,
-      original_spot_amount: balances[coin_name]["spot_amount"],
-      original_perp_amount: @positions[coin_name]["netSize"]
+      coin: @coin,
+      coin_name: @coin.name,
+      user: current_user,
+      original_spot_amount: balances[selected_coin]["spot_amount"],
+      original_perp_amount: @positions[selected_coin]["netSize"]
     )
+
+    days_to_show = [1, 3, 7, 14, 30] # ,60,90,:historical]
 
     render locals: {balances: balances, days_to_show: days_to_show}
   end
@@ -117,6 +106,17 @@ class FundingController < ApplicationController
   end
 
   private
+
+  def set_coin_and_coins
+    @coins = case action_name
+    when "index"
+      Coin.active.with_perp.include_funding_stat
+    when "show"
+      Coin.active.select("coins.name", "coins.spotsizeIncrement", "coins.perpsizeIncrement", "coins.weight").include_funding_stat
+    end
+
+    @coin = @coins.detect { |coin| coin[:name] == selected_coin }
+  end
 
   def selected_coin
     params["coin_name"] || "BTC"

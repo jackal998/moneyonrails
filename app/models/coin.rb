@@ -3,6 +3,7 @@ class Coin < ApplicationRecord
 
   scope :with_perp, -> { where(have_perp: true) }
   scope :active, -> { where(status: "active") }
+  scope :include_funding_stat, -> { includes(:coin_funding_stat).where(coin_funding_stat: {market_type: "normal"}).order("coin_funding_stat.irr_past_month desc") }
 
   has_many :rates
   has_many :sorted_rates, -> { order("time asc") }, class_name: "Rate"
