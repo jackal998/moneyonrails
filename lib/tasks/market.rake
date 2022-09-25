@@ -129,12 +129,12 @@ namespace :market do
     coin_datas_tbu, fund_stat_datas_tbu = [], []
     last_coin_id = 0
 
-    @coins = Coin.includes(:current_fund_stat).order("id ASC").all
+    @coins = Coin.active.includes(:coin_funding_stat).order("id ASC").all
     @coins.each do |coin|
       current_coin_counts += 1
       if tmp[coin.name]
         matched_coin_counts += 1
-        fund_stat_datas_tbu << fund_stat_attr(coin.current_fund_stat, tmp[coin.name])
+        fund_stat_datas_tbu << fund_stat_attr(coin.coin_funding_stat, tmp[coin.name])
         coin_datas_tbu << coin_attr(coin, tmp[coin.name]) unless coin_data_equal?(coin, tmp[coin.name])
         tmp.except!(coin.name)
       else
@@ -152,62 +152,21 @@ namespace :market do
     end
 
     last_coin_id = @coins.empty? ? 0 : @coins.last.id
-    last_fund_stat_id = @coins.empty? ? 0 : @coins.last.current_fund_stat.id
+    last_fund_stat_id = @coins.empty? ? 0 : @coins.last.coin_funding_stat.id
 
     tmp.each do |coin_name, result|
       last_coin_id += 1
       last_fund_stat_id += 1
 
       coin_datas_tbu << coin_attr(Coin.new(id: last_coin_id, name: coin_name, created_at: Time.now), result)
-      fund_stat_datas_tbu << fund_stat_attr(CurrentFundStat.new(id: last_fund_stat_id, coin_id: last_coin_id, created_at: Time.now), result)
+      fund_stat_datas_tbu << fund_stat_attr(CoinFundingStat.new(id: last_fund_stat_id, coin_id: last_coin_id, created_at: Time.now), result)
     end
 
     Coin.upsert_all(coin_datas_tbu) unless coin_datas_tbu.empty?
-    CurrentFundStat.upsert_all(fund_stat_datas_tbu) unless fund_stat_datas_tbu.empty?
+    CoinFundingStat.upsert_all(fund_stat_datas_tbu) unless fund_stat_datas_tbu.empty?
 
     logger.info "new coin counts: #{tmp.size}, #{tmp.keys}" unless tmp.empty?
 
-    logger.info "========= Done ==========  #{(Time.now - init_time).round(3)}s"
-  end
-
-  task update_funding_infos: :environment do
-    def logger
-      Logger.new("log/task_market_update_funding_infos.log")
-    end
-
-    init_time = Time.now
-    @coins = Coin.includes(:current_fund_stat).where("have_perp = ?", true)
-
-    logger.info "updating: #{@coins.size}"
-    fund_stat_datas_tbu = []
-
-    @coins.each do |coin|
-      retry_count = 0
-      # finding ways to websocket ftx...
-      data = {"success" => false}
-      until data["success"] || retry_count >= 3
-        data = FtxClient.future_stats("#{coin.name}-PERP")
-
-        unless data["success"]
-          retry_count += 1
-          logger.warn "ftx response #{coin.name}-PERP failed #{data} #{retry_count}/3"
-          sleep(1)
-        end
-      end
-
-      next if retry_count >= 3
-
-      fund_stat_datas_tbu << coin.current_fund_stat.attributes.merge({
-        "nextFundingRate" => data["result"]["nextFundingRate"],
-        "nextFundingTime" => data["result"]["nextFundingTime"],
-        "openInterest" => data["result"]["openInterest"],
-        "updated_at" => Time.now
-      })
-    end
-
-    CurrentFundStat.upsert_all(fund_stat_datas_tbu)
-
-    logger.info "updated: #{fund_stat_datas_tbu.size}"
     logger.info "========= Done ==========  #{(Time.now - init_time).round(3)}s"
   end
 
@@ -216,12 +175,11 @@ namespace :market do
       Logger.new("log/task_market_update_rates.log")
     end
 
-    def ftx_response
+    def ftx_funding_rates_response(last_hour)
       # max data per request = 500
       pre_size = 0
       data = {"success" => false, "result" => []}
       until data["success"] && pre_size == data["result"].size
-        last_hour = Time.now.beginning_of_hour
         pre_size = data["result"].size
         data = FtxClient.funding_rates({start_time: last_hour.to_i})
 
@@ -245,29 +203,26 @@ namespace :market do
     init_time = Time.now
     last_hour = init_time.beginning_of_hour
 
-    response = ftx_response
+    response = ftx_funding_rates_response(last_hour)
     abort("") unless response
 
     datas = response["result"].index_by { |data| data["future"].split("-")[0] }
-    @coins = Coin.where("have_perp = ?", true).includes(:latest_rate)
+    @coins = Coin.active.with_perp.includes(:sorted_rates)
 
     logger.info "db_coins: #{@coins.size}, datas_size: #{datas.size}"
 
-    in_db_no_response_count, already_up_to_date_count = 0, 0
-    list_no_db_rates, rate_datas_tbn = [], []
+    no_response_count = 0
+    coin_list_to_update = []
+    rate_datas_tbn = []
 
     @coins.each do |coin|
       if datas[coin.name].nil?
-        in_db_no_response_count += 1
+        no_response_count += 1
         logger.warn "coin: #{coin.name} in db but no data response."
-      elsif coin.latest_rate.nil?
-        list_no_db_rates << coin
-        logger.warn "coin: #{coin.name} no db_rates, auto update."
-      elsif coin.latest_rate.created_at < init_time - 1.day
-        logger.warn "coin: #{coin.name}, latest_rate was created_at 1 day ago: #{coin.latest_rate.created_at}, auto ignore."
-      elsif coin.latest_rate.created_at >= last_hour
-        already_up_to_date_count += 1
-      else
+      elsif coin.latest_rate.nil? || coin.latest_rate.created_at < last_hour - 1.hour
+        coin_list_to_update << coin
+        logger.warn "coin: #{coin.name} rates missing, auto update."
+      elsif coin.latest_rate.created_at < last_hour
         rate_datas_tbn << {
           coin_id: coin.id,
           name: datas[coin.name]["future"],
@@ -282,11 +237,17 @@ namespace :market do
 
     datas.each { |coin_name, data| logger.warn "coin: #{coin_name} not found in db, auto ignore." }
 
-    logger.info rate_datas_tbn.size
-    logger.info list_no_db_rates.size
-    Rate.insert_all(rate_datas_tbn) if rate_datas_tbn.present?
+    if rate_datas_tbn.present?
+      Rate.import rate_datas_tbn.compact, validate: true, validate_uniqueness: true, batch_size: 10000
+      logger.info "Updated rates: #{rate_datas_tbn.size}"
+    end
+
     logger.info "========= Done ==========  #{(Time.now - init_time).round(3)}s"
-    Rake::Task["market:update_all_rates"].invoke(list_no_db_rates, init_time) if list_no_db_rates.present?
+
+    if coin_list_to_update.present?
+      logger.info "Missing datas to update: #{coin_list_to_update.size} (see task_market_update_all_rates.log)"
+      Rake::Task["market:update_all_rates"].invoke(coin_list_to_update, init_time)
+    end
   end
 
   task :update_all_rates, [:list_no_db_rates, :init_time] => :environment do |tsk, args|
@@ -294,11 +255,10 @@ namespace :market do
       Logger.new("log/task_market_update_all_rates.log")
     end
 
-    list = args[:list_no_db_rates] || Coin.all.includes(:latest_rate)
+    list = args[:list_no_db_rates] || Coin.active.with_perp.includes(:sorted_rates)
     init_time = args[:init_time] || Time.now
 
     coin_counter, rate_datas_tbn = 0, []
-    batch_insert_result = 0
 
     list.each do |coin|
       # ftx first data time
@@ -308,16 +268,17 @@ namespace :market do
       coin_counter += 1
       logger.info "(#{coin_counter}/#{list.size}) #{coin.name}...#{datas_lag} to update."
 
-      end_time = init_time.beginning_of_hour.to_i + 1
+      query_end_time = init_time.beginning_of_hour + 1.second
+
       last_response_data_count = 1
 
-      while last_response_data_count > 0
+      while last_response_data_count > 0 && query_end_time > latest_data_time
         pre_size, retry_count = 0, 0
         data = {"success" => false, "result" => []}
 
         until data["success"] && pre_size == data["result"].size || retry_count >= 3
           pre_size = data["result"].size
-          data = FtxClient.funding_rates({future: "#{coin.name}-PERP", end_time: end_time})
+          data = FtxClient.funding_rates({future: "#{coin.name}-PERP", end_time: query_end_time.to_i})
 
           unless data["success"]
             retry_count += 1
@@ -330,9 +291,10 @@ namespace :market do
         last_response_data_count = data["result"].size
 
         if last_response_data_count > 0
-          end_time = data["result"].last["time"].to_time.to_i - 1
+          query_end_time = data["result"].last["time"].to_time - 1.second
 
           data["result"].each do |result|
+            next if result["time"].to_time <= latest_data_time
             rate_datas_tbn << {
               coin_id: coin.id,
               name: result["future"],
@@ -344,20 +306,10 @@ namespace :market do
           end
         end
       end
-
-      if rate_datas_tbn.size > 30000
-        batch_result = Rate.insert_all(rate_datas_tbn)
-        batch_insert_result += batch_result.length
-        rate_datas_tbn = []
-      end
     end
 
-    if rate_datas_tbn.present?
-      batch_result = Rate.insert_all(rate_datas_tbn)
-      batch_insert_result += batch_result.length
-    end
+    Rate.import rate_datas_tbn.compact, validate: true, validate_uniqueness: true, batch_size: 10000
 
-    logger.info "updated: #{batch_insert_result} counts."
     logger.info "========= Done ==========  #{(Time.now - init_time).round(3)}s"
   end
 end

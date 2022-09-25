@@ -41,13 +41,17 @@
     <% closed_orders = grid_setting.grid_orders.select {|o| o if (o.status == "closed" and o.filledSize == o.size )} %>
     <h6>24小時套利次數：<%= closed_orders.select {|o| o if o.createdAt > Time.now - 1.day }.size %> 次 / 歷史套利次數: <%= closed_orders.size %> 次 </h6>
   </div>
-  <% unless grid_setting.status == "closing" %>
+  <% if grid_setting.status == "closing" || closing_grid_ids.include?(grid_setting.id.to_s) %>
     <div class="card-body">
-    <!-- Button grid_setting_close_form_trigger -->
-    <button type="button" id="grid_setting_<%= grid_setting.id %>_close_form_trigger" class="btn btn-outline-danger btn-rounded" 
-    data-bs-toggle="modal" data-bs-target="#grid_setting_<%= grid_setting.id %>_close_form">
-      終止
-    </button>
+      Closing, Please wait.
+    </div>
+  <% else %>
+    <div class="card-body">
+      <!-- Button grid_setting_close_form_trigger -->
+      <button type="button" id="grid_setting_<%= grid_setting.id %>_close_form_trigger" class="btn btn-outline-danger btn-rounded" 
+      data-bs-toggle="modal" data-bs-target="#grid_setting_<%= grid_setting.id %>_close_form">
+        終止
+      </button>
     </div>
     <div class="modal fade" id="grid_setting_<%= grid_setting.id %>_close_form" tabindex="-1" aria-labelledby="grid_setting_<%= grid_setting.id %>_modal" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -73,10 +77,6 @@
           </div>
         </div>
       </div>
-    </div>
-  <% else %>
-    <div class="card-body">
-      Closing, Please wait.
     </div>
   <% end %>
 </div>

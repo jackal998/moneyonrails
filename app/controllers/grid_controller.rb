@@ -1,44 +1,41 @@
 class GridController < ApplicationController
-  require "ftx_client"
+  before_action :authenticate_user!
+  before_action :authenticate_for_grid
 
   def index
-    market_name = index_params["market_name"] || ("#{index_params["coin_name"]}/USD" if index_params["coin_name"]) || GridSetting.last["market_name"]
+    @grid_settings = GridSetting.where(status: ["new", "active", "closing"]).where("grid_settings.user_id = ?", current_user).includes(:grid_orders).order("grid_orders.price asc")
+
+    market_name = index_params["market_name"] || ("#{index_params["coin_name"]}/USD" if index_params["coin_name"]) || "BTC/USD"
 
     @market = FtxClient.market_info(market_name)["result"]
     coin_name = @market["type"] == "spot" ? @market["baseCurrency"] : nil
 
-    @grid_setting = GridSetting.new(market_name: market_name, price_step: @market["priceIncrement"], size_step: @market["sizeIncrement"])
-    @grid_settings = GridSetting.includes(:grid_orders).order("grid_orders.price asc").where(status: ["active", "closing"])
+    @grid_setting = GridSetting.new(market_name: market_name, user_id: current_user.id, price_step: @market["priceIncrement"], size_step: @market["sizeIncrement"])
 
     grid_profits = {}
     @grid_settings.each { |g| grid_profits[g.id] = profit(g) }
 
-    balances = ftx_wallet_balance("GridOnRails", coin_name)
+    balances = ftx_wallet_balance(current_user.grid_account, coin_name)
 
-    render locals: {balances: balances, coin_name: coin_name, tv_market_name: tv_market_name(market_name), grid_profits: grid_profits}
+    closing_grid_ids = get_closing_jobs
+
+    render locals: {balances: balances, closing_grid_ids: closing_grid_ids, coin_name: coin_name, tv_market_name: tv_market_name(market_name), grid_profits: grid_profits}
   end
 
-  def creategrid
+  def create
     @grid_setting = GridSetting.new(creategrid_params)
     input_totalUSD_amount = (@grid_setting["input_spot_amount"] * @grid_setting["trigger_price"] + @grid_setting["input_USD_amount"]).round(2)
-    @grid_setting.attributes = {status: "new", input_totalUSD_amount: input_totalUSD_amount}
-    @grid_setting.save
-
-    GridExecutorJob.perform_later(is_main_job: true, grid_setting_id: @grid_setting[:id])
-    redirect_to grid_path(market_name: @grid_setting[:market_name])
+    @grid_setting.update(status: "new", input_totalUSD_amount: input_totalUSD_amount)
+    @sub_account = @grid_setting.user.grid_account
+    sleep(1)
+    GridWebsocketJob.perform_later(@sub_account.id)
+    GridInitJob.perform_later(@sub_account.id)
+    redirect_to grid_path(market_name: @grid_setting["market_name"])
   end
 
-  def closegrid
-    @grid_setting = GridSetting.find(params["grid_setting"]["id"])
-    @grid_setting.update(status: "closing") unless @grid_setting.status == "closed"
-
-    close_price = @grid_setting["id"] * @grid_setting["price_step"]
-    payload = {market: @grid_setting[:market_name], side: "buy", price: close_price, type: "limit", size: @grid_setting["order_size"]}
-
-    order_result = FtxClient.place_order("GridOnRails", payload)["result"]
-    puts "closegrid order result:" + order_result.select { |k, v| {k => v} if ["market", "side", "price", "size", "status", "createdAt"].include?(k) }.to_s
-
-    redirect_to grid_path(market_name: @grid_setting[:market_name])
+  def close
+    GridCloseJob.perform_later(params["grid_setting"]["id"])
+    redirect_to grid_path(market_name: params["grid_setting"]["market_name"])
   end
 
   private
@@ -89,8 +86,19 @@ class GridController < ApplicationController
     ftx_market_name.dup.sub!("-", "") || ftx_market_name.dup.sub!("/", "")
   end
 
+  def get_closing_jobs
+    output = []
+    Sidekiq::Workers.new.each do |_process_id, _thread_id, work|
+      work["payload"]["args"].each do |job|
+        next unless job["job_class"] == "GridCloseJob"
+        output += job["arguments"]
+      end
+    end
+    output
+  end
+
   def creategrid_params
-    params.require(:grid_setting).permit(:market_name, :order_size, :price_step, :size_step,
+    params.require(:grid_setting).permit(:market_name, :user_id, :order_size, :price_step, :size_step,
       :lower_limit, :upper_limit, :grids, :grid_gap,
       :input_USD_amount, :input_spot_amount,
       :trigger_price, :threshold,

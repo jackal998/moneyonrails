@@ -1,0 +1,210 @@
+<!-- row -->
+<% colors = ["bg-success", "bg-secondary", "bg-info", "bg-warning", "bg-danger"] %>
+<div class="row">
+  <div class="col-xxl-3 col-lg-6 col-md-8 col-sm-6">
+    <div class="card">
+      <div class="stat-widget-two card-body">
+        <div class="stat-content">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>7 日</th>
+                <th>收益</th>
+                <th>年化報酬率</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% list_index.each_with_index do |coin_name, i| %>
+                <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
+                <tr>
+                  <td class="text-center">
+                    <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
+                  </td>
+                  <td class="text-right"><i class="far fa-dollar-sign"></i> <%= fundingstat[:last_7_day_payments] %></td>
+                  <td class="text-center">
+                    <%= fundingstat[:last_7_day_irr] %> <i class="far fa-percent"></i>
+                  </td>
+                </tr>
+              <% end %>
+              <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == "total_of_coins"} %>
+              <tr>
+                <td class="text-center">
+                  小計
+                </td>
+                <td class="text-right"><i class="far fa-dollar-sign"></i> <%= fundingstat[:last_7_day_payments] %></td>
+                <td class="text-center">
+                  <%= fundingstat[:last_7_day_irr] %> <i class="far fa-percent"></i>
+                </td>                                
+              </tr>
+            </tbody>
+          </table>
+          <table class="table table-sm mb-0">
+            <% disp_days = 30 %>
+            <thead>
+              <tr>
+                <th>30 日</th>
+                <th>　　</th>
+                <th>　　　　　</th>
+              </tr>
+            </thead>
+            <tbody>
+                <% list_index.each_with_index do |coin_name, i| %>
+                  <% next unless fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == coin_name} %>
+                  <tr>
+                    <td class="text-center">
+                      <%= link_to coin_name, funding_show_path(:coin_name => coin_name), data: { turbolinks: false } %>
+                    </td>
+                    <td class="text-right"><i class="far fa-dollar-sign"></i> <%= fundingstat[:last_30_day_payments] %></td>
+                    <td class="text-center">
+                      <%= fundingstat[:last_30_day_irr] %> <i class="far fa-percent"></i>
+                    </td>
+                  </tr>
+                <% end %>
+                <% fundingstat = @fundingstats.detect {|fs| fs[:coin_name] == "total_of_coins"} %>
+                <tr>
+                  <td class="text-center">
+                    小計
+                  </td>
+                  <td class="text-right"><i class="far fa-dollar-sign"></i> <%= fundingstat[:last_30_day_payments] %></td>
+                  <td class="text-center">
+                    <%= fundingstat[:last_30_day_irr] %> <i class="far fa-percent"></i>
+                  </td>                                
+                </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xxl-3 col-lg-6 col-md-4 col-sm-6">
+      <div class="card">
+        <div class="stat-widget-two card-body">
+          <div class="stat-content">
+            <div class="stat-text">USD可用餘額</div>
+            <div class="stat-digit">
+              <i class="far fa-dollar-sign"></i><%= balances["USD"]["available_amount"].round(2) %>
+            </div>
+          </div>
+          <div class="progress">
+            <% usd_percent = coin_balances_percent(balances, "USD") %>
+            <div class="progress-bar bg-success" style="width: <%= usd_percent %>%" role="progressbar" aria-valuenow="<%= usd_percent %>" aria-valuemin="0" aria-valuemax="100">
+              USD
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stat-widget-two card-body">
+          <div class="stat-content">
+            <div class="stat-text">30日收益</div>
+            <div class="stat-digit"> <i class="far fa-dollar-sign"></i><%= fundingstat[:last_30_day_payments] %></div>
+            <%= pie_chart @pie_chart_payment_data, prefix: "$", donut: true, dataset: {borderWidth: 5, hoverOffset: 4,backgroundColor: ["#99b2e5","#ed9c88","#ffcc7f","#87ca8b","#cc7fcc","#9d9ed5","#7fcce2","#eea1bb","#b2d47f","#db9696"]} %>
+          </div>
+        </div>
+      </div>
+  </div>
+  <div class="col-xxl-6 col-sm-12">
+      <div class="card">
+          <div class="stat-widget-two card-body">
+              <div class="stat-content">
+                  <div class="stat-text">30 日收益</div>
+                  <div>
+                    <%= column_chart @col_chart_payment_data, height: "511px", prefix: "$ ", stacked: true, dataset: {borderWidth: 0} %>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <!-- /# card -->
+  </div>
+    <!-- /# column -->
+</div>
+<div class="row">
+  <div class="col-xl-12 col-lg-12 col-md-12">
+    <div class="card">
+      <div class="card-header">
+          <h4 class="card-title">FTX</h4>
+      </div>
+      <div class="card-body">
+        <table class="table table-sm mb-0 table-bordered table-hover table-fixhead table-responsive" data-toggle="table" data-search="true" data-custom-sort="funds_table_sort">
+          <thead>
+            <tr>
+              <th colspan="1"></th>
+              <th colspan="2">資金費率</th>
+              <th colspan="2">成功率</th>
+              <th colspan="2">年化報酬率</th>
+              <th colspan="2">價差率</th>
+              <th colspan="1"></th>
+              <th colspan="2">成交量</th>
+              <th colspan="1"></th>
+              <th colspan="1"></th>
+            </tr>
+            <tr>
+              <th>幣種</th>
+              <th data-sortable="true">最近</th>
+              <th data-sortable="true">預估</th>
+              <th data-sortable="true">最近48小時</th>
+              <th data-sortable="true">最近一周</th>
+              <th data-sortable="true">最近一周</th>
+              <th data-sortable="true">最近一月</th>
+              <th data-sortable="true">空永續/多現貨</th>
+              <th data-sortable="true">多永續/空現貨</th>
+              <th data-sortable="true">現貨成交價格</th>
+              <th data-sortable="true">現貨24小時</th>
+              <th data-sortable="true">永續24小時</th>
+              <th data-sortable="true">永續持倉量</th>
+              <th data-sortable="true">抵押率</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @coins.each do |coin| %>
+              <tr>
+                <td class="text-center"> 
+                  <%= link_to coin.name, funding_show_path(:coin_name => coin.name), :class => ('text-muted' unless coin.weight > 0), data: { turbolinks: false } %>
+                </td>
+                <td class="text-right"><%= display_rate(coin.coin_funding_stat.rate, 4) %></td>
+                <td class="text-right"><%= display_rate(coin.coin_funding_stat.nextFundingRate, 4) %></td>
+                <% rate_past_48hrs = coin.coin_funding_stat.success_rate_past_48_hrs %>
+                <% rate_past_48hrs_class = 'text-success' if rate_past_48hrs && rate_past_48hrs > 0.85 %>
+                <td class="text-right <%= rate_past_48hrs_class %>">
+                  <%= display_rate(rate_past_48hrs, 1) %>
+                </td>
+                <% rate_past_week = coin.coin_funding_stat.success_rate_past_week %>
+                <% rate_past_week_class = 'text-success' if rate_past_week && rate_past_week > 0.8 %>
+                <td class="text-right <%= rate_past_week_class %>">
+                  <%= display_rate(rate_past_week, 1) %>
+                </td>
+                <% irr_past_week = coin.coin_funding_stat.irr_past_week %>
+                <% irr_past_week_class = 'text-success' if irr_past_week && irr_past_week > 0.18 %>
+                <% irr_past_week_class = 'text-danger' if irr_past_week && irr_past_week < 0 %>
+                <td class="text-right <%= irr_past_week_class %>">
+                  <%= display_rate(irr_past_week, 1) %>
+                </td>
+                <% irr_past_month = coin.coin_funding_stat.irr_past_month %>
+                <% irr_past_month_class = 'text-success' if irr_past_month && irr_past_month > 0.18 %>
+                <% irr_past_month_class = 'text-danger' if irr_past_month && irr_past_month < 0 %>
+                <td class="text-right <%= irr_past_month_class %>">
+                  <%= display_rate(irr_past_month, 1) %>
+                </td>
+                <td class="text-right <%= 'text-primary'if coin.coin_funding_stat.perp_over_spot > 1 %>">
+                  <%= display_rate(coin.coin_funding_stat.perp_over_spot - 1, 3) %>
+                </td>
+                <td class="text-right <%= 'text-primary'if coin.coin_funding_stat.spot_over_perp > 1 %>">
+                  <%= display_rate(coin.coin_funding_stat.spot_over_perp - 1, 3) %>
+                </td>
+                <td class="text-right"><%= "#{number_to_currency(coin.coin_funding_stat.spot_price_usd, precision: 5)}" %></td>
+                <td class="text-right"><%= "#{number_to_currency(coin.coin_funding_stat.spot_volume)}" %></td>
+                <td class="text-right"><%= "#{number_to_currency(coin.coin_funding_stat.perp_volume)}" %></td>
+                <!-- openInterest volume is based on coin rather than USD -->
+                <td class="text-right">
+                  <%= "#{number_to_currency(coin.coin_funding_stat.openInterest * coin.coin_funding_stat.spot_price_usd)}" %>
+                </td>
+                <td class="text-right"><%= coin.weight %></td>
+              </tr>
+            <% end %>
+            <tr></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

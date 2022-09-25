@@ -1,100 +1,92 @@
-
 <!-- # 2021/09/29 全面改用market_name
 # 2021/09/29 全面廢棄coin_name coin 之類的所有關聯
  -->
-<!-- **********************************
-  Content body start
-*********************************** -->
-<div class="content-body">
-  <div class="container-fluid">
-    <!-- row -->
-    <div class="row">
-      <div class="col-xl-3 col-md-6 col-sm-12">
-        <div class="card">
-            <div class="stat-widget-two card-body">
-              <div class="stat-content">
-                  <div class="stat-text">USD可用餘額</div>
-                  <div class="stat-digit">
-                    <i class="far fa-dollar-sign"></i><%= balances["USD"]["available_amount"].round(2) %>
-                  </div>
+<!-- row -->
+<div class="row">
+  <div class="col-xl-3 col-md-6 col-sm-12">
+    <div class="card">
+        <div class="stat-widget-two card-body">
+          <div class="stat-content">
+              <div class="stat-text">USD可用餘額</div>
+              <div class="stat-digit">
+                <i class="far fa-dollar-sign"></i><%= balances["USD"]["available_amount"].round(2) %>
               </div>
-              <div class="progress">
-                <% percent = (balances["USD"]["available_amount"] / balances["totalusdValue"]) * 100.round(0) %>
-                <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
-                  USD
-                </div>
-              </div>
-            </div>
-        </div>
-        <% if coin_name %>
-          <div class="card">
-            <div class="stat-widget-two card-body">
-              <div class="stat-content">
-                <div class="stat-text"><%= "#{coin_name}" %>可用餘額</div>
-                <div class="stat-digit">
-                  <% spot_precision = decimals(@grid_setting.size_step) %>
-                  <% spot_data = balances[coin_name] %>
-                  
-                  <% spot_available_usdValue = spot_data["spot_amount"] == 0 ? 0 : (spot_data["usdValue"] / spot_data["spot_amount"]) * spot_data["available_amount"] %>
-                  <%= spot_data["available_amount"].round(spot_precision) %> / <i class="far fa-dollar-sign"></i><%= spot_available_usdValue.round(2) %>
-                </div>
-              </div>
-              <div class="progress">
-                <% percent = (spot_available_usdValue / balances["totalusdValue"]) * 100.round(0) %>
-                <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
-                  in USD
-                </div>
-              </div>
+          </div>
+          <div class="progress">
+            <% percent = (balances["USD"]["available_amount"] / balances["totalusdValue"]) * 100.round(0) %>
+            <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
+              USD
             </div>
           </div>
-        <% end %>
-      </div>
-      <div class="col-xl-3 col-md-6 col-sm-12">
-        <% grid_setting = @grid_settings.detect {|gs| gs[:market_name] == @grid_setting["market_name"] } %>
-        <% unless grid_setting %>
-          <%= render "grid/grid_new", coin_name: coin_name, balances: balances, spot_data: spot_data %>
-        <% else %>
-          <%= render "grid/grid_detial", grid_setting: grid_setting, grid_profits: grid_profits %>
-        <% end %>
-      </div>
-      <div class="col-xl-6 col-md-12 col-sm-12">
-        <div class="card">
-          <!-- TradingView Widget BEGIN -->
-          <div class="tradingview-widget-container">
-            <div id="tradingview_1f621" style="height: 499px;"></div>
-            <div class="tradingview-widget-copyright">
-              <% tv_href = "https://tw.tradingview.com/symbols/#{tv_market_name}/?exchange=FTX" %> 
-              <a href=<%= tv_href %> rel="noopener" target="_blank">
-                <span class="blue-text"><%= tv_market_name %> 圖表</span>
-              </a>由TradingView提供</div>
-            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-            <script type="text/javascript">
-              new TradingView.widget({
-                "autosize": true,
-                "symbol": "FTX:<%= tv_market_name %>",
-                "timezone": "Asia/Taipei",
-                "theme": "light",
-                "style": "1",
-                "locale": "zh_TW",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "withdateranges": true,
-                "range": "1M",
-                "container_id": "tradingview_1f621"});
-            </script>
-          </div>
-          <!-- TradingView Widget END -->
         </div>
-      </div>
     </div>
-    <div class="row">
-      <% @grid_settings.each do |grid_setting| %>
-        <% unless grid_setting["market_name"] == @grid_setting["market_name"] %>
-          <div class="col-xl-3 col-md-6 col-sm-12">
-            <%= render "grid/grid_detial", grid_setting: grid_setting, grid_profits: grid_profits %>
+    <% if coin_name %>
+      <div class="card">
+        <div class="stat-widget-two card-body">
+          <div class="stat-content">
+            <div class="stat-text"><%= "#{coin_name}" %>可用餘額</div>
+            <div class="stat-digit">
+              <% spot_precision = decimals(@grid_setting.size_step) %>
+              <% spot_data = balances[coin_name] %>
+              
+              <% spot_available_usdValue = spot_data["spot_amount"] == 0 ? 0 : (spot_data["usdValue"] / spot_data["spot_amount"]) * spot_data["available_amount"] %>
+              <%= spot_data["available_amount"].round(spot_precision) %> / <i class="far fa-dollar-sign"></i><%= spot_available_usdValue.round(2) %>
+            </div>
           </div>
-        <% end %>
-      <% end %>
+          <div class="progress">
+            <% percent = (spot_available_usdValue / balances["totalusdValue"]) * 100.round(0) %>
+            <div class="progress-bar bg-success" style="width: <%= percent %>%" role="progressbar" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100">
+              in USD
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+  <div class="col-xl-3 col-md-6 col-sm-12">
+    <% grid_setting = @grid_settings.detect {|gs| gs[:market_name] == @grid_setting["market_name"] } %>
+    <% if grid_setting %>
+      <%= render "grid/grid_detial", closing_grid_ids: closing_grid_ids, grid_setting: grid_setting, grid_profits: grid_profits %>
+    <% else %>
+      <%= render "grid/grid_new", coin_name: coin_name, balances: balances, spot_data: spot_data %>
+    <% end %>
+  </div>
+  <div class="col-xl-6 col-md-12 col-sm-12">
+    <div class="card">
+      <!-- TradingView Widget BEGIN -->
+      <div class="tradingview-widget-container">
+        <div id="tradingview_1f621" style="height: 499px;"></div>
+        <div class="tradingview-widget-copyright">
+          <% tv_href = "https://tw.tradingview.com/symbols/#{tv_market_name}/?exchange=FTX" %> 
+          <a href=<%= tv_href %> rel="noopener" target="_blank">
+            <span class="blue-text"><%= tv_market_name %> 圖表</span>
+          </a>由TradingView提供</div>
+        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+        <script type="text/javascript">
+          new TradingView.widget({
+            "autosize": true,
+            "symbol": "FTX:<%= tv_market_name %>",
+            "timezone": "Asia/Taipei",
+            "theme": "light",
+            "style": "1",
+            "locale": "zh_TW",
+            "toolbar_bg": "#f1f3f6",
+            "enable_publishing": false,
+            "withdateranges": true,
+            "range": "1M",
+            "container_id": "tradingview_1f621"});
+        </script>
+      </div>
+      <!-- TradingView Widget END -->
     </div>
   </div>
+</div>
+<div class="row">
+  <% @grid_settings.each do |grid_setting| %>
+    <% unless grid_setting["market_name"] == @grid_setting["market_name"] %>
+      <div class="col-xl-3 col-md-6 col-sm-12">
+        <%= render "grid/grid_detial", grid_setting: grid_setting, grid_profits: grid_profits %>
+      </div>
+    <% end %>
+  <% end %>
 </div>

@@ -11,14 +11,16 @@ import * as ActiveStorage from "@rails/activestorage"
 import "channels"
 
 import "aos"
-import "./src/application.scss"
+import "../stylesheets/application.scss"
 import "bootstrap"
 import "bootstrap-table"
 import "chartkick/chart.js"
 
-import('./js/custom')
-import('./js/grid')
+import('js/custom')
+import('js/grid')
 
 Rails.start()
 Turbolinks.start()
 ActiveStorage.start()
+
+require.context('../images', true)

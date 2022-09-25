@@ -1,0 +1,42 @@
+<div class="card">
+  <%= form_with model: @sub_account, url: sub_account_create_path do |form| %>
+    <div class="card-header">                  
+      <h4 class="card-title">API設定</h4>
+    </div>
+    <div class="card-body">
+      <%= form.hidden_field :user_id %>
+      <table class="table table-sm mb-0 table-borderless">
+        <thead>
+          <tr>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>子帳號</td>
+            <td>指定為</td>
+          </tr>
+          <tr>
+            <td><%= form.text_field :name, :class => "form-control" %></td>
+            <td><%= form.select(:application, options_for_select(ROBOT.keys),{}, {:class => "form-select"}) %></td>
+          </tr>
+          <tr>
+            <td colspan="2">API Key</td>
+          </tr>
+          <tr>
+            <td colspan="2"><%= form.text_field :encrypted_public_key, :class => "form-control", autocomplete: 'off' %></td>
+          </tr>
+          <tr>
+            <td colspan="2">API Secret</td>
+          </tr>
+          <tr>
+            <td colspan="2"><%= form.text_field :encrypted_secret_key, :class => "form-control", autocomplete: 'off' %></td>
+          </tr>
+        </tbody>
+      </table>
+      &nbsp;
+      <%= form.submit "送 出", :class => "text-center btn btn-outline-secondary btn-rounded" %>
+      &nbsp;
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,14 @@
+<div class="row">
+  <% if @sub_account  %>
+    <div class="col-xl-3 col-md-6 col-sm-12">
+      <%= @error_msgs %>
+      <%= render "user/sub_account_new", sub_account: @sub_account %>
+    </div>
+  <% end %>
+
+  <% @sub_accounts.each do |sub_account| %>
+    <div class="col-xl-3 col-md-6 col-sm-12">
+      <%= render "user/sub_account_detail", sub_account: sub_account %>
+    </div>
+  <% end %>
+</div>
