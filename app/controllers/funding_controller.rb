@@ -99,9 +99,8 @@ class FundingController < ApplicationController
 
   def abortorder
     @funding_order = FundingOrder.find(params["funding_order"]["id"])
-    @funding_order.update(order_status: "Abort") if @funding_order.order_status == "Underway"
+    Rails.cache.write("funding_order:#{@funding_order.id}:order_status", "Abort")
 
-    # 如果order_status有問題，要顯示出來
     redirect_to funding_show_path(coin_name: params["current_coin_name"])
   end
 
